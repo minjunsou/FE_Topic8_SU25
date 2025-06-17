@@ -4,6 +4,8 @@ import GuestLayout from '../layouts/GuestLayout';
 import HomePage from '../pages/HomePage';
 import LoginPage from '../pages/LoginPage';
 import ComingSoonPage from '../pages/ComingSoonPage';
+import HealthDeclarationPage from '../pages/HealthDeclarationPage';
+import UserProfile from '../pages/UserProfile';
 import { ProtectedRoute, GuestRoute } from './ProtectedRoute';
 import { USER_ROLES } from '../constants/userRoles';
 
@@ -49,11 +51,19 @@ const router = createBrowserRouter([
         element: <ComingSoonPage />
       },
       
-      // Routes chung cho tất cả người dùng đã đăng nhập
+      // Trang khai báo thông tin y tế - không cần phân quyền
+      {
+        path: 'health-declaration',
+        element: <HealthDeclarationPage />
+      },
+      
+      // Trang hồ sơ người dùng - không cần phân quyền
       {
         path: 'profile',
-        element: <ProtectedRoute><ComingSoonPage /></ProtectedRoute>
+        element: <UserProfile />
       },
+      
+      // Routes chung cho tất cả người dùng đã đăng nhập
       {
         path: 'settings',
         element: <ProtectedRoute><ComingSoonPage /></ProtectedRoute>

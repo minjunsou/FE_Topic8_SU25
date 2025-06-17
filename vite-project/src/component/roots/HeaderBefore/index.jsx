@@ -61,13 +61,6 @@ const HeaderBefore = () => {
     navigate('/login');
   };
 
-  // Hàm xử lý đăng ký
-  // const handleSignUp = () => {
-  //   console.log('Sign Up clicked');
-  //   // Điều hướng đến trang đăng ký
-  //   // window.location.href = '/register';
-  // };
-
   // Xác định menu item nào đang được chọn dựa trên đường dẫn hiện tại
   const getSelectedKey = () => {
     const path = location.pathname;
@@ -155,13 +148,6 @@ const HeaderBefore = () => {
             >
               Login
             </Button>
-            {/* <Button 
-              className="headerBefore-signup-button" 
-              onClick={handleSignUp}
-              type="primary"
-            >
-              Sign Up
-            </Button> */}
           </Space>
         </div>
       )}

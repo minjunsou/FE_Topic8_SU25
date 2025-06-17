@@ -1,11 +1,15 @@
 .home-page {
   width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0;
+  width: 100%;
 }
 
 /* Hero Section */
@@ -17,7 +21,9 @@
   display: flex;
   align-items: center;
   position: relative;
-  padding: 0 20px;
+  padding: 0;
+  margin: 0;
+  width: 100%;
 }
 
 .hero-section::before {
@@ -35,6 +41,7 @@
   z-index: 1;
   max-width: 600px;
   color: white;
+  padding: 0 20px;
 }
 
 .hero-subtitle {
@@ -73,6 +80,8 @@
 .about-section {
   padding: 60px 0;
   background-color: white;
+  margin: 0;
+  width: 100%;
 }
 
 .about-text {
@@ -82,17 +91,21 @@
   text-align: center;
   max-width: 800px;
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 /* Departments Section */
 .departments-section {
   padding: 60px 0;
   background-color: #f9f9f9;
+  margin: 0;
+  width: 100%;
 }
 
 .section-header {
   text-align: center;
   margin-bottom: 40px;
+  padding: 0 20px;
 }
 
 .section-title {
@@ -144,10 +157,13 @@
 .trust-section {
   padding: 60px 0;
   background-color: white;
+  margin: 0;
+  width: 100%;
 }
 
 .trust-content {
   padding-right: 30px;
+  padding-left: 20px;
 }
 
 .trust-title {
@@ -168,6 +184,7 @@
   width: 100%;
   border-radius: 8px;
   overflow: hidden;
+  padding-right: 20px;
 }
 
 .trust-image {
@@ -182,10 +199,13 @@
   padding: 60px 0;
   background-color: #f0f2f5;
   color: #333;
+  margin: 0;
+  width: 100%;
 }
 
 .contact-info {
   padding-right: 30px;
+  padding-left: 20px;
 }
 
 .contact-title {
@@ -205,6 +225,7 @@
 
 .contact-stats {
   text-align: center;
+  padding-right: 20px;
 }
 
 .stat-item {
@@ -227,6 +248,8 @@
 .testimonials-section {
   padding: 60px 0;
   background-color: #f9f9f9;
+  margin: 0;
+  width: 100%;
 }
 
 .testimonial-card {
@@ -272,6 +295,8 @@
 .updates-section {
   padding: 60px 0;
   background-color: white;
+  margin: 0;
+  width: 100%;
 }
 
 .updates-banner {
@@ -282,7 +307,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 40px;
+  margin: 0 20px 40px 20px;
 }
 
 .updates-title {
@@ -302,6 +327,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: none;
   height: 100%;
+  margin: 0 20px;
 }
 
 .service-image {
@@ -334,13 +360,15 @@
   }
   
   .trust-content, .contact-info {
-    padding-right: 0;
+    padding-right: 20px;
+    padding-left: 20px;
     margin-bottom: 30px;
   }
   
   .updates-banner {
     flex-direction: column;
     text-align: center;
+    margin: 0 20px 40px 20px;
   }
   
   .updates-title {

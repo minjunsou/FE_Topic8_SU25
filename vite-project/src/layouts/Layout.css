@@ -1,14 +1,22 @@
 .layout {
   min-height: 100vh;
+  width: 100%;
+  padding: 0;
+  margin: 0;
 }
 
 .layout-content {
   padding-top: 64px; /* Chiều cao của header */
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .layout-container {
   min-height: calc(100vh - 64px - 70px); /* 100vh - header height - footer height */
-  padding: 24px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* Responsive styles */
@@ -23,11 +31,15 @@
   padding: 0;
   background-color: #f9f9f9;
   position: relative;
-  margin-top: 64px; /* Thêm margin-top bằng với chiều cao của header */
+  width: 100%;
+  margin: 0;
 }
 
 .ant-layout-content {
   min-height: calc(100vh - 64px - 300px); /* Trừ đi chiều cao của header và footer */
+  width: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 /* Loại bỏ đường kẻ ở đầu trang */

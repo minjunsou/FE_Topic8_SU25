@@ -1,110 +1,87 @@
 .headerBefore-container {
-  width: 100%;
-  background-color: #0078FF;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: linear-gradient(90deg, #1890ff 0%, #0050b3 100%);
   color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   height: 64px;
-  line-height: 64px;
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .headerBefore-logo {
   display: flex;
   align-items: center;
   cursor: pointer;
-  z-index: 10;
-  min-width: 150px;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  margin-right: 24px;
+  flex-shrink: 0;
 }
 
 .headerBefore-logo span {
-  margin-left: 5px;
-  font-weight: bold;
-  font-size: 18px;
+  margin-left: 8px;
 }
 
-/* Override Ant Design Menu styles */
-.headerBefore-nav.ant-menu {
-  position: absolute;
-  left: 0;
-  right: 0;
-  margin: 0 auto;
-  width: fit-content;
+.headerBefore-nav {
+  flex: 1;
   display: flex;
   justify-content: center;
+  min-width: 0;
 }
 
-.headerBefore-nav.ant-menu-dark .ant-menu-item-selected {
-  background-color: rgba(255, 255, 255, 0.2);
+/* Đảm bảo menu không bị thu gọn vào dấu ba chấm */
+.headerBefore-nav .ant-menu-overflow-item {
+  flex-shrink: 0 !important;
 }
 
-/* Sửa màu chữ của menu item khi được chọn */
-.headerBefore-nav.ant-menu-dark .ant-menu-item-selected a,
-.headerBefore-nav.ant-menu-dark .ant-menu-item-selected,
-.headerBefore-nav.ant-menu-dark .ant-menu-item:hover {
-  color: white !important;
+.headerBefore-nav .ant-menu-overflow-item-rest {
+  display: none !important;
 }
 
-.headerBefore-nav.ant-menu-dark .ant-menu-item:hover {
+.headerBefore-nav .ant-menu-item {
+  padding: 0 16px;
+  margin: 0 4px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.headerBefore-nav .ant-menu-item:hover {
+  color: white;
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.headerBefore-nav .ant-menu-item-selected {
+  color: white !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 .headerBefore-auth-section {
   display: flex;
   align-items: center;
-  z-index: 10;
-  min-width: 150px;
-  justify-content: flex-end;
+  margin-left: 16px;
+  flex-shrink: 0;
 }
 
-.headerBefore-signin-button {
-  border-color: white !important;
-  color: white !important;
+.headerBefore-signin-button,
+.headerBefore-profile-button {
+  margin-left: 8px;
 }
 
-.headerBefore-signin-button:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
-.headerBefore-signup-button {
-  background-color: white !important;
-  color: #0078FF !important;
-  border: none !important;
-}
-
-.headerBefore-signup-button:hover {
-  background-color: #f0f0f0 !important;
-}
-
-/* Mobile menu button */
 .headerBefore-mobile-menu-button {
-  margin-left: auto;
-  background: transparent;
-  border: none;
-  padding: 8px;
-  height: auto;
-}
-
-/* Mobile drawer styles */
-.headerBefore-mobile-drawer .ant-drawer-header {
-  background-color: #0078FF;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.headerBefore-mobile-drawer .ant-drawer-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: white;
-  font-weight: bold;
 }
 
-.headerBefore-mobile-drawer .ant-drawer-close {
-  color: white;
+.headerBefore-mobile-drawer .ant-drawer-body {
+  padding: 0;
 }
 
 .headerBefore-mobile-drawer-footer {
@@ -112,9 +89,30 @@
   border-top: 1px solid #f0f0f0;
 }
 
-/* Responsive styles cho padding */
+/* Responsive styles */
+@media (max-width: 1200px) {
+  .headerBefore-container {
+    padding: 0 16px;
+  }
+  
+  .headerBefore-nav {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 992px) {
+  .headerBefore-nav .ant-menu-item {
+    padding: 0 12px;
+    margin: 0 2px;
+  }
+}
+
 @media (max-width: 768px) {
   .headerBefore-container {
     padding: 0 16px;
+  }
+  
+  .headerBefore-logo {
+    font-size: 16px;
   }
 } 

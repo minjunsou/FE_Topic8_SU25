@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, Avatar, Space, Dropdown, message, Drawer } from 'antd';
-import { UserOutlined, HeartFilled, DownOutlined, MenuOutlined } from '@ant-design/icons';
+import { UserOutlined, HeartFilled, DownOutlined, MenuOutlined, FormOutlined } from '@ant-design/icons';
 import { authApi } from '../../../api';
 import './HeaderAfter.css';
 
@@ -44,6 +44,9 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
         break;
       case 'healthInfo':
         navigate('/health-info');
+        break;
+      case 'healthDeclaration':
+        navigate('/health-declaration');
         break;
       case 'vaccination':
         navigate('/vaccination');
@@ -121,6 +124,7 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
     if (path === '/') return 'home';
     if (path === '/about') return 'about';
     if (path === '/health-info') return 'healthInfo';
+    if (path === '/health-declaration') return 'healthDeclaration';
     if (path === '/vaccination') return 'vaccination';
     if (path === '/health-check') return 'healthCheck';
     if (path === '/medicine') return 'medicine';
@@ -134,6 +138,7 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
       { key: 'home', label: 'Trang chủ' },
       { key: 'about', label: 'Giới thiệu' },
       { key: 'healthInfo', label: 'Thông tin sức khỏe' },
+      { key: 'healthDeclaration', label: 'Khai báo sức khỏe', icon: <FormOutlined /> },
     ];
 
     // Thêm các menu item dựa trên vai trò
@@ -244,41 +249,27 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
           onClick={handleMenuClick}
           style={{ border: 'none' }}
         />
-        <div className="headerAfter-mobile-drawer-footer">
-          <Menu
-            mode="vertical"
-            items={userMenuItems}
-            onClick={handleUserMenuClick}
-            style={{ border: 'none' }}
-          />
-        </div>
+        <Menu
+          mode="vertical"
+          items={userMenuItems}
+          onClick={handleUserMenuClick}
+          style={{ border: 'none', borderTop: '1px solid #f0f0f0' }}
+        />
       </Drawer>
       
       {/* User section cho desktop */}
       {!isMobile && (
         <div className="headerAfter-user-section">
           <Dropdown
-            menu={{ 
-              items: userMenuItems,
-              onClick: handleUserMenuClick
-            }}
+            menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
             placement="bottomRight"
             arrow
           >
-            <Button type="text" className="headerAfter-user-button">
-              <Space>
-                <Avatar icon={<UserOutlined />} />
-                <span>{userName}</span>
-                <span className="headerAfter-user-role">
-                  ({userRole === 'student' ? 'Học sinh' : 
-                    userRole === 'parent' ? 'Phụ huynh' : 
-                    userRole === 'nurse' ? 'Y tá trường' : 
-                    userRole === 'manager' ? 'Quản lý' : 
-                    userRole === 'admin' ? 'Quản trị viên' : 'Người dùng'})
-                </span>
-                <DownOutlined />
-              </Space>
-            </Button>
+            <Space className="headerAfter-user-dropdown">
+              <Avatar icon={<UserOutlined />} />
+              <span className="headerAfter-username">{userName}</span>
+              <DownOutlined />
+            </Space>
           </Dropdown>
         </div>
       )}
