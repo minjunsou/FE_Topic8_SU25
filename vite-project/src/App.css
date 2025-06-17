@@ -1,42 +1,178 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* CSS chung cho toàn bộ ứng dụng */
+:root {
+  --primary-color: #0078FF;
+  --secondary-color: #041E42;
+  --accent-color: #00A3E0;
+  --success-color: #28a745;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --gray-color: #6c757d;
+  --border-radius: 6px;
+  --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Roboto', 'Segoe UI', 'Arial', sans-serif;
+  color: #333;
+  background-color: #f9f9f9;
+  line-height: 1.6;
+}
+
+/* Tạo hiệu ứng nhẹ nhàng cho tất cả các chuyển động */
+a, button, .ant-btn {
+  transition: all 0.3s ease;
+}
+
+/* Tùy chỉnh các nút */
+.ant-btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.ant-btn-primary:hover, .ant-btn-primary:focus {
+  background-color: #0065d9;
+  border-color: #0065d9;
+}
+
+/* Tùy chỉnh các tiêu đề */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--secondary-color);
+  margin-bottom: 1rem;
+}
+
+/* Tùy chỉnh các liên kết */
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+a:hover {
+  color: #0065d9;
+}
+
+/* Tùy chỉnh các card */
+.ant-card {
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.ant-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Tùy chỉnh các form */
+.ant-form-item-label > label {
+  font-weight: 500;
+}
+
+.ant-input, .ant-select-selector {
+  border-radius: var(--border-radius) !important;
+}
+
+/* Tùy chỉnh các bảng */
+.ant-table {
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #f0f7ff;
+  color: var(--secondary-color);
+}
+
+/* Tùy chỉnh các menu */
+.ant-menu-horizontal {
+  border-bottom: none;
+}
+
+.ant-menu-item-selected {
+  color: var(--primary-color) !important;
+}
+
+/* Đảm bảo màu chữ của menu item khi được chọn */
+.ant-menu-dark .ant-menu-item-selected,
+.ant-menu-dark .ant-menu-item-selected a,
+.ant-menu-dark .ant-menu-item-selected > span,
+.ant-menu-dark .ant-menu-item-selected:hover,
+.ant-menu-dark .ant-menu-item:hover,
+.ant-menu-dark .ant-menu-item:hover a,
+.ant-menu-dark .ant-menu-item:hover > span {
+  color: white !important;
+}
+
+/* Tùy chỉnh các thông báo */
+.ant-message-custom-content {
+  display: flex;
+  align-items: center;
+}
+
+/* Các class tiện ích */
+.text-center {
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.text-primary {
+  color: var(--primary-color);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.text-secondary {
+  color: var(--secondary-color);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.text-accent {
+  color: var(--accent-color);
 }
 
-.card {
-  padding: 2em;
+.bg-light {
+  background-color: var(--light-color);
 }
 
-.read-the-docs {
-  color: #888;
+.bg-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.bg-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.section-padding {
+  padding: 4rem 0;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* Hiệu ứng làm mờ khi hover */
+.hover-blur {
+  transition: filter 0.3s ease;
+}
+
+.hover-blur:hover {
+  filter: blur(1px);
+}
+
+/* Hiệu ứng đổ bóng */
+.shadow-effect {
+  box-shadow: var(--box-shadow);
+  transition: box-shadow 0.3s ease;
+}
+
+.shadow-effect:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }

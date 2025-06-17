@@ -1,0 +1,120 @@
+.headerAfter-container {
+  width: 100%;
+  background-color: #0078FF;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 64px;
+  line-height: 64px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.headerAfter-logo {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  z-index: 10;
+  min-width: 150px;
+}
+
+.headerAfter-logo span {
+  margin-left: 5px;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+/* Override Ant Design Menu styles */
+.headerAfter-nav.ant-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
+  display: flex;
+  justify-content: center;
+}
+
+.headerAfter-nav.ant-menu-dark .ant-menu-item-selected {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Sửa màu chữ của menu item khi được chọn */
+.headerAfter-nav.ant-menu-dark .ant-menu-item-selected a,
+.headerAfter-nav.ant-menu-dark .ant-menu-item-selected,
+.headerAfter-nav.ant-menu-dark .ant-menu-item:hover {
+  color: white !important;
+}
+
+.headerAfter-nav.ant-menu-dark .ant-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.headerAfter-user-section {
+  display: flex;
+  align-items: center;
+  z-index: 10;
+  min-width: 150px;
+  justify-content: flex-end;
+}
+
+.headerAfter-user-button {
+  color: white !important;
+}
+
+.headerAfter-user-button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Mobile menu button */
+.headerAfter-mobile-menu-button {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  height: auto;
+}
+
+/* Mobile drawer styles */
+.headerAfter-mobile-drawer .ant-drawer-header {
+  background-color: #0078FF;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.headerAfter-mobile-drawer .ant-drawer-title {
+  color: white;
+  font-weight: bold;
+}
+
+.headerAfter-mobile-drawer .ant-drawer-close {
+  color: white;
+}
+
+.headerAfter-mobile-user {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.headerAfter-mobile-username {
+  margin-left: 12px;
+  font-weight: bold;
+}
+
+.headerAfter-mobile-drawer-footer {
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Responsive styles cho padding */
+@media (max-width: 768px) {
+  .headerAfter-container {
+    padding: 0 16px;
+  }
+} 

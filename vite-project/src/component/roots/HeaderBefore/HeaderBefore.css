@@ -1,0 +1,120 @@
+.headerBefore-container {
+  width: 100%;
+  background-color: #0078FF;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 64px;
+  line-height: 64px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.headerBefore-logo {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  z-index: 10;
+  min-width: 150px;
+}
+
+.headerBefore-logo span {
+  margin-left: 5px;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+/* Override Ant Design Menu styles */
+.headerBefore-nav.ant-menu {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
+  display: flex;
+  justify-content: center;
+}
+
+.headerBefore-nav.ant-menu-dark .ant-menu-item-selected {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Sửa màu chữ của menu item khi được chọn */
+.headerBefore-nav.ant-menu-dark .ant-menu-item-selected a,
+.headerBefore-nav.ant-menu-dark .ant-menu-item-selected,
+.headerBefore-nav.ant-menu-dark .ant-menu-item:hover {
+  color: white !important;
+}
+
+.headerBefore-nav.ant-menu-dark .ant-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.headerBefore-auth-section {
+  display: flex;
+  align-items: center;
+  z-index: 10;
+  min-width: 150px;
+  justify-content: flex-end;
+}
+
+.headerBefore-signin-button {
+  border-color: white !important;
+  color: white !important;
+}
+
+.headerBefore-signin-button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.headerBefore-signup-button {
+  background-color: white !important;
+  color: #0078FF !important;
+  border: none !important;
+}
+
+.headerBefore-signup-button:hover {
+  background-color: #f0f0f0 !important;
+}
+
+/* Mobile menu button */
+.headerBefore-mobile-menu-button {
+  margin-left: auto;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  height: auto;
+}
+
+/* Mobile drawer styles */
+.headerBefore-mobile-drawer .ant-drawer-header {
+  background-color: #0078FF;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.headerBefore-mobile-drawer .ant-drawer-title {
+  color: white;
+  font-weight: bold;
+}
+
+.headerBefore-mobile-drawer .ant-drawer-close {
+  color: white;
+}
+
+.headerBefore-mobile-drawer-footer {
+  padding: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Responsive styles cho padding */
+@media (max-width: 768px) {
+  .headerBefore-container {
+    padding: 0 16px;
+  }
+} 

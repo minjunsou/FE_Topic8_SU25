@@ -1,0 +1,68 @@
+.layout {
+  min-height: 100vh;
+}
+
+.layout-content {
+  padding-top: 64px; /* Chiều cao của header */
+}
+
+.layout-container {
+  min-height: calc(100vh - 64px - 70px); /* 100vh - header height - footer height */
+  padding: 24px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .layout-container {
+    padding: 16px;
+  }
+}
+
+.site-content {
+  flex: 1;
+  padding: 0;
+  background-color: #f9f9f9;
+  position: relative;
+  margin-top: 64px; /* Thêm margin-top bằng với chiều cao của header */
+}
+
+.ant-layout-content {
+  min-height: calc(100vh - 64px - 300px); /* Trừ đi chiều cao của header và footer */
+}
+
+/* Loại bỏ đường kẻ ở đầu trang */
+/* .layout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(to right, var(--primary-color), var(--accent-color), var(--success-color));
+  z-index: 1000;
+} */
+
+/* Loại bỏ đường kẻ ở cuối trang */
+/* .layout::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(to right, var(--success-color), var(--accent-color), var(--primary-color));
+  z-index: 1000;
+} */
+
+/* Thêm pattern y tế nhẹ nhàng cho background */
+.site-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230078FF' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.5;
+  z-index: -1;
+} 
