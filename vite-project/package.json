@@ -10,8 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "antd": "^5.26.1",
+    "framer-motion": "^12.18.1",
+    "nprogress": "^0.2.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^7.6.2",
+    "react-spinners": "^0.17.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

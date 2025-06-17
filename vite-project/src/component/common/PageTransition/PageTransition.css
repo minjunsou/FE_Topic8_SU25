@@ -1,0 +1,16 @@
+.page-content {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Tùy chỉnh thanh tiến trình NProgress - phong cách minimal */
+#nprogress .bar {
+  background: #0078FF !important;
+  height: 2px !important;
+  opacity: 0.8;
+}
+
+#nprogress .peg {
+  box-shadow: none !important;
+  transform: rotate(0deg) !important;
+} 
