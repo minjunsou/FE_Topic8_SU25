@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, Avatar, Space, Dropdown, message, Drawer } from 'antd';
 import { UserOutlined, HeartFilled, DownOutlined, MenuOutlined } from '@ant-design/icons';
+import { authApi } from '../../../api';
 import './HeaderAfter.css';
 
 const { Header } = Layout;
 
-const HeaderAfter = ({ userName = "User Name" }) => {
+const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
@@ -41,14 +42,20 @@ const HeaderAfter = ({ userName = "User Name" }) => {
       case 'about':
         navigate('/about');
         break;
-      case 'news':
-        navigate('/news');
+      case 'healthInfo':
+        navigate('/health-info');
         break;
-      case 'doctors':
-        navigate('/doctors');
+      case 'vaccination':
+        navigate('/vaccination');
         break;
-      case 'career':
-        navigate('/career');
+      case 'healthCheck':
+        navigate('/health-check');
+        break;
+      case 'medicine':
+        navigate('/medicine');
+        break;
+      case 'dashboard':
+        navigate('/dashboard');
         break;
       default:
         navigate('/');
@@ -62,25 +69,49 @@ const HeaderAfter = ({ userName = "User Name" }) => {
       case '1':
         // Xử lý khi người dùng click vào Profile
         console.log('Profile clicked');
-        message.info('Đang chuyển đến trang Profile');
+        message.info('Đang chuyển đến trang hồ sơ');
         navigate('/profile');
         break;
       case '2':
         // Xử lý khi người dùng click vào Settings
         console.log('Settings clicked');
-        message.info('Đang chuyển đến trang Settings');
+        message.info('Đang chuyển đến trang cài đặt');
         navigate('/settings');
         break;
       case '3':
         // Xử lý khi người dùng click vào Logout
         console.log('Logout clicked');
-        message.info('Đang đăng xuất...');
-        // Thực hiện đăng xuất
-        // localStorage.removeItem('token');
-        navigate('/login');
+        handleLogout();
         break;
       default:
         break;
+    }
+  };
+
+  // Hàm xử lý đăng xuất
+  const handleLogout = async () => {
+    try {
+      message.loading('Đang đăng xuất...', 1);
+      
+      // Gọi API đăng xuất
+      await authApi.logout();
+      
+      message.success('Đăng xuất thành công');
+      
+      // Chuyển hướng đến trang đăng nhập
+      navigate('/login');
+    } catch (error) {
+      console.error('Lỗi đăng xuất:', error);
+      
+      // Hiển thị thông báo lỗi
+      if (error.message) {
+        message.error(error.message);
+      } else {
+        message.error('Đã xảy ra lỗi khi đăng xuất');
+      }
+      
+      // Chuyển hướng đến trang đăng nhập ngay cả khi có lỗi
+      navigate('/login');
     }
   };
 
@@ -89,32 +120,72 @@ const HeaderAfter = ({ userName = "User Name" }) => {
     const path = location.pathname;
     if (path === '/') return 'home';
     if (path === '/about') return 'about';
-    if (path === '/news') return 'news';
-    if (path === '/doctors') return 'doctors';
-    if (path === '/career') return 'career';
+    if (path === '/health-info') return 'healthInfo';
+    if (path === '/vaccination') return 'vaccination';
+    if (path === '/health-check') return 'healthCheck';
+    if (path === '/medicine') return 'medicine';
+    if (path === '/dashboard') return 'dashboard';
     return '';
   };
 
-  const menuItems = [
-    { key: 'home', label: 'Home' },
-    { key: 'about', label: 'About' },
-    { key: 'news', label: 'News/Schedule' },
-    { key: 'doctors', label: 'Our Doctors' },
-    { key: 'career', label: 'Career' },
-  ];
+  // Tạo menu items dựa trên vai trò người dùng
+  const getMenuItems = () => {
+    const baseItems = [
+      { key: 'home', label: 'Trang chủ' },
+      { key: 'about', label: 'Giới thiệu' },
+      { key: 'healthInfo', label: 'Thông tin sức khỏe' },
+    ];
+
+    // Thêm các menu item dựa trên vai trò
+    switch (userRole) {
+      case 'student':
+        // Học sinh chỉ xem được thông tin cơ bản
+        return baseItems;
+      case 'parent':
+        // Phụ huynh có thể xem thông tin sức khỏe, tiêm chủng và gửi thuốc
+        return [
+          ...baseItems,
+          { key: 'vaccination', label: 'Tiêm chủng' },
+          { key: 'healthCheck', label: 'Khám sức khỏe' },
+          { key: 'medicine', label: 'Gửi thuốc' },
+        ];
+      case 'nurse':
+        // Y tá trường có thể truy cập tất cả các chức năng
+        return [
+          ...baseItems,
+          { key: 'vaccination', label: 'Tiêm chủng' },
+          { key: 'healthCheck', label: 'Khám sức khỏe' },
+          { key: 'medicine', label: 'Quản lý thuốc' },
+        ];
+      case 'manager':
+      case 'admin':
+        // Quản lý và admin có thêm dashboard
+        return [
+          ...baseItems,
+          { key: 'vaccination', label: 'Tiêm chủng' },
+          { key: 'healthCheck', label: 'Khám sức khỏe' },
+          { key: 'medicine', label: 'Quản lý thuốc' },
+          { key: 'dashboard', label: 'Báo cáo & Thống kê' },
+        ];
+      default:
+        return baseItems;
+    }
+  };
+
+  const menuItems = getMenuItems();
 
   const userMenuItems = [
     {
       key: '1',
-      label: 'Profile',
+      label: 'Hồ sơ cá nhân',
     },
     {
       key: '2',
-      label: 'Settings',
+      label: 'Cài đặt',
     },
     {
       key: '3',
-      label: 'Logout',
+      label: 'Đăng xuất',
     },
   ];
 
@@ -160,6 +231,11 @@ const HeaderAfter = ({ userName = "User Name" }) => {
         <div className="headerAfter-mobile-user">
           <Avatar icon={<UserOutlined />} size="large" />
           <span className="headerAfter-mobile-username">{userName}</span>
+          <span className="headerAfter-mobile-role">({userRole === 'student' ? 'Học sinh' : 
+            userRole === 'parent' ? 'Phụ huynh' : 
+            userRole === 'nurse' ? 'Y tá trường' : 
+            userRole === 'manager' ? 'Quản lý' : 
+            userRole === 'admin' ? 'Quản trị viên' : 'Người dùng'})</span>
         </div>
         <Menu
           mode="vertical"
@@ -193,6 +269,13 @@ const HeaderAfter = ({ userName = "User Name" }) => {
               <Space>
                 <Avatar icon={<UserOutlined />} />
                 <span>{userName}</span>
+                <span className="headerAfter-user-role">
+                  ({userRole === 'student' ? 'Học sinh' : 
+                    userRole === 'parent' ? 'Phụ huynh' : 
+                    userRole === 'nurse' ? 'Y tá trường' : 
+                    userRole === 'manager' ? 'Quản lý' : 
+                    userRole === 'admin' ? 'Quản trị viên' : 'Người dùng'})
+                </span>
                 <DownOutlined />
               </Space>
             </Button>

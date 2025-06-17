@@ -1,39 +1,50 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
+import { USER_ROLES } from '../constants/userRoles';
 
-// Hàm kiểm tra đăng nhập
-const isAuthenticated = () => {
-  // Trong thực tế, bạn sẽ kiểm tra token hoặc session
-  // Ví dụ: return localStorage.getItem('token') !== null;
+// Hàm lấy vai trò người dùng
+const getUserRole = () => {
+  const userInfoString = localStorage.getItem('userInfo');
+  if (!userInfoString) return null;
   
-  // Tạm thời trả về true để disable việc kiểm tra xác thực
-  return true;
+  try {
+    const userInfo = JSON.parse(userInfoString);
+    return userInfo.role || null;
+  } catch (error) {
+    console.error('Lỗi khi phân tích thông tin người dùng:', error);
+    return null;
+  }
 };
 
 // Bảo vệ route yêu cầu xác thực
-export const ProtectedRoute = ({ children }) => {
-  // Tạm thời disable việc kiểm tra xác thực bằng cách luôn trả về children
-  return children;
+export const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const location = useLocation();
+  const userRole = getUserRole();
   
-  // Khi cần kích hoạt lại, hãy uncomment đoạn code dưới đây và xóa dòng return children;
-  /*
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
+  // Nếu không có thông tin người dùng, chuyển hướng đến trang đăng nhập
+  if (!userRole) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
+  
+  // Nếu có yêu cầu về vai trò và vai trò không được phép
+  if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+    // Chuyển hướng đến trang không có quyền truy cập
+    return <Navigate to="/unauthorized" state={{ from: location }} replace />;
+  }
+  
   return children;
-  */
 };
 
-// Bảo vệ route dành cho khách
+// Bảo vệ route dành cho khách (chưa đăng nhập)
 export const GuestRoute = ({ children }) => {
-  // Tạm thời disable việc kiểm tra xác thực bằng cách luôn trả về children
-  return children;
-  
-  // Khi cần kích hoạt lại, hãy uncomment đoạn code dưới đây và xóa dòng return children;
-  /*
-  if (isAuthenticated()) {
-    return <Navigate to="/dashboard" replace />;
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/';
+  const userRole = getUserRole();
+
+  // Nếu đã có thông tin người dùng, chuyển hướng đến trang chủ hoặc trang trước đó
+  if (userRole) {
+    return <Navigate to={from} replace />;
   }
+  
   return children;
-  */
 }; 
