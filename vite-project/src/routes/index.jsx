@@ -1,10 +1,11 @@
 import { createBrowserRouter } from 'react-router-dom';
+import Layout from '../layouts/Layout';
 import GuestLayout from '../layouts/GuestLayout';
-import AuthLayout from '../layouts/AuthLayout';
 import HomePage from '../pages/HomePage';
 import LoginPage from '../pages/LoginPage';
 import ComingSoonPage from '../pages/ComingSoonPage';
 import { ProtectedRoute, GuestRoute } from './ProtectedRoute';
+import { USER_ROLES } from '../constants/userRoles';
 
 // Import các component trang (sẽ được tạo sau)
 // import AboutPage from '../pages/AboutPage';
@@ -15,47 +16,40 @@ import { ProtectedRoute, GuestRoute } from './ProtectedRoute';
 // import SettingsPage from '../pages/SettingsPage';
 
 const router = createBrowserRouter([
-  // Routes cho người dùng chưa đăng nhập
+  // Route cho trang đăng nhập với GuestLayout
   {
-    path: '/',
+    path: '/login',
     element: <GuestLayout />,
     children: [
       {
         path: '',
+        element: <GuestRoute><LoginPage /></GuestRoute>
+      }
+    ]
+  },
+  
+  // Sử dụng Layout chung cho các trang khác
+  {
+    path: '/',
+    element: <Layout />,
+    children: [
+      // Trang chủ - hiển thị cho tất cả người dùng
+      {
+        path: '',
         element: <HomePage />
       },
-      {
-        path: 'login',
-        element: <GuestRoute><LoginPage /></GuestRoute>
-      },
+      
+      // Các trang công khai
       {
         path: 'about',
         element: <ComingSoonPage />
       },
       {
-        path: 'news',
+        path: 'health-info',
         element: <ComingSoonPage />
       },
-      {
-        path: 'doctors',
-        element: <ComingSoonPage />
-      },
-      {
-        path: 'career',
-        element: <ComingSoonPage />
-      },
-      {
-        path: '*',
-        element: <ComingSoonPage />
-      }
-    ]
-  },
-  
-  // Routes cho người dùng đã đăng nhập
-  {
-    path: '/',
-    element: <AuthLayout />,
-    children: [
+      
+      // Routes chung cho tất cả người dùng đã đăng nhập
       {
         path: 'profile',
         element: <ProtectedRoute><ComingSoonPage /></ProtectedRoute>
@@ -64,9 +58,50 @@ const router = createBrowserRouter([
         path: 'settings',
         element: <ProtectedRoute><ComingSoonPage /></ProtectedRoute>
       },
+      
+      // Routes cho phụ huynh, y tá, quản lý và admin
+      {
+        path: 'vaccination',
+        element: <ProtectedRoute allowedRoles={[USER_ROLES.PARENT, USER_ROLES.NURSE, USER_ROLES.MANAGER, USER_ROLES.ADMIN]}>
+          <ComingSoonPage />
+        </ProtectedRoute>
+      },
+      {
+        path: 'health-check',
+        element: <ProtectedRoute allowedRoles={[USER_ROLES.PARENT, USER_ROLES.NURSE, USER_ROLES.MANAGER, USER_ROLES.ADMIN]}>
+          <ComingSoonPage />
+        </ProtectedRoute>
+      },
+      {
+        path: 'medicine',
+        element: <ProtectedRoute allowedRoles={[USER_ROLES.PARENT, USER_ROLES.NURSE, USER_ROLES.MANAGER, USER_ROLES.ADMIN]}>
+          <ComingSoonPage />
+        </ProtectedRoute>
+      },
+      
+      // Routes chỉ dành cho quản lý và admin
+      {
+        path: 'dashboard',
+        element: <ProtectedRoute allowedRoles={[USER_ROLES.MANAGER, USER_ROLES.ADMIN]}>
+          <ComingSoonPage />
+        </ProtectedRoute>
+      },
+      
+      // Trang không có quyền truy cập
+      {
+        path: 'unauthorized',
+        element: <ProtectedRoute>
+          <div className="unauthorized-page">
+            <h1>Không có quyền truy cập</h1>
+            <p>Bạn không có quyền truy cập vào trang này.</p>
+          </div>
+        </ProtectedRoute>
+      },
+      
+      // Route mặc định
       {
         path: '*',
-        element: <ProtectedRoute><ComingSoonPage /></ProtectedRoute>
+        element: <ComingSoonPage />
       }
     ]
   }
