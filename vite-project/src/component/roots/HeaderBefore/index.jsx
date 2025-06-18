@@ -49,6 +49,12 @@ const HeaderBefore = () => {
       case 'career':
         navigate('/career');
         break;
+      case 'healthDeclaration':
+        navigate('/health-declaration');
+        break;
+      case 'medicineRequest':
+        navigate('/medicine-request');
+        break;
       default:
         navigate('/');
     }
@@ -61,13 +67,6 @@ const HeaderBefore = () => {
     navigate('/login');
   };
 
-  // Hàm xử lý đăng ký
-  // const handleSignUp = () => {
-  //   console.log('Sign Up clicked');
-  //   // Điều hướng đến trang đăng ký
-  //   // window.location.href = '/register';
-  // };
-
   // Xác định menu item nào đang được chọn dựa trên đường dẫn hiện tại
   const getSelectedKey = () => {
     const path = location.pathname;
@@ -76,12 +75,16 @@ const HeaderBefore = () => {
     if (path === '/news') return 'news';
     if (path === '/doctors') return 'doctors';
     if (path === '/career') return 'career';
+    if (path === '/health-declaration') return 'healthDeclaration';
+    if (path === '/medicine-request') return 'medicineRequest';
     return '';
   };
 
   const menuItems = [
     { key: 'home', label: 'Home' },
     { key: 'about', label: 'About' },
+    { key: 'healthDeclaration', label: 'Health Declaration' },
+    { key: 'medicineRequest', label: 'Medicine Request' },
     { key: 'news', label: 'News/Schedule' },
     { key: 'doctors', label: 'Our Doctors' },
     { key: 'career', label: 'Career' },
@@ -155,13 +158,6 @@ const HeaderBefore = () => {
             >
               Login
             </Button>
-            {/* <Button 
-              className="headerBefore-signup-button" 
-              onClick={handleSignUp}
-              type="primary"
-            >
-              Sign Up
-            </Button> */}
           </Space>
         </div>
       )}

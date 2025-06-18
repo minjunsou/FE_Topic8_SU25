@@ -2,6 +2,7 @@ import React from 'react';
 import { Typography, Result, Button } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ClockCircleOutlined } from '@ant-design/icons';
+import './ComingSoonPage.css';
 
 const { Title, Paragraph } = Typography;
 
@@ -12,7 +13,7 @@ const ComingSoonPage = () => {
   const pageName = path.charAt(0).toUpperCase() + path.slice(1); // Viết hoa chữ cái đầu
 
   return (
-    <div className="container section-padding">
+    <div className="coming-soon-container">
       <Result
         icon={<ClockCircleOutlined style={{ color: '#0078FF' }} />}
         title={<Title level={2}>Tính năng "{pageName}" sắp ra mắt!</Title>}
