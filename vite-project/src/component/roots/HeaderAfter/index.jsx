@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, Avatar, Space, Dropdown, message, Drawer } from 'antd';
-import { UserOutlined, HeartFilled, DownOutlined, MenuOutlined, FormOutlined } from '@ant-design/icons';
+import { UserOutlined, HeartFilled, DownOutlined, MenuOutlined, FormOutlined, MedicineBoxOutlined } from '@ant-design/icons';
 import { authApi } from '../../../api';
 import './HeaderAfter.css';
 
@@ -56,6 +56,9 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
         break;
       case 'medicine':
         navigate('/medicine');
+        break;
+      case 'medicineRequest':
+        navigate('/medicine-request');
         break;
       case 'dashboard':
         navigate('/dashboard');
@@ -128,6 +131,7 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
     if (path === '/vaccination') return 'vaccination';
     if (path === '/health-check') return 'healthCheck';
     if (path === '/medicine') return 'medicine';
+    if (path === '/medicine-request') return 'medicineRequest';
     if (path === '/dashboard') return 'dashboard';
     return '';
   };
@@ -139,6 +143,7 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
       { key: 'about', label: 'Giới thiệu' },
       { key: 'healthInfo', label: 'Thông tin sức khỏe' },
       { key: 'healthDeclaration', label: 'Khai báo sức khỏe', icon: <FormOutlined /> },
+      { key: 'medicineRequest', label: 'Gửi thuốc', icon: <MedicineBoxOutlined /> },
     ];
 
     // Thêm các menu item dựa trên vai trò
@@ -152,7 +157,7 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
           ...baseItems,
           { key: 'vaccination', label: 'Tiêm chủng' },
           { key: 'healthCheck', label: 'Khám sức khỏe' },
-          { key: 'medicine', label: 'Gửi thuốc' },
+          { key: 'medicine', label: 'Quản lý thuốc' },
         ];
       case 'nurse':
         // Y tá trường có thể truy cập tất cả các chức năng

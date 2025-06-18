@@ -6,6 +6,7 @@ import LoginPage from '../pages/LoginPage';
 import ComingSoonPage from '../pages/ComingSoonPage';
 import HealthDeclarationPage from '../pages/HealthDeclarationPage';
 import UserProfile from '../pages/UserProfile';
+import MedicineRequestPage from '../pages/MedicineRequestPage';
 import { ProtectedRoute, GuestRoute } from './ProtectedRoute';
 import { USER_ROLES } from '../constants/userRoles';
 
@@ -55,6 +56,12 @@ const router = createBrowserRouter([
       {
         path: 'health-declaration',
         element: <HealthDeclarationPage />
+      },
+      
+      // Trang gửi thuốc - không cần phân quyền (cho mục đích test UI)
+      {
+        path: 'medicine-request',
+        element: <MedicineRequestPage />
       },
       
       // Trang hồ sơ người dùng - không cần phân quyền

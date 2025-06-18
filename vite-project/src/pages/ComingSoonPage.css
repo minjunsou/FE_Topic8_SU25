@@ -1,0 +1,45 @@
+.coming-soon-container {
+  padding-top: 100px;
+  min-height: calc(100vh - 64px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 0 auto;
+  max-width: 1200px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.coming-soon-container .ant-result {
+  width: 100%;
+  text-align: center;
+}
+
+.coming-soon-container .ant-result-icon {
+  margin-bottom: 24px;
+}
+
+.coming-soon-container .ant-result-icon .anticon {
+  font-size: 72px;
+}
+
+.coming-soon-container .ant-result-title {
+  color: #333;
+}
+
+.coming-soon-container .ant-btn-primary {
+  background-color: #0078FF;
+  border-color: #0078FF;
+}
+
+.coming-soon-container .ant-btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+@media (max-width: 768px) {
+  .coming-soon-container {
+    padding-top: 80px;
+  }
+} 

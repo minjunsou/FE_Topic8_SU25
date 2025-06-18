@@ -1,34 +1,41 @@
 import React from 'react';
 import { Button, Typography, Row, Col, Card, Divider, Space, Image } from 'antd';
-import { PhoneOutlined, MailOutlined, ClockCircleOutlined, ArrowRightOutlined } from '@ant-design/icons';
+import { PhoneOutlined, MailOutlined, ClockCircleOutlined, ArrowRightOutlined, MedicineBoxOutlined, FileTextOutlined, ReadOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import './HomePage.css';
+// import medicalTeamImage from '../assets/Screenshot 2025-06-18 114846.png';
+import teamDoctorImage from '../assets/Screenshot 2025-06-18 120512.png'
 
 const { Title, Text, Paragraph } = Typography;
 
 const HomePage = () => {
-  // Danh sách các phòng ban
-  const departments = [
+  const navigate = useNavigate();
+
+  // Danh sách các chức năng
+  const functions = [
     {
-      icon: <img src="/images/cardiology-icon.png" alt="Cardiology" className="department-icon" />,
-      title: 'Cardiology',
-      description: 'Heart care specialists'
+      icon: <MedicineBoxOutlined className="function-icon" />,
+      title: 'Health Declaration',
+      description: 'Declare health status',
+      path: '/health-declaration'
     },
     {
-      icon: <img src="/images/ophthalmology-icon.png" alt="Ophthalmology" className="department-icon" />,
-      title: 'Ophthalmology',
-      description: 'Eye care specialists'
+      icon: <FileTextOutlined className="function-icon" />,
+      title: 'Medicine Request',
+      description: 'Register and manage medicine',
+      path: '/medicine-request'
     },
     {
-      icon: <img src="/images/pediatrics-icon.png" alt="Pediatrics" className="department-icon" />,
-      title: 'Pediatrics & Child Health',
-      description: 'Child healthcare'
-    },
-    {
-      icon: <img src="/images/testing-icon.png" alt="Medical Testing" className="department-icon" />,
-      title: 'Medical Testing',
-      description: 'Diagnostic services'
+      icon: <ReadOutlined className="function-icon" />,
+      title: 'Blog',
+      description: 'School health information',
+      path: '/blog'
     }
   ];
+
+  const handleCardClick = (path) => {
+    navigate(path);
+  };
 
   // Danh sách testimonials
   const testimonials = [
@@ -86,50 +93,92 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Departments Section */}
-      <section className="departments-section">
+      {/* Functions Section */}
+      <section className="functions-section">
         <div className="container">
           <div className="section-header">
-            <Title level={2} className="section-title">Our All Department</Title>
+            <Title level={2} className="section-title">Our Functions</Title>
             <Divider className="section-divider" />
           </div>
           
-          <Row gutter={[24, 24]} className="departments-row">
-            {departments.map((dept, index) => (
-              <Col xs={24} sm={12} md={6} key={index}>
-                <Card className="department-card">
-                  <div className="department-icon-wrapper">
-                    {dept.icon}
-                  </div>
-                  <Title level={4} className="department-title">{dept.title}</Title>
-                  <Text className="department-description">{dept.description}</Text>
-                </Card>
-              </Col>
-            ))}
-          </Row>
+          <div className="functions-container">
+            <Row justify="center" gutter={[24, 24]} className="functions-row">
+              {functions.map((func, index) => (
+                <Col xs={24} sm={8} md={8} lg={8} xl={8} key={index} className="function-col">
+                  <Card className="function-card" onClick={() => handleCardClick(func.path)}>
+                    <div className="function-icon-wrapper">
+                      {func.icon}
+                    </div>
+                    <Title level={4} className="function-title">{func.title}</Title>
+                    <Text className="function-description">{func.description}</Text>
+                    <Button 
+                      type="primary" 
+                      shape="round" 
+                      icon={<ArrowRightOutlined />} 
+                      className="function-button"
+                    >
+                      Go to {func.title}
+                    </Button>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
         </div>
       </section>
 
       {/* Trust Section */}
       <section className="trust-section">
         <div className="container">
-          <Row gutter={24} align="middle">
+          <Row gutter={[32, 32]} align="middle">
             <Col xs={24} md={12}>
               <div className="trust-content">
                 <Title level={2} className="trust-title">
-                  Trust us to be there to help all and make things well again.
+                  Đội ngũ y tá chuyên nghiệp, tận tâm và đầy trách nhiệm
                 </Title>
-                <Button type="primary" shape="circle" icon={<ArrowRightOutlined />} size="large" className="trust-button" />
+                <Paragraph className="trust-description">
+                  Với đội ngũ y tá được đào tạo bài bản và giàu kinh nghiệm, chúng tôi cam kết mang đến dịch vụ chăm sóc sức khỏe chất lượng cao nhất cho học sinh. Mỗi y tá trong hệ thống đều làm việc với tinh thần trách nhiệm cao, luôn đặt sức khỏe và sự an toàn của học sinh lên hàng đầu.
+                </Paragraph>
+                <div className="trust-features">
+                  <div className="trust-feature-item">
+                    <CheckCircleOutlined className="trust-feature-icon" />
+                    <Text className="trust-feature-text">Đội ngũ y tá có chứng chỉ hành nghề</Text>
+                  </div>
+                  <div className="trust-feature-item">
+                    <CheckCircleOutlined className="trust-feature-icon" />
+                    <Text className="trust-feature-text">Phản ứng nhanh trong các tình huống khẩn cấp</Text>
+                  </div>
+                  <div className="trust-feature-item">
+                    <CheckCircleOutlined className="trust-feature-icon" />
+                    <Text className="trust-feature-text">Theo dõi sức khỏe học sinh liên tục</Text>
+                  </div>
+                </div>
+                <Button 
+                  type="primary" 
+                  shape="round" 
+                  icon={<ArrowRightOutlined />} 
+                  size="large" 
+                  className="trust-button-new"
+                  onClick={() => navigate('/about')} 
+                >
+                  Tìm hiểu thêm
+                </Button>
               </div>
             </Col>
             <Col xs={24} md={12}>
               <div className="trust-image-container">
                 <Image 
-                  src="/images/doctor-with-patient.jpg" 
-                  alt="Doctor with patient" 
+                  src={teamDoctorImage} 
+                  alt="Y tá chăm sóc học sinh" 
                   className="trust-image"
                   preview={false}
                 />
+                <div className="trust-image-badge">
+                  <div className="trust-badge-content">
+                    <Title level={4} className="trust-badge-number">98%</Title>
+                    <Text className="trust-badge-text">Phụ huynh hài lòng</Text>
+                  </div>
+                </div>
               </div>
             </Col>
           </Row>
@@ -139,19 +188,19 @@ const HomePage = () => {
       {/* Contact Banner */}
       <section className="contact-banner">
         <div className="container">
-          <Row gutter={24} align="middle">
+          <Row gutter={[32, 32]} align="middle">
             <Col xs={24} md={12}>
               <div className="contact-info">
                 <Title level={3} className="contact-title">
                   We always ready <br />
                   for a challenge.
                 </Title>
-                <Space direction="vertical" size="middle">
-                  <Space>
+                <Space direction="vertical" size="large">
+                  <Space align="center">
                     <PhoneOutlined className="contact-icon" />
                     <Text className="contact-text">+880 1234 567 890</Text>
                   </Space>
-                  <Space>
+                  <Space align="center">
                     <MailOutlined className="contact-icon" />
                     <Text className="contact-text">schoolmed@gmail.com</Text>
                   </Space>
@@ -160,14 +209,14 @@ const HomePage = () => {
             </Col>
             <Col xs={24} md={12}>
               <div className="contact-stats">
-                <Row gutter={[24, 24]}>
-                  <Col span={12}>
+                <Row gutter={[32, 32]}>
+                  <Col xs={24} sm={12}>
                     <div className="stat-item">
                       <Title level={2} className="stat-number">20+</Title>
                       <Text className="stat-label">Doctors</Text>
                     </div>
                   </Col>
-                  <Col span={12}>
+                  <Col xs={24} sm={12}>
                     <div className="stat-item">
                       <Title level={2} className="stat-number">1500+</Title>
                       <Text className="stat-label">Patients</Text>
@@ -220,10 +269,10 @@ const HomePage = () => {
       {/* Updates Section */}
       <section className="updates-section">
         <div className="container">
-          <div className="updates-banner">
+          {/* <div className="updates-banner">
             <Title level={3} className="updates-title">Get Every Single Updates Here.</Title>
             <Button type="primary" className="updates-button">Subscribe</Button>
-          </div>
+          </div> */}
           
           <Row gutter={[24, 24]} className="services-row">
             <Col xs={24} md={12}>
