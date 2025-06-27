@@ -1,9 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, Avatar, Space, Dropdown, message, Drawer } from 'antd';
-import { UserOutlined, HeartFilled, DownOutlined, MenuOutlined, FormOutlined, MedicineBoxOutlined, DashboardOutlined } from '@ant-design/icons';
+import { 
+  UserOutlined, 
+  HeartFilled, 
+  DownOutlined, 
+  MenuOutlined, 
+  FormOutlined, 
+  MedicineBoxOutlined, 
+  DashboardOutlined,
+  AlertOutlined,
+  HistoryOutlined,
+  HomeOutlined,
+  LogoutOutlined,
+  SettingOutlined,
+  FileTextOutlined,
+  SolutionOutlined,
+  ExperimentOutlined
+} from '@ant-design/icons';
 import { authApi } from '../../../api';
 import './HeaderAfter.css';
+import { Link } from 'react-router-dom';
 
 const { Header } = Layout;
 
@@ -36,34 +53,31 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
     console.log('Menu clicked:', key);
     setMobileMenuVisible(false);
     switch (key) {
-      case 'home':
+      case '/':
         navigate('/');
         break;
-      case 'about':
-        navigate('/about');
-        break;
-      case 'healthInfo':
-        navigate('/health-info');
-        break;
-      case 'healthDeclaration':
+      case '/health-declaration':
         navigate('/health-declaration');
         break;
-      case 'vaccination':
+      case '/vaccination':
         navigate('/vaccination');
         break;
-      case 'healthCheck':
+      case '/health-check':
         navigate('/health-check');
         break;
-      case 'medicine':
-        navigate('/medicine');
-        break;
-      case 'medicineRequest':
+      case '/medicine-request':
         navigate('/medicine-request');
         break;
-      case 'staff':
+      case '/medical-incidents':
+        navigate('/medical-incidents');
+        break;
+      case '/health-history':
+        navigate('/health-history');
+        break;
+      case '/staff':
         navigate('/staff');
         break;
-      case 'dashboard':
+      case '/dashboard':
         navigate('/dashboard');
         break;
       default:
@@ -75,19 +89,19 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
   const handleUserMenuClick = ({ key }) => {
     setMobileMenuVisible(false);
     switch (key) {
-      case '1':
+      case 'profile':
         // Xử lý khi người dùng click vào Profile
         console.log('Profile clicked');
         message.info('Đang chuyển đến trang hồ sơ');
         navigate('/profile');
         break;
-      case '2':
+      case 'settings':
         // Xử lý khi người dùng click vào Settings
         console.log('Settings clicked');
         message.info('Đang chuyển đến trang cài đặt');
         navigate('/settings');
         break;
-      case '3':
+      case 'logout':
         // Xử lý khi người dùng click vào Logout
         console.log('Logout clicked');
         handleLogout();
@@ -127,27 +141,24 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
   // Xác định menu item nào đang được chọn dựa trên đường dẫn hiện tại
   const getSelectedKey = () => {
     const path = location.pathname;
-    if (path === '/') return 'home';
-    if (path === '/about') return 'about';
-    if (path === '/health-info') return 'healthInfo';
-    if (path === '/health-declaration') return 'healthDeclaration';
-    if (path === '/vaccination') return 'vaccination';
-    if (path === '/health-check') return 'healthCheck';
-    if (path === '/medicine') return 'medicine';
-    if (path === '/medicine-request') return 'medicineRequest';
-    if (path === '/staff') return 'staff';
-    if (path === '/dashboard') return 'dashboard';
-    return '';
+    if (path === '/') return '/';
+    if (path === '/health-declaration') return '/health-declaration';
+    if (path === '/vaccination') return '/vaccination';
+    if (path === '/health-check') return '/health-check';
+    if (path === '/medicine-request') return '/medicine-request';
+    if (path === '/medical-incidents') return '/medical-incidents';
+    if (path === '/health-history') return '/health-history';
+    if (path === '/staff') return '/staff';
+    if (path === '/dashboard') return '/dashboard';
+    return '/';
   };
 
   // Tạo menu items dựa trên vai trò người dùng
   const getMenuItems = () => {
     const baseItems = [
-      { key: 'home', label: 'Trang chủ' },
-      { key: 'about', label: 'Giới thiệu' },
-      { key: 'healthInfo', label: 'Thông tin sức khỏe' },
-      { key: 'healthDeclaration', label: 'Khai báo sức khỏe', icon: <FormOutlined /> },
-      { key: 'medicineRequest', label: 'Gửi thuốc', icon: <MedicineBoxOutlined /> },
+      { key: '/', label: 'Trang chủ', icon: <HomeOutlined /> },
+      { key: '/health-declaration', label: 'Khai báo y tế', icon: <FileTextOutlined /> },
+      { key: '/medicine-request', label: 'Yêu cầu thuốc', icon: <MedicineBoxOutlined /> },
     ];
 
     // Thêm các menu item dựa trên vai trò
@@ -159,29 +170,32 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
         // Phụ huynh có thể xem thông tin sức khỏe, tiêm chủng và gửi thuốc
         return [
           ...baseItems,
-          { key: 'vaccination', label: 'Tiêm chủng' },
-          { key: 'healthCheck', label: 'Khám sức khỏe' },
-          { key: 'medicine', label: 'Quản lý thuốc' },
+          { key: '/vaccination', label: 'Tiêm chủng', icon: <MedicineBoxOutlined /> },
+          { key: '/health-check', label: 'Kiểm tra sức khỏe', icon: <ExperimentOutlined /> },
+          { key: '/medical-incidents', label: 'Sự kiện y tế', icon: <SolutionOutlined /> },
+          { key: '/health-history', label: 'Lịch sử sức khỏe', icon: <HistoryOutlined /> },
         ];
       case 'nurse':
         // Y tá trường có thể truy cập tất cả các chức năng và trang quản lý
         return [
           ...baseItems,
-          { key: 'vaccination', label: 'Tiêm chủng' },
-          { key: 'healthCheck', label: 'Khám sức khỏe' },
-          { key: 'medicine', label: 'Quản lý thuốc' },
-          { key: 'staff', label: 'Trang quản lý', icon: <DashboardOutlined /> },
+          { key: '/vaccination', label: 'Tiêm chủng', icon: <MedicineBoxOutlined /> },
+          { key: '/health-check', label: 'Kiểm tra sức khỏe', icon: <ExperimentOutlined /> },
+          { key: '/medical-incidents', label: 'Sự kiện y tế', icon: <SolutionOutlined /> },
+          { key: '/health-history', label: 'Lịch sử sức khỏe', icon: <HistoryOutlined /> },
+          { key: '/staff', label: 'Trang Y tá', icon: <MedicineBoxOutlined /> },
         ];
       case 'manager':
       case 'admin':
         // Quản lý và admin có thêm dashboard và trang quản lý
         return [
           ...baseItems,
-          { key: 'vaccination', label: 'Tiêm chủng' },
-          { key: 'healthCheck', label: 'Khám sức khỏe' },
-          { key: 'medicine', label: 'Quản lý thuốc' },
-          { key: 'staff', label: 'Trang quản lý', icon: <DashboardOutlined /> },
-          { key: 'dashboard', label: 'Báo cáo & Thống kê' },
+          { key: '/vaccination', label: 'Tiêm chủng', icon: <MedicineBoxOutlined /> },
+          { key: '/health-check', label: 'Kiểm tra sức khỏe', icon: <ExperimentOutlined /> },
+          { key: '/medical-incidents', label: 'Sự kiện y tế', icon: <SolutionOutlined /> },
+          { key: '/health-history', label: 'Lịch sử sức khỏe', icon: <HistoryOutlined /> },
+          { key: '/staff', label: 'Trang Y tá', icon: <MedicineBoxOutlined /> },
+          { key: '/dashboard', label: 'Báo cáo & Thống kê', icon: <DashboardOutlined /> },
         ];
       default:
         return baseItems;
@@ -192,18 +206,26 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
 
   const userMenuItems = [
     {
-      key: '1',
-      label: 'Hồ sơ cá nhân',
+      key: 'profile',
+      label: 'Hồ sơ',
     },
-    // {
-    //   key: '2',
-    //   label: 'Cài đặt',
-    // },
     {
-      key: '3',
+      key: 'settings',
+      label: 'Cài đặt',
+    },
+    {
+      key: 'logout',
       label: 'Đăng xuất',
     },
   ];
+
+  const showDrawer = () => {
+    setMobileMenuVisible(true);
+  };
+
+  const onClose = () => {
+    setMobileMenuVisible(false);
+  };
 
   return (
     <Header className="headerAfter-container">
@@ -231,7 +253,7 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
           className="headerAfter-mobile-menu-button"
           type="text"
           icon={<MenuOutlined style={{ fontSize: '24px', color: 'white' }} />}
-          onClick={() => setMobileMenuVisible(true)}
+          onClick={showDrawer}
         />
       )}
       
@@ -239,7 +261,7 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
       <Drawer
         title="Menu"
         placement="right"
-        onClose={() => setMobileMenuVisible(false)}
+        onClose={onClose}
         open={mobileMenuVisible}
         className="headerAfter-mobile-drawer"
         bodyStyle={{ padding: 0 }}

@@ -1,0 +1,109 @@
+.medical-incidents-page {
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: calc(100vh - 64px);
+  margin-top: 100px;
+}
+
+.medical-incidents-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.medical-incidents-card {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.medical-incidents-title {
+  margin-bottom: 8px !important;
+  color: #1890ff;
+}
+
+.medical-incidents-description {
+  margin-bottom: 24px;
+  color: #666;
+}
+
+.medical-incidents-tabs {
+  margin-top: 24px;
+}
+
+.detail-card {
+  margin-bottom: 16px;
+}
+
+.detail-card .ant-card-head {
+  background-color: #f0f5ff;
+}
+
+.detail-card .ant-card-head-title {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.ant-descriptions-item-label {
+  font-weight: 600;
+}
+
+/* Timeline styles */
+.ant-timeline-item-content {
+  margin-bottom: 16px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .medical-incidents-page {
+    padding: 16px;
+  }
+  
+  .medical-incidents-container {
+    max-width: 100%;
+  }
+}
+
+/* Table styles */
+.ant-table-wrapper {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #f0f5ff !important;
+  color: #1890ff;
+  font-weight: 600;
+}
+
+/* Button styles */
+.ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* Tag styles */
+.ant-tag {
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* Modal styles */
+.ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.ant-modal-title {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 16px 24px;
+} 

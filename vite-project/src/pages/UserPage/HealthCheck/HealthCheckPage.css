@@ -1,0 +1,104 @@
+.health-check-page {
+  padding: 24px;
+  background-color: #f5f5f5;
+  min-height: calc(100vh - 64px);
+  margin-top: 100px;
+}
+
+.health-check-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.health-check-card {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.health-check-title {
+  margin-bottom: 8px !important;
+  color: #1890ff;
+}
+
+.health-check-description {
+  margin-bottom: 24px;
+  color: #666;
+}
+
+.health-check-tabs {
+  margin-top: 24px;
+}
+
+.health-check-info p {
+  margin-bottom: 8px;
+}
+
+.result-card {
+  margin-bottom: 16px;
+}
+
+.result-card .ant-card-head {
+  background-color: #f0f5ff;
+}
+
+.result-card .ant-card-head-title {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .health-check-page {
+    padding: 16px;
+  }
+  
+  .health-check-container {
+    max-width: 100%;
+  }
+}
+
+/* Table styles */
+.ant-table-wrapper {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background-color: #f0f5ff !important;
+  color: #1890ff;
+  font-weight: 600;
+}
+
+/* Button styles */
+.ant-btn-primary {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.ant-btn-primary:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* Tag styles */
+.ant-tag {
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* Modal styles */
+.ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.ant-modal-title {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid #f0f0f0;
+  padding: 16px 24px;
+} 
