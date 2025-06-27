@@ -7,10 +7,16 @@ import LoginPage from '../pages/LoginPage';
 import ComingSoonPage from '../pages/ComingSoonPage';
 import HealthDeclarationPage from '../pages/HealthDeclarationPage';
 import UserProfile from '../pages/UserProfile';
-import MedicineRequestPage from '../pages/MedicineRequestPage';
 import StaffPage from '../pages/StaffPage/StaffPage';
 import { ProtectedRoute, GuestRoute } from './ProtectedRoute';
 import { USER_ROLES } from '../constants/userRoles';
+
+// Import các trang từ thư mục UserPage
+import VaccinationPage from '../pages/UserPage/Vaccination/VaccinationPage';
+import HealthCheckPage from '../pages/UserPage/HealthCheck/HealthCheckPage';
+import MedicalIncidentsPage from '../pages/UserPage/MedicalIncidents/MedicalIncidentsPage';
+import HealthHistoryPage from '../pages/UserPage/HealthHistory/HealthHistoryPage';
+import MedicineRequestPage from '../pages/UserPage/MedicineRequest/MedicineRequestPage';
 
 // Import các component trang (sẽ được tạo sau)
 // import AboutPage from '../pages/AboutPage';
@@ -87,21 +93,23 @@ const router = createBrowserRouter([
       // Routes cho phụ huynh, y tá, quản lý và admin
       {
         path: 'vaccination',
-        element: <ProtectedRoute allowedRoles={[USER_ROLES.PARENT, USER_ROLES.NURSE, USER_ROLES.MANAGER, USER_ROLES.ADMIN]}>
-          <ComingSoonPage />
-        </ProtectedRoute>
+        element: <VaccinationPage />
       },
       {
         path: 'health-check',
-        element: <ProtectedRoute allowedRoles={[USER_ROLES.PARENT, USER_ROLES.NURSE, USER_ROLES.MANAGER, USER_ROLES.ADMIN]}>
-          <ComingSoonPage />
-        </ProtectedRoute>
+        element: <HealthCheckPage />
       },
       {
         path: 'medicine',
-        element: <ProtectedRoute allowedRoles={[USER_ROLES.PARENT, USER_ROLES.NURSE, USER_ROLES.MANAGER, USER_ROLES.ADMIN]}>
-          <ComingSoonPage />
-        </ProtectedRoute>
+        element: <MedicineRequestPage />
+      },
+      {
+        path: 'medical-incidents',
+        element: <MedicalIncidentsPage />
+      },
+      {
+        path: 'health-history',
+        element: <HealthHistoryPage />
       },
       
       // Routes chỉ dành cho quản lý và admin
