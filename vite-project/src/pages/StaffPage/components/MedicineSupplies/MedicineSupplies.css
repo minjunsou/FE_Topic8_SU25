@@ -1,0 +1,57 @@
+.medicine-supplies-container {
+  padding: 20px;
+}
+
+.statistics-card {
+  margin-bottom: 24px;
+}
+
+.supplies-tabs {
+  margin-bottom: 0;
+}
+
+.ant-tabs-nav {
+  margin-bottom: 0 !important;
+}
+
+.form-footer {
+  margin-top: 24px;
+  margin-bottom: 0;
+}
+
+.sidebar-footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  padding: 16px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .medicine-supplies-container {
+    padding: 12px;
+  }
+  
+  .ant-card-extra {
+    margin-top: 16px;
+    margin-left: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .ant-card-extra .ant-input-search {
+    margin-bottom: 8px;
+    width: 100% !important;
+  }
+  
+  .ant-card-extra .ant-space {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .ant-card-extra .ant-space .ant-btn {
+    margin-left: 0 !important;
+    margin-top: 8px;
+    width: 100%;
+  }
+} 

@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { Layout } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import HeaderBefore from '../component/roots/HeaderBefore';
-import AppFooter from '../component/roots/Footer';
-import PageTransition from '../component/common/PageTransition';
+import HeaderBefore from '../component/roots/HeaderBefore/HeaderBefore';
+import AppFooter from '../component/roots/Footer/Footer';
+import PageTransition from '../component/common/PageTransition/PageTransition';
 import './Layout.css';
 
 const { Content } = Layout;

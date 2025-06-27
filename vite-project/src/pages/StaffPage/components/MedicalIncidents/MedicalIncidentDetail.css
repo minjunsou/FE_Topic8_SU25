@@ -1,0 +1,94 @@
+.medical-incident-detail {
+  padding: 24px;
+}
+
+.incident-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.incident-title {
+  display: flex;
+  align-items: center;
+}
+
+.icon-alert {
+  font-size: 24px;
+  color: #ff4d4f;
+  margin-right: 12px;
+}
+
+.incident-status {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.incident-status .ant-badge {
+  margin-right: 16px;
+}
+
+.incident-tabs {
+  margin-bottom: 24px;
+}
+
+.info-card {
+  height: 100%;
+}
+
+.actions-card,
+.medicines-card,
+.activity-card {
+  margin-bottom: 24px;
+}
+
+.activity-item {
+  margin-bottom: 16px;
+}
+
+.activity-title {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.activity-date {
+  color: #8c8c8c;
+  font-size: 12px;
+}
+
+.activity-user {
+  color: #1890ff;
+  margin-bottom: 4px;
+}
+
+.activity-description {
+  color: #5c5c5c;
+}
+
+.action-form,
+.medicine-form {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  margin-bottom: 16px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .incident-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .incident-actions {
+    margin-top: 16px;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
+} 

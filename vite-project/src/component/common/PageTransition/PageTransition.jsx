@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'react-router-dom';
 import NProgress from 'nprogress';
-import LoadingScreen from '../LoadingScreen';
+import LoadingScreen from '../LoadingScreen/LoadingScreen';
 import './PageTransition.css';
 import 'nprogress/nprogress.css';
 

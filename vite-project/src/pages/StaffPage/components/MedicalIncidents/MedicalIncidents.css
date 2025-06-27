@@ -1,0 +1,53 @@
+.medical-incidents-container {
+  margin: 24px;
+}
+
+.filter-section {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.drawer-footer {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  border-top: 1px solid #e8e8e8;
+  padding: 16px;
+  background: #fff;
+  text-align: right;
+  left: 0;
+}
+
+.detail-card {
+  box-shadow: none;
+  margin-bottom: 16px;
+}
+
+.action-list, .medicines-list {
+  padding-left: 20px;
+}
+
+.action-list li, .medicines-list li {
+  margin-bottom: 8px;
+}
+
+/* Status Badge Styles */
+.ant-badge-status-dot {
+  width: 8px;
+  height: 8px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .filter-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .filter-section .ant-input-affix-wrapper,
+  .filter-section .ant-select {
+    margin-bottom: 16px;
+    width: 100%;
+  }
+} 

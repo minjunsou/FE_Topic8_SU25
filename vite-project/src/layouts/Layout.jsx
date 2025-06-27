@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Layout as AntLayout, ConfigProvider } from 'antd';
-import HeaderBefore from '../component/roots/HeaderBefore';
-import HeaderAfter from '../component/roots/HeaderAfter';
-import Footer from '../component/roots/Footer';
+import HeaderBefore from '../component/roots/HeaderBefore/HeaderBefore';
+import HeaderAfter from '../component/roots/HeaderAfter/HeaderAfter';
+import Footer from '../component/roots/Footer/Footer';
 import { authApi } from '../api';
 import './Layout.css';
 
