@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, Avatar, Space, Dropdown, message, Drawer } from 'antd';
-import { UserOutlined, HeartFilled, DownOutlined, MenuOutlined, FormOutlined, MedicineBoxOutlined } from '@ant-design/icons';
+import { UserOutlined, HeartFilled, DownOutlined, MenuOutlined, FormOutlined, MedicineBoxOutlined, DashboardOutlined } from '@ant-design/icons';
 import { authApi } from '../../../api';
 import './HeaderAfter.css';
 
@@ -59,6 +59,9 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
         break;
       case 'medicineRequest':
         navigate('/medicine-request');
+        break;
+      case 'staff':
+        navigate('/staff');
         break;
       case 'dashboard':
         navigate('/dashboard');
@@ -132,6 +135,7 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
     if (path === '/health-check') return 'healthCheck';
     if (path === '/medicine') return 'medicine';
     if (path === '/medicine-request') return 'medicineRequest';
+    if (path === '/staff') return 'staff';
     if (path === '/dashboard') return 'dashboard';
     return '';
   };
@@ -160,21 +164,23 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
           { key: 'medicine', label: 'Quản lý thuốc' },
         ];
       case 'nurse':
-        // Y tá trường có thể truy cập tất cả các chức năng
+        // Y tá trường có thể truy cập tất cả các chức năng và trang quản lý
         return [
           ...baseItems,
           { key: 'vaccination', label: 'Tiêm chủng' },
           { key: 'healthCheck', label: 'Khám sức khỏe' },
           { key: 'medicine', label: 'Quản lý thuốc' },
+          { key: 'staff', label: 'Trang quản lý', icon: <DashboardOutlined /> },
         ];
       case 'manager':
       case 'admin':
-        // Quản lý và admin có thêm dashboard
+        // Quản lý và admin có thêm dashboard và trang quản lý
         return [
           ...baseItems,
           { key: 'vaccination', label: 'Tiêm chủng' },
           { key: 'healthCheck', label: 'Khám sức khỏe' },
           { key: 'medicine', label: 'Quản lý thuốc' },
+          { key: 'staff', label: 'Trang quản lý', icon: <DashboardOutlined /> },
           { key: 'dashboard', label: 'Báo cáo & Thống kê' },
         ];
       default:
@@ -189,10 +195,10 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
       key: '1',
       label: 'Hồ sơ cá nhân',
     },
-    {
-      key: '2',
-      label: 'Cài đặt',
-    },
+    // {
+    //   key: '2',
+    //   label: 'Cài đặt',
+    // },
     {
       key: '3',
       label: 'Đăng xuất',

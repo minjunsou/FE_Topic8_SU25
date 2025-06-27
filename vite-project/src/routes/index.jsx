@@ -1,12 +1,14 @@
 import { createBrowserRouter } from 'react-router-dom';
 import Layout from '../layouts/Layout';
 import GuestLayout from '../layouts/GuestLayout';
+import AuthLayout from '../layouts/AuthLayout';
 import HomePage from '../pages/HomePage';
 import LoginPage from '../pages/LoginPage';
 import ComingSoonPage from '../pages/ComingSoonPage';
 import HealthDeclarationPage from '../pages/HealthDeclarationPage';
 import UserProfile from '../pages/UserProfile';
 import MedicineRequestPage from '../pages/MedicineRequestPage';
+import StaffPage from '../pages/StaffPage/StaffPage';
 import { ProtectedRoute, GuestRoute } from './ProtectedRoute';
 import { USER_ROLES } from '../constants/userRoles';
 
@@ -29,6 +31,12 @@ const router = createBrowserRouter([
         element: <GuestRoute><LoginPage /></GuestRoute>
       }
     ]
+  },
+  
+  // Route riêng cho StaffPage, không dùng Layout chung
+  {
+    path: '/staff',
+    element: <StaffPage />
   },
   
   // Sử dụng Layout chung cho các trang khác

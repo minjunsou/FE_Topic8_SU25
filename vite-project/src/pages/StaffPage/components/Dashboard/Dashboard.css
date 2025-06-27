@@ -1,0 +1,99 @@
+.staff-overview .ant-row {
+  margin-bottom: 24px;
+}
+
+.staff-welcome {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.staff-section {
+  margin-top: 32px;
+}
+
+.staff-section .ant-typography {
+  margin-bottom: 16px;
+}
+
+.view-all-link {
+  margin-top: 12px;
+  text-align: right;
+}
+
+.dashboard-container {
+  padding: 24px;
+}
+
+.staff-overview {
+  margin: 24px 0;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  height: 130px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.stat-card .icon {
+  font-size: 36px;
+  margin-right: 20px;
+  padding: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon.medicine {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.icon.declaration {
+  background-color: #f6ffed;
+  color: #52c41a;
+}
+
+.icon.incident {
+  background-color: #fff1f0;
+  color: #ff4d4f;
+}
+
+.stat-info {
+  flex: 1;
+}
+
+.stat-info h2 {
+  font-size: 28px;
+  margin: 5px 0;
+}
+
+.stat-info p {
+  margin: 0;
+  color: #8c8c8c;
+}
+
+.stat-info p.highlight {
+  color: #1890ff;
+  font-weight: bold;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .stat-card {
+    height: auto;
+    padding: 16px;
+  }
+  
+  .stat-card .icon {
+    font-size: 24px;
+    padding: 12px;
+  }
+  
+  .stat-info h2 {
+    font-size: 20px;
+  }
+} 
