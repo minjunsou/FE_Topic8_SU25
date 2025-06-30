@@ -3,6 +3,7 @@ import { Form, Input, Button, Card, Typography, Divider, message } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '../api';
+import { ROLE_IDS } from '../constants/userRoles';
 import './LoginPage.css';
 
 const { Title, Text } = Typography;
@@ -28,26 +29,30 @@ const LoginPage = () => {
       console.log('Login response:', response);
       
       if (response && response.user) {
-        const userRole = response.user.role;
+        // Lấy roleId từ thông tin người dùng
+        const userRoleId = response.user.roleId ? Number(response.user.roleId) : 0;
         message.success('Đăng nhập thành công!');
         
-        // Tạo event để thông báo thay đổi trong sessionStorage
+        // Tạo event để thông báo thay đổi trong localStorage
         window.dispatchEvent(new Event('storage'));
         
         // Chuyển hướng dựa trên vai trò người dùng
         setTimeout(() => {
-          // Kiểm tra vai trò và chuyển hướng đến trang tương ứng
-          switch (userRole) {
-            case 'parent':
+          // Kiểm tra roleId và chuyển hướng đến trang tương ứng
+          switch (userRoleId) {
+            case ROLE_IDS.STUDENT: // Student
               navigate('/');
               break;
-            case 'nurse':
-              navigate('/health-check');
+            case ROLE_IDS.PARENT: // Parent
+              navigate('/');
               break;
-            case 'admin':
+            case ROLE_IDS.NURSE: // Nurse
+              navigate('/staff');
+              break;
+            case ROLE_IDS.MANAGER: // Manager
               navigate('/dashboard');
               break;
-            case 'manager':
+            case ROLE_IDS.ADMIN: // Admin
               navigate('/dashboard');
               break;
             default:

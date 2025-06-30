@@ -5,7 +5,8 @@ import {
   MedicineBoxOutlined, 
   FileTextOutlined,
   AlertOutlined,
-  MedicineBoxTwoTone
+  MedicineBoxTwoTone,
+  KeyOutlined
 } from '@ant-design/icons';
 
 const { TabPane } = Tabs;
@@ -80,6 +81,15 @@ const StaffTabs = ({
             </span>
           } 
           key="health-declarations" 
+        />
+        <TabPane 
+          tab={
+            <span>
+              <KeyOutlined />
+              Đổi mật khẩu
+            </span>
+          } 
+          key="change-password" 
         />
       </Tabs>
     </div>

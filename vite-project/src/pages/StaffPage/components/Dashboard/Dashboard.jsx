@@ -181,33 +181,45 @@ const Dashboard = ({
   return (
     <div className="dashboard-container">
       <Row gutter={[24, 24]}>
-        <Col span={8}>
-          <Card className="stat-card">
-            <MedicineBoxOutlined className="icon medicine" />
-            <div className="stat-info">
-              <p>Yêu cầu thuốc</p>
-              <h2>{medicineRequests.length}</h2>
-              <p className="highlight">{medicineRequests.filter(item => item.status === 'pending').length} đang chờ</p>
+        <Col xs={24} sm={24} md={8}>
+          <Card className="stat-card" bordered={false}>
+            <div className="stat-card-content">
+              <div className="stat-icon-container">
+                <MedicineBoxOutlined className="icon medicine" />
+              </div>
+              <div className="stat-info">
+                <Text className="stat-title">Yêu cầu thuốc</Text>
+                <Title level={2} className="stat-number">{medicineRequests.length}</Title>
+                <Text className="stat-highlight">{medicineRequests.filter(item => item.status === 'pending').length} đang chờ</Text>
+              </div>
             </div>
           </Card>
         </Col>
-        <Col span={8}>
-          <Card className="stat-card">
-            <FileTextOutlined className="icon declaration" />
-            <div className="stat-info">
-              <p>Khai báo sức khỏe</p>
-              <h2>{healthDeclarations.length}</h2>
-              <p className="highlight">{healthDeclarations.filter(item => item.status === 'new').length} mới</p>
+        <Col xs={24} sm={24} md={8}>
+          <Card className="stat-card" bordered={false}>
+            <div className="stat-card-content">
+              <div className="stat-icon-container">
+                <FileTextOutlined className="icon declaration" />
+              </div>
+              <div className="stat-info">
+                <Text className="stat-title">Khai báo sức khỏe</Text>
+                <Title level={2} className="stat-number">{healthDeclarations.length}</Title>
+                <Text className="stat-highlight">{healthDeclarations.filter(item => item.status === 'new').length} mới</Text>
+              </div>
             </div>
           </Card>
         </Col>
-        <Col span={8}>
-          <Card className="stat-card">
-            <AlertOutlined className="icon incident" />
-            <div className="stat-info">
-              <p>Sự kiện y tế</p>
-              <h2>{medicalIncidents?.length || 0}</h2>
-              <p className="highlight">{medicalIncidents?.filter(item => item.status === 'new').length || 0} mới</p>
+        <Col xs={24} sm={24} md={8}>
+          <Card className="stat-card" bordered={false}>
+            <div className="stat-card-content">
+              <div className="stat-icon-container">
+                <AlertOutlined className="icon incident" />
+              </div>
+              <div className="stat-info">
+                <Text className="stat-title">Sự kiện y tế</Text>
+                <Title level={2} className="stat-number">{medicalIncidents?.length || 0}</Title>
+                <Text className="stat-highlight">{medicalIncidents?.filter(item => item.status === 'new').length || 0} mới</Text>
+              </div>
             </div>
           </Card>
         </Col>
@@ -240,7 +252,7 @@ const Dashboard = ({
       </Row>
 
       <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-        <Col span={12}>
+        <Col xs={24} md={12}>
           <Card 
             title={
               <Space>
@@ -263,7 +275,7 @@ const Dashboard = ({
             />
           </Card>
         </Col>
-        <Col span={12}>
+        <Col xs={24} md={12}>
           <Card 
             title={
               <Space>

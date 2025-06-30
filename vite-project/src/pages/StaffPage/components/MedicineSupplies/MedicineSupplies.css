@@ -1,13 +1,13 @@
 .medicine-supplies-container {
-  padding: 20px;
+  padding: 0;
 }
 
 .statistics-card {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .supplies-tabs {
-  margin-bottom: 0;
+  margin-bottom: -16px;
 }
 
 .ant-tabs-nav {
@@ -24,6 +24,43 @@
   bottom: 0;
   width: 100%;
   padding: 16px;
+}
+
+/* CSS cho chuông thông báo */
+.notification-dropdown {
+  max-height: 400px;
+  overflow: auto;
+}
+
+.notification-header {
+  font-weight: bold;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 8px;
+  color: #ff4d4f;
+}
+
+.low-stock-list {
+  margin-left: 16px;
+  padding-left: 0;
+}
+
+.low-stock-list li {
+  margin-bottom: 4px;
+}
+
+/* Tùy chỉnh màu sắc cho biểu tượng chuông */
+.ant-badge-count {
+  background-color: #ff4d4f;
+}
+
+/* Tùy chỉnh dropdown menu */
+.ant-dropdown-menu-item {
+  padding: 8px 12px;
+}
+
+.ant-dropdown-menu-item:hover {
+  background-color: #fff1f0;
 }
 
 /* Responsive styles */
