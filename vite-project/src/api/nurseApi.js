@@ -31,6 +31,130 @@ const nurseApi = {
   },
 
   /**
+   * Lấy danh sách tất cả phụ huynh
+   * @param {Object} params - Tham số truy vấn
+   * @param {number} params.page - Trang hiện tại (mặc định: 0)
+   * @param {number} params.size - Số lượng mục trên mỗi trang (mặc định: 100)
+   * @param {number} params.roleId - ID vai trò (mặc định: 3 - phụ huynh)
+   * @param {string} params.sortBy - Trường để sắp xếp (mặc định: fullName)
+   * @param {string} params.direction - Hướng sắp xếp (mặc định: asc)
+   * @returns {Promise} - Promise chứa danh sách phụ huynh
+   */
+  getAllParents: async (params = {}) => {
+    try {
+      const defaultParams = {
+        page: 0,
+        size: 100,
+        roleId: 3, // ID vai trò phụ huynh
+        sortBy: 'fullName',
+        direction: 'asc'
+      };
+      
+      const queryParams = { ...defaultParams, ...params };
+      
+      const response = await axiosInstance.get('/v1/accounts', { params: queryParams });
+      
+      // Dựa vào cấu trúc response thực tế từ API
+      if (response.data && response.data.accounts) {
+        return response.data.accounts || [];
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách phụ huynh:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy danh sách tất cả học sinh
+   * @param {Object} params - Tham số truy vấn
+   * @param {number} params.page - Trang hiện tại (mặc định: 0)
+   * @param {number} params.size - Số lượng mục trên mỗi trang (mặc định: 100)
+   * @param {number} params.roleId - ID vai trò (mặc định: 4 - học sinh)
+   * @param {string} params.sortBy - Trường để sắp xếp (mặc định: fullName)
+   * @param {string} params.direction - Hướng sắp xếp (mặc định: asc)
+   * @returns {Promise} - Promise chứa danh sách học sinh
+   */
+  getAllStudents: async (params = {}) => {
+    try {
+      const defaultParams = {
+        page: 0,
+        size: 100,
+        roleId: 4, // ID vai trò học sinh
+        sortBy: 'fullName',
+        direction: 'asc'
+      };
+      
+      const queryParams = { ...defaultParams, ...params };
+      
+      const response = await axiosInstance.get('/v1/accounts', { params: queryParams });
+      
+      // Dựa vào cấu trúc response thực tế từ API
+      if (response.data && response.data.accounts) {
+        return response.data.accounts || [];
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách học sinh:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy danh sách con của một phụ huynh
+   * @param {string} parentId - ID của phụ huynh
+   * @returns {Promise} - Promise chứa danh sách con của phụ huynh
+   */
+  getParentChildren: async (parentId) => {
+    try {
+      if (!parentId) {
+        throw new Error('parentId là bắt buộc để lấy danh sách con');
+      }
+      
+      const response = await axiosInstance.get(`/v1/accounts/${parentId}/children`);
+      
+      // Dựa vào cấu trúc response thực tế từ API
+      if (response.data && response.data.children) {
+        return response.data.children || [];
+      }
+      
+      return [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy danh sách con của phụ huynh ID ${parentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Thêm học sinh vào phụ huynh
+   * @param {string} studentId - ID của học sinh
+   * @param {string} parentId - ID của phụ huynh
+   * @returns {Promise} - Promise chứa kết quả thêm học sinh vào phụ huynh
+   */
+  addStudentToParent: async (studentId, parentId) => {
+    try {
+      if (!studentId || !parentId) {
+        throw new Error('studentId và parentId là bắt buộc');
+      }
+      
+      const requestBody = {
+        studentId,
+        parentId
+      };
+      
+      console.log(`Gọi API POST /v1/student-parents với body:`, requestBody);
+      
+      const response = await axiosInstance.post('/v1/student-parents', requestBody);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi thêm học sinh ID ${studentId} vào phụ huynh ID ${parentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Thêm thuốc mới
    * @param {Object} medicationData - Dữ liệu thuốc mới
    * @returns {Promise} - Promise chứa kết quả thêm thuốc

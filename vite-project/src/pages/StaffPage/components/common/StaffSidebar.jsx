@@ -1,7 +1,6 @@
 import React from 'react';
 import { Layout, Menu, Button, Divider } from 'antd';
 import { 
-  UserOutlined, 
   MedicineBoxOutlined, 
   FileTextOutlined, 
   DashboardOutlined,
@@ -9,7 +8,8 @@ import {
   AlertOutlined,
   MedicineBoxTwoTone,
   LogoutOutlined,
-  KeyOutlined
+  KeyOutlined,
+  ProfileOutlined
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -69,10 +69,10 @@ const StaffSidebar = ({
             onClick: () => onMenuClick('health-declarations')
           },
           {
-            key: 'students',
-            icon: <UserOutlined />,
-            label: 'Quản lý học sinh',
-            onClick: () => onNavigate('/staff/students')
+            key: 'profiles',
+            icon: <ProfileOutlined />,
+            label: 'Quản lý hồ sơ',
+            onClick: () => onMenuClick('profiles')
           },
           {
             key: 'change-password',
