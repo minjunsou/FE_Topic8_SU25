@@ -13,8 +13,8 @@ const axiosInstance = axios.create({
 // Interceptor cho request
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Lấy token từ sessionStorage
-    const token = sessionStorage.getItem('accessToken');
+    // Lấy token từ localStorage
+    const token = localStorage.getItem('accessToken');
     
     // Nếu có token, thêm vào header Authorization
     if (token) {
@@ -41,8 +41,8 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       
       try {
-        // Lấy refresh token từ sessionStorage
-        const refreshToken = sessionStorage.getItem('refreshToken');
+        // Lấy refresh token từ localStorage
+        const refreshToken = localStorage.getItem('refreshToken');
         
         if (!refreshToken) {
           // Nếu không có refresh token, chuyển hướng đến trang đăng nhập
@@ -56,8 +56,8 @@ axiosInstance.interceptors.response.use(
         });
         
         if (response.data.data?.access_token) {
-          // Lưu token mới vào sessionStorage
-          sessionStorage.setItem('accessToken', response.data.data.access_token);
+          // Lưu token mới vào localStorage
+          localStorage.setItem('accessToken', response.data.data.access_token);
           
           // Cập nhật token trong header của request ban đầu
           originalRequest.headers.Authorization = `Bearer ${response.data.data.access_token}`;
@@ -67,8 +67,8 @@ axiosInstance.interceptors.response.use(
         }
       } catch (refreshError) {
         // Nếu refresh token thất bại, xóa token và chuyển hướng đến trang đăng nhập
-        sessionStorage.removeItem('accessToken');
-        sessionStorage.removeItem('refreshToken');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }

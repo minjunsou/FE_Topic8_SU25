@@ -11,27 +11,54 @@ const UserInfo = () => {
   const [form] = Form.useForm();
   const [userData, setUserData] = useState(null);
 
-  // Giả lập lấy dữ liệu người dùng
+  // Lấy dữ liệu người dùng từ localStorage
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Giả lập API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setLoading(true);
         
-        // Dữ liệu mẫu
-        const mockData = {
-          id: 1,
-          name: 'Nguyễn Việt Thành',
-          email: 'nguyenviethanh12a112022@gmail.com',
-          phone: '0987654321',
-          address: 'Số 123, Đường Lê Lợi, Quận 1, TP.HCM',
-          role: 'Phụ huynh',
-          avatar: null, // URL hình ảnh nếu có
-          joinDate: '15/06/2023',
-        };
+        // Lấy thông tin người dùng từ localStorage
+        const storedUserInfo = localStorage.getItem('userInfo');
         
-        setUserData(mockData);
-        form.setFieldsValue(mockData);
+        if (storedUserInfo) {
+          const parsedUserInfo = JSON.parse(storedUserInfo);
+          console.log('User info loaded from localStorage:', parsedUserInfo);
+          
+          // Chuyển đổi dữ liệu từ API sang định dạng hiển thị
+          const formattedUserData = {
+            id: parsedUserInfo.accountId || '',
+            name: parsedUserInfo.fullName || parsedUserInfo.name || parsedUserInfo.username || '',
+            email: parsedUserInfo.email || '',
+            phone: parsedUserInfo.phone || '',
+            address: parsedUserInfo.address || '',
+            role: getRoleName(parsedUserInfo.roleId),
+            avatar: null, // URL hình ảnh nếu có
+            joinDate: new Date().toLocaleDateString('vi-VN'), // Giả sử không có thông tin ngày tham gia
+            gender: parsedUserInfo.gender === null ? 'Chưa cập nhật' : parsedUserInfo.gender === true ? 'Nam' : 'Nữ',
+            dob: parsedUserInfo.dob || 'Chưa cập nhật'
+          };
+          
+          setUserData(formattedUserData);
+          form.setFieldsValue(formattedUserData);
+        } else {
+          // Nếu không có dữ liệu trong localStorage, hiển thị thông báo
+          message.warning('Không tìm thấy thông tin người dùng');
+          
+          // Đặt dữ liệu mặc định
+          const defaultUserData = {
+            name: 'Người dùng',
+            email: '',
+            phone: '',
+            address: '',
+            role: 'Người dùng',
+            gender: 'Chưa cập nhật',
+            dob: 'Chưa cập nhật',
+            joinDate: new Date().toLocaleDateString('vi-VN')
+          };
+          
+          setUserData(defaultUserData);
+          form.setFieldsValue(defaultUserData);
+        }
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu:', error);
         message.error('Không thể tải thông tin người dùng');
@@ -42,6 +69,19 @@ const UserInfo = () => {
 
     fetchUserData();
   }, [form]);
+
+  // Hàm chuyển đổi roleId sang tên vai trò
+  const getRoleName = (roleId) => {
+    const roleIdNum = Number(roleId);
+    switch (roleIdNum) {
+      case 1: return 'Học sinh';
+      case 2: return 'Phụ huynh';
+      case 3: return 'Y tá trường';
+      case 4: return 'Quản lý';
+      case 5: return 'Quản trị viên';
+      default: return 'Người dùng';
+    }
+  };
 
   const handleEdit = () => {
     setEditing(true);
@@ -172,6 +212,8 @@ const UserInfo = () => {
           <Descriptions.Item label="Email">{userData?.email}</Descriptions.Item>
           <Descriptions.Item label="Số điện thoại">{userData?.phone}</Descriptions.Item>
           <Descriptions.Item label="Địa chỉ">{userData?.address}</Descriptions.Item>
+          <Descriptions.Item label="Giới tính">{userData?.gender}</Descriptions.Item>
+          <Descriptions.Item label="Ngày sinh">{userData?.dob}</Descriptions.Item>
           <Descriptions.Item label="Vai trò">{userData?.role}</Descriptions.Item>
           <Descriptions.Item label="Ngày tham gia">{userData?.joinDate}</Descriptions.Item>
         </Descriptions>
