@@ -23,7 +23,7 @@ const UserInfo = () => {
         if (storedUserInfo) {
           const parsedUserInfo = JSON.parse(storedUserInfo);
           console.log('User info loaded from localStorage:', parsedUserInfo);
-          
+        
           // Chuyển đổi dữ liệu từ API sang định dạng hiển thị
           const formattedUserData = {
             id: parsedUserInfo.accountId || '',
@@ -32,12 +32,12 @@ const UserInfo = () => {
             phone: parsedUserInfo.phone || '',
             address: parsedUserInfo.address || '',
             role: getRoleName(parsedUserInfo.roleId),
-            avatar: null, // URL hình ảnh nếu có
+          avatar: null, // URL hình ảnh nếu có
             joinDate: new Date().toLocaleDateString('vi-VN'), // Giả sử không có thông tin ngày tham gia
             gender: parsedUserInfo.gender === null ? 'Chưa cập nhật' : parsedUserInfo.gender === true ? 'Nam' : 'Nữ',
             dob: parsedUserInfo.dob || 'Chưa cập nhật'
-          };
-          
+        };
+        
           setUserData(formattedUserData);
           form.setFieldsValue(formattedUserData);
         } else {

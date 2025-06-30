@@ -10,6 +10,7 @@ import MedicineRequests from './components/MedicineRequests/MedicineRequests';
 import HealthDeclarations from './components/HealthDeclarations/HealthDeclarations';
 import MedicalIncidents from './components/MedicalIncidents/MedicalIncidents';
 import MedicineSupplies from './components/MedicineSupplies/MedicineSupplies';
+import ProfileManagement from './components/ProfileManagement/ProfileManagement';
 import StaffSidebar from './components/common/StaffSidebar';
 import StaffTabs from './components/common/StaffTabs';
 import LoadingIndicator from './components/common/LoadingIndicator';
@@ -380,7 +381,7 @@ const StaffPage = () => {
     if (path.includes('health-declarations')) return 'health-declarations';
     if (path.includes('medical-incidents')) return 'medical-incidents';
     if (path.includes('medicine-supplies')) return 'medicine-supplies';
-    if (path.includes('students')) return 'students';
+    if (path.includes('profiles')) return 'profiles';
     if (activeTab === 'change-password') return 'change-password';
     return 'dashboard';
   };
@@ -451,6 +452,10 @@ const StaffPage = () => {
             loading={loading} 
           />
         );
+      case 'profiles':
+        return (
+          <ProfileManagement />
+        );
       case 'change-password':
         return <StaffChangePassword />;
       case 'overview':
@@ -485,7 +490,7 @@ const StaffPage = () => {
       <Layout className="staff-content-layout">
         <Content className="staff-content">
           <div className="staff-content-container">
-            {loading ? (
+            {loading && activeTab === 'overview' ? (
               <LoadingIndicator />
             ) : (
               <>

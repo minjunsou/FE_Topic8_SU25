@@ -232,3 +232,36 @@
     margin-right: 6px;
   }
 }
+
+/* Table scrolling fixes */
+.staff-content .ant-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.staff-content .ant-table-container {
+  overflow-x: auto;
+}
+
+.staff-content .ant-table-body {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+
+/* Fix for modal content scrolling */
+.ant-modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Ensure tables don't overflow on mobile */
+@media (max-width: 768px) {
+  .ant-table {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .ant-table-content {
+    overflow-x: auto;
+  }
+}
