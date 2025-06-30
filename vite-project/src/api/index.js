@@ -1,3 +1,4 @@
 import authApi from './authApi';
+import nurseApi from './nurseApi';
 
-export { authApi }; 
+export { authApi, nurseApi }; 

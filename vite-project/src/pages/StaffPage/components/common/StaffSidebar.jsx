@@ -8,7 +8,8 @@ import {
   CalendarOutlined,
   AlertOutlined,
   MedicineBoxTwoTone,
-  LogoutOutlined
+  LogoutOutlined,
+  KeyOutlined
 } from '@ant-design/icons';
 
 const { Sider } = Layout;
@@ -73,7 +74,12 @@ const StaffSidebar = ({
             label: 'Quản lý học sinh',
             onClick: () => onNavigate('/staff/students')
           },
-          
+          {
+            key: 'change-password',
+            icon: <KeyOutlined />,
+            label: 'Đổi mật khẩu',
+            onClick: () => onMenuClick('change-password')
+          },
         ]}
       />
       <div className="sidebar-footer">

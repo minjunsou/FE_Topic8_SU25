@@ -10,6 +10,17 @@ export const USER_ROLES = {
 };
 
 /**
+ * ID của các vai trò trong hệ thống
+ */
+export const ROLE_IDS = {
+  STUDENT: 1,
+  PARENT: 2,
+  MANAGER: 3,
+  NURSE: 4,
+  ADMIN: 5
+};
+
+/**
  * Tên hiển thị của các vai trò
  */
 export const ROLE_DISPLAY_NAMES = {
