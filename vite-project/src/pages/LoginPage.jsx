@@ -40,20 +40,17 @@ const LoginPage = () => {
         setTimeout(() => {
           // Kiểm tra roleId và chuyển hướng đến trang tương ứng
           switch (userRoleId) {
-            case ROLE_IDS.STUDENT: // Student
-              navigate('/');
-              break;
-            case ROLE_IDS.PARENT: // Parent
-              navigate('/');
+            case ROLE_IDS.ADMIN: // Admin
+              navigate('/dashboard');
               break;
             case ROLE_IDS.NURSE: // Nurse
               navigate('/staff');
               break;
-            case ROLE_IDS.MANAGER: // Manager
-              navigate('/dashboard');
+            case ROLE_IDS.PARENT: // Parent
+              navigate('/');
               break;
-            case ROLE_IDS.ADMIN: // Admin
-              navigate('/dashboard');
+            case ROLE_IDS.STUDENT: // Student
+              navigate('/');
               break;
             default:
               navigate('/');
