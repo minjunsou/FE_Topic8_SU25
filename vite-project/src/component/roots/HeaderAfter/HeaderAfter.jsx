@@ -24,7 +24,7 @@ import { Link } from 'react-router-dom';
 
 const { Header } = Layout;
 
-const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
+const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
@@ -95,12 +95,6 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
         message.info('Đang chuyển đến trang hồ sơ');
         navigate('/profile');
         break;
-      case 'settings':
-        // Xử lý khi người dùng click vào Settings
-        console.log('Settings clicked');
-        message.info('Đang chuyển đến trang cài đặt');
-        navigate('/settings');
-        break;
       case 'logout':
         // Xử lý khi người dùng click vào Logout
         console.log('Logout clicked');
@@ -153,6 +147,19 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
     return '/';
   };
 
+  // Map roleId từ API sang role name
+  const getRoleByRoleId = (roleId) => {
+    const roleIdNum = Number(roleId);
+    switch (roleIdNum) {
+      case 1: return 'student'; // Học sinh
+      case 2: return 'parent';  // Phụ huynh
+      case 3: return 'nurse';   // Y tá trường
+      case 4: return 'manager'; // Quản lý
+      case 5: return 'admin';   // Admin
+      default: return 'student';
+    }
+  };
+
   // Tạo menu items dựa trên vai trò người dùng
   const getMenuItems = () => {
     const baseItems = [
@@ -161,8 +168,12 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
       { key: '/medicine-request', label: 'Yêu cầu thuốc', icon: <MedicineBoxOutlined /> },
     ];
 
+    // Chuyển đổi roleId thành role name
+    const role = getRoleByRoleId(userRole);
+    console.log('Current user role:', role, 'from roleId:', userRole);
+
     // Thêm các menu item dựa trên vai trò
-    switch (userRole) {
+    switch (role) {
       case 'student':
         // Học sinh chỉ xem được thông tin cơ bản
         return baseItems;
@@ -171,9 +182,9 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
         return [
           ...baseItems,
           { key: '/vaccination', label: 'Tiêm chủng', icon: <MedicineBoxOutlined /> },
-          { key: '/health-check', label: 'Kiểm tra sức khỏe', icon: <ExperimentOutlined /> },
-          { key: '/medical-incidents', label: 'Sự kiện y tế', icon: <SolutionOutlined /> },
-          { key: '/health-history', label: 'Lịch sử sức khỏe', icon: <HistoryOutlined /> },
+          // { key: '/health-check', label: 'Kiểm tra sức khỏe', icon: <ExperimentOutlined /> },
+          // { key: '/medical-incidents', label: 'Sự kiện y tế', icon: <SolutionOutlined /> },
+          // { key: '/health-history', label: 'Lịch sử sức khỏe', icon: <HistoryOutlined /> },
         ];
       case 'nurse':
         // Y tá trường có thể truy cập tất cả các chức năng và trang quản lý
@@ -210,10 +221,6 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
       label: 'Hồ sơ',
     },
     {
-      key: 'settings',
-      label: 'Cài đặt',
-    },
-    {
       key: 'logout',
       label: 'Đăng xuất',
     },
@@ -226,6 +233,9 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
   const onClose = () => {
     setMobileMenuVisible(false);
   };
+
+  // Hiển thị tên người dùng phù hợp
+  const displayName = userName || "Người dùng";
 
   return (
     <Header className="headerAfter-container">
@@ -250,62 +260,58 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "student" }) => {
       {/* Nút menu cho mobile */}
       {isMobile && (
         <Button 
-          className="headerAfter-mobile-menu-button"
-          type="text"
-          icon={<MenuOutlined style={{ fontSize: '24px', color: 'white' }} />}
+          type="text" 
+          icon={<MenuOutlined style={{ fontSize: '24px', color: '#fff' }} />} 
           onClick={showDrawer}
+          className="headerAfter-mobile-menu-button"
         />
       )}
       
-      {/* Drawer menu cho mobile */}
+      {/* User dropdown menu */}
+      <Dropdown 
+        menu={{ 
+          items: userMenuItems,
+          onClick: handleUserMenuClick
+        }} 
+        placement="bottomRight"
+        className="headerAfter-user-dropdown"
+      >
+        <a onClick={(e) => e.preventDefault()}>
+          <Space className="headerAfter-user-info">
+            <Avatar icon={<UserOutlined />} />
+            <span className="headerAfter-username">{displayName}</span>
+            <DownOutlined />
+          </Space>
+        </a>
+      </Dropdown>
+      
+      {/* Drawer cho menu mobile */}
       <Drawer
         title="Menu"
         placement="right"
         onClose={onClose}
         open={mobileMenuVisible}
         className="headerAfter-mobile-drawer"
-        bodyStyle={{ padding: 0 }}
       >
-        <div className="headerAfter-mobile-user">
-          <Avatar icon={<UserOutlined />} size="large" />
-          <span className="headerAfter-mobile-username">{userName}</span>
-          <span className="headerAfter-mobile-role">({userRole === 'student' ? 'Học sinh' : 
-            userRole === 'parent' ? 'Phụ huynh' : 
-            userRole === 'nurse' ? 'Y tá trường' : 
-            userRole === 'manager' ? 'Quản lý' : 
-            userRole === 'admin' ? 'Quản trị viên' : 'Người dùng'})</span>
-        </div>
         <Menu
           mode="vertical"
           items={menuItems}
           selectedKeys={[getSelectedKey()]}
           onClick={handleMenuClick}
-          style={{ border: 'none' }}
         />
-        <Menu
-          mode="vertical"
-          items={userMenuItems}
-          onClick={handleUserMenuClick}
-          style={{ border: 'none', borderTop: '1px solid #f0f0f0' }}
-        />
-      </Drawer>
-      
-      {/* User section cho desktop */}
-      {!isMobile && (
-        <div className="headerAfter-user-section">
-          <Dropdown
-            menu={{ items: userMenuItems, onClick: handleUserMenuClick }}
-            placement="bottomRight"
-            arrow
-          >
-            <Space className="headerAfter-user-dropdown">
-              <Avatar icon={<UserOutlined />} />
-              <span className="headerAfter-username">{userName}</span>
-              <DownOutlined />
-            </Space>
-          </Dropdown>
+        
+        <div className="mobile-drawer-footer">
+          <Button type="primary" icon={<UserOutlined />} onClick={() => { navigate('/profile'); onClose(); }}>
+            Hồ sơ
+          </Button>
+          <Button type="default" icon={<SettingOutlined />} onClick={() => { navigate('/settings'); onClose(); }}>
+            Cài đặt
+          </Button>
+          <Button type="default" danger icon={<LogoutOutlined />} onClick={handleLogout}>
+            Đăng xuất
+          </Button>
         </div>
-      )}
+      </Drawer>
     </Header>
   );
 };

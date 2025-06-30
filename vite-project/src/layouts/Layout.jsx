@@ -23,11 +23,14 @@ const Layout = () => {
       const response = await authApi.getCurrentUser();
       if (response && response.data) {
         const userData = response.data;
+        
+        // Cập nhật state với thông tin người dùng
         setUserInfo({
-          name: userData.fullName || userData.name || 'Người dùng',
-          role: userData.role || 'student',
+          name: userData.fullName || userData.name || userData.username || 'Người dùng',
+          role: userData.roleId ? String(userData.roleId) : 'student',
           ...userData
         });
+        
         console.log('User info fetched from API:', userData);
       }
     } catch (error) {
@@ -50,13 +53,15 @@ const Layout = () => {
           try {
             const parsedUserInfo = JSON.parse(storedUserInfo);
             setUserInfo({
-              name: parsedUserInfo.fullName || parsedUserInfo.name || 'Người dùng',
-              role: parsedUserInfo.role || 'student',
+              name: parsedUserInfo.fullName || parsedUserInfo.name || parsedUserInfo.username || 'Người dùng',
+              role: parsedUserInfo.roleId ? String(parsedUserInfo.roleId) : 'student',
               ...parsedUserInfo
             });
             console.log('User info loaded from localStorage:', parsedUserInfo);
           } catch (error) {
             console.error('Lỗi khi phân tích thông tin người dùng:', error);
+            // Nếu không thể phân tích dữ liệu từ localStorage, lấy từ API
+            fetchUserInfo();
           }
         } else {
           // Nếu không có thông tin trong localStorage, lấy từ API
@@ -120,6 +125,9 @@ const Layout = () => {
     }
   };
 
+  // Lấy tên hiển thị chính xác cho header
+  const displayName = userInfo.fullName || userInfo.name || userInfo.username || 'Người dùng';
+
   return (
     <ConfigProvider
       theme={antdConfig.theme}
@@ -127,7 +135,7 @@ const Layout = () => {
     >
       <AntLayout className="layout">
         {!isAuthPage && (
-          isLoggedIn ? <HeaderAfter userName={userInfo.name} userRole={userInfo.role} /> : <HeaderBefore />
+          isLoggedIn ? <HeaderAfter userName={displayName} userRole={userInfo.roleId ? String(userInfo.roleId) : 'student'} /> : <HeaderBefore />
         )}
         <Content className="layout-content">
           <div className="layout-container">

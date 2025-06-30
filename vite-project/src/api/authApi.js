@@ -1,4 +1,4 @@
-import axiosInstance from './axiosConfig';
+// import axiosInstance from './axiosConfig';
 import axios from 'axios';
 
 const authApi = {
@@ -49,7 +49,65 @@ const authApi = {
           console.warn('Refresh token not found in response');
         }
         
-        // Tạo thông tin người dùng từ dữ liệu API
+        // Nếu có accessToken, gọi API để lấy thông tin chi tiết của người dùng
+        if (accessToken) {
+          try {
+            console.log('Fetching user details from /api/v1/auth/me');
+            // Gọi API /api/v1/auth/me để lấy thông tin chi tiết người dùng với token trong body
+            const userDetailResponse = await axios.post('/api/v1/auth/me', {
+              token: accessToken
+            }, {
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            console.log('User detail response:', userDetailResponse);
+            
+            // Kiểm tra nếu response có dữ liệu và status là 200
+            if (userDetailResponse.status === 200 && userDetailResponse.data && userDetailResponse.data.data) {
+              // Lấy dữ liệu chi tiết người dùng
+              const userDetailData = userDetailResponse.data.data;
+              console.log('User detail data:', userDetailData);
+              
+              // Tạo đối tượng thông tin người dùng từ dữ liệu API chi tiết
+              const userInfo = {
+                accountId: userDetailData.accountId || '',
+                username: userDetailData.username || '',
+                fullName: userDetailData.fullName || '',
+                name: userDetailData.fullName || userDetailData.username || '',
+                dob: userDetailData.dob || null,
+                gender: userDetailData.gender || null,
+                phone: userDetailData.phone || '',
+                roleId: userDetailData.roleId || 0,
+                email: userDetailData.email || '',
+                // Lưu toàn bộ dữ liệu API
+                ...userDetailData
+              };
+              
+              console.log('Formatted user info to save:', userInfo);
+              
+              // Lưu thông tin người dùng chi tiết vào localStorage
+              localStorage.setItem('userInfo', JSON.stringify(userInfo));
+              console.log('Detailed user info saved to localStorage:', userInfo);
+              
+              // Thông báo cho các component khác biết rằng thông tin người dùng đã thay đổi
+              window.dispatchEvent(new Event('storage'));
+              
+              return {
+                accessToken,
+                refreshToken,
+                user: userInfo,
+                message: response.data.message
+              };
+            }
+          } catch (userDetailError) {
+            console.error('Lỗi khi lấy thông tin chi tiết người dùng:', userDetailError);
+            // Nếu không thể lấy thông tin chi tiết, vẫn sử dụng thông tin cơ bản từ API đăng nhập
+          }
+        }
+        
+        // Tạo thông tin người dùng từ dữ liệu API đăng nhập (trong trường hợp không lấy được thông tin chi tiết)
         const userInfo = {
           name: userData.name || userData.fullName || loginData.email.split('@')[0],
           email: userData.email || loginData.email,
@@ -60,7 +118,7 @@ const authApi = {
         
         // Lưu thông tin người dùng vào localStorage
         localStorage.setItem('userInfo', JSON.stringify(userInfo));
-        console.log('User info saved to localStorage:', userInfo);
+        console.log('Basic user info saved to localStorage:', userInfo);
         
         return {
           accessToken,
@@ -148,17 +206,135 @@ const authApi = {
    */
   getCurrentUser: async () => {
     try {
-      const response = await axiosInstance.get('/v1/auth/me');
+      // Lấy token từ localStorage
+      const accessToken = localStorage.getItem('accessToken');
       
-      // Cập nhật thông tin người dùng trong localStorage nếu có dữ liệu mới
-      if (response.data && response.data.data) {
-        const userData = response.data.data;
-        localStorage.setItem('userInfo', JSON.stringify(userData));
+      if (!accessToken) {
+        throw new Error('Không tìm thấy token đăng nhập');
       }
       
-      return response.data;
+      // Gọi API để lấy thông tin người dùng hiện tại với token trong body
+      const response = await axios.post('/api/v1/auth/me', {
+        token: accessToken
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('User info response:', response);
+      
+      // Kiểm tra nếu response có dữ liệu và status là 200
+      if (response.status === 200 && response.data && response.data.data) {
+        // Lấy dữ liệu từ response.data.data (đây là nơi chứa thông tin người dùng)
+        const userData = response.data.data;
+        console.log('User data extracted from API response:', userData);
+        
+        // Tạo đối tượng thông tin người dùng từ dữ liệu API
+        const userInfo = {
+          accountId: userData.accountId || '',
+          username: userData.username || '',
+          fullName: userData.fullName || '',
+          name: userData.fullName || userData.username || '',
+          dob: userData.dob || null,
+          gender: userData.gender || null,
+          phone: userData.phone || '',
+          roleId: userData.roleId || 0,
+          email: userData.email || '',
+          // Lưu toàn bộ dữ liệu API
+          ...userData
+        };
+        
+        console.log('Formatted user info to save:', userInfo);
+        
+        // Lưu thông tin người dùng vào localStorage
+        localStorage.setItem('userInfo', JSON.stringify(userInfo));
+        console.log('User info saved to localStorage:', userInfo);
+        
+        // Thông báo cho các component khác biết rằng thông tin người dùng đã thay đổi
+        window.dispatchEvent(new Event('storage'));
+        
+        return {
+          data: userInfo,
+          message: response.data.message
+        };
+      } else {
+        console.warn('API response does not contain user data or status is not 200:', response);
+        return {
+          data: null,
+          message: response.data?.message || 'Không tìm thấy thông tin người dùng'
+        };
+      }
     } catch (error) {
       console.error('Lỗi lấy thông tin người dùng:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Thay đổi mật khẩu người dùng
+   * @param {Object} passwordData - Dữ liệu mật khẩu
+   * @param {string} passwordData.currentPassword - Mật khẩu hiện tại
+   * @param {string} passwordData.newPassword - Mật khẩu mới
+   * @param {string} passwordData.confirmPassword - Xác nhận mật khẩu mới
+   * @returns {Promise} - Promise chứa kết quả thay đổi mật khẩu
+   */
+  changePassword: async (passwordData) => {
+    try {
+      // Lấy accountId từ localStorage
+      const userInfo = localStorage.getItem('userInfo');
+      
+      if (!userInfo) {
+        throw new Error('Không tìm thấy thông tin người dùng');
+      }
+      
+      const { accountId } = JSON.parse(userInfo);
+      
+      if (!accountId) {
+        throw new Error('Không tìm thấy accountId của người dùng');
+      }
+      
+      console.log('Changing password for account:', accountId);
+      
+      // Chuẩn bị dữ liệu gửi đi
+      const requestData = {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+        confirmPassword: passwordData.confirmPassword
+      };
+      
+      // Gọi API thay đổi mật khẩu
+      const response = await axios.put(`/api/v1/auth/change-password/${accountId}`, requestData, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        }
+      });
+      
+      console.log('Change password response:', response);
+      
+      // Kiểm tra kết quả
+      if (response.status === 200) {
+        return {
+          success: true,
+          message: response.data?.message || 'Đổi mật khẩu thành công'
+        };
+      } else {
+        throw new Error(response.data?.message || 'Đã xảy ra lỗi khi đổi mật khẩu');
+      }
+    } catch (error) {
+      console.error('Lỗi khi đổi mật khẩu:', error);
+      
+      // Xử lý lỗi từ server
+      if (error.response) {
+        throw {
+          status: error.response.status,
+          message: error.response.data?.message || 'Đã xảy ra lỗi khi đổi mật khẩu',
+          data: error.response.data
+        };
+      }
+      
+      // Các lỗi khác
       throw error;
     }
   },

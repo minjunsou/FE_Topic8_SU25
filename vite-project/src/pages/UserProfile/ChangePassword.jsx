@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Typography, Form, Input, Button, message, Alert } from 'antd';
 import { LockOutlined, KeyOutlined } from '@ant-design/icons';
+import { authApi } from '../../api';
 import './UserProfile.css';
 
 const { Title } = Typography;
@@ -10,6 +11,23 @@ const ChangePassword = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [userInfo, setUserInfo] = useState(null);
+
+  // Lấy thông tin người dùng từ localStorage khi component được render
+  useEffect(() => {
+    const storedUserInfo = localStorage.getItem('userInfo');
+    if (storedUserInfo) {
+      try {
+        const parsedUserInfo = JSON.parse(storedUserInfo);
+        setUserInfo(parsedUserInfo);
+      } catch (error) {
+        console.error('Lỗi khi phân tích thông tin người dùng:', error);
+        message.error('Không thể lấy thông tin người dùng');
+      }
+    } else {
+      message.warning('Vui lòng đăng nhập để sử dụng tính năng này');
+    }
+  }, []);
 
   const onFinish = async (values) => {
     if (values.newPassword !== values.confirmPassword) {
@@ -22,26 +40,62 @@ const ChangePassword = () => {
     setSuccess(false);
 
     try {
-      // Giả lập API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Gọi API thay đổi mật khẩu
+      const passwordData = {
+        currentPassword: values.currentPassword,
+        newPassword: values.newPassword,
+        confirmPassword: values.confirmPassword
+      };
       
-      // Kiểm tra mật khẩu cũ (giả lập)
-      if (values.currentPassword !== 'password123') {
-        throw new Error('Mật khẩu hiện tại không đúng');
-      }
+      // Gọi API thay đổi mật khẩu từ authApi
+      const response = await authApi.changePassword(passwordData);
       
-      // Nếu thành công
+      console.log('Change password response:', response);
+      
+      // Hiển thị thông báo thành công
       setSuccess(true);
-      message.success('Đổi mật khẩu thành công');
+      message.success(response.message || 'Đổi mật khẩu thành công');
       form.resetFields();
     } catch (error) {
       console.error('Lỗi khi đổi mật khẩu:', error);
-      setError(error.message || 'Đã xảy ra lỗi khi đổi mật khẩu');
-      message.error(error.message || 'Đã xảy ra lỗi khi đổi mật khẩu');
+      
+      // Hiển thị thông báo lỗi
+      const errorMessage = error.message || 'Đã xảy ra lỗi khi đổi mật khẩu';
+      setError(errorMessage);
+      message.error(errorMessage);
+      
+      // Xử lý các lỗi cụ thể
+      if (error.status === 401) {
+        setError('Mật khẩu hiện tại không đúng');
+      } else if (error.status === 400) {
+        setError('Vui lòng kiểm tra lại thông tin mật khẩu');
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  // Hiển thị thông báo nếu không có thông tin người dùng
+  if (!userInfo?.accountId) {
+    return (
+      <Card 
+        className="user-profile-card"
+        title={
+          <div className="user-profile-header">
+            <KeyOutlined className="user-profile-icon" />
+            <Title level={4} className="user-profile-title">Đổi mật khẩu</Title>
+          </div>
+        }
+      >
+        <Alert
+          message="Không thể thay đổi mật khẩu"
+          description="Vui lòng đăng nhập để sử dụng tính năng này hoặc tài khoản của bạn không có accountId."
+          type="warning"
+          showIcon
+        />
+      </Card>
+    );
+  }
 
   return (
     <Card 
