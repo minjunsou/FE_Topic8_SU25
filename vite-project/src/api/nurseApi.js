@@ -166,6 +166,8 @@ const nurseApi = {
         name: medicationData.name,
         description: medicationData.description,
         quantity: medicationData.quantity,
+        quantityType: medicationData.quantityType || 'viên',
+        medicationType: medicationData.medicationType || 'MEDICATION',
         expiryDate: medicationData.expiryDate
       };
       
@@ -196,6 +198,8 @@ const nurseApi = {
         name: medicationData.name,
         description: medicationData.description,
         quantity: medicationData.quantity,
+        quantityType: medicationData.quantityType || 'viên',
+        medicationType: medicationData.medicationType || 'MEDICATION',
         expiryDate: medicationData.expiryDate
       };
       
