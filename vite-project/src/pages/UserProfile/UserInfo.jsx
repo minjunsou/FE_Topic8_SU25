@@ -74,11 +74,10 @@ const UserInfo = () => {
   const getRoleName = (roleId) => {
     const roleIdNum = Number(roleId);
     switch (roleIdNum) {
-      case 1: return 'Học sinh';
-      case 2: return 'Phụ huynh';
-      case 3: return 'Y tá trường';
-      case 4: return 'Quản lý';
-      case 5: return 'Quản trị viên';
+      case 1: return 'Quản trị viên';
+      case 2: return 'Y tá trường';
+      case 3: return 'Phụ huynh';
+      case 4: return 'Học sinh';
       default: return 'Người dùng';
     }
   };

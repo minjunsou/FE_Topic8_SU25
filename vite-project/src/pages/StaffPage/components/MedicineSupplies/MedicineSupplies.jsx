@@ -81,13 +81,15 @@ const MedicineSupplies = () => {
       const formattedData = data.map(item => ({
         id: item.medicationId,
         name: item.name,
-        type: 'Thuốc', // Mặc định là thuốc
+        type: item.medicationType === 'MEDICATION' ? 'Thuốc' : 'Vật tư', // Dựa theo medicationType
         quantity: item.quantity,
-        unit: 'viên', // Mặc định là viên
+        unit: item.quantityType || 'viên', // Lấy từ quantityType
         expiry: formatExpiryDate(item.expiryDate),
         status: getStatus(item.expiryDate),
         description: item.description,
-        rawExpiryDate: item.expiryDate // Lưu trữ ngày gốc để xử lý sau này
+        rawExpiryDate: item.expiryDate, // Lưu trữ ngày gốc để xử lý sau này
+        medicationType: item.medicationType, // Lưu trữ giá trị medicationType gốc
+        quantityType: item.quantityType // Lưu trữ giá trị quantityType gốc
       }));
       
       setMedicines(formattedData);
@@ -132,7 +134,7 @@ const MedicineSupplies = () => {
         </div>
       ),
       icon: <AlertOutlined style={{ color: '#ff4d4f' }} />,
-      duration: 0,
+      duration: 3, // Hiện thông báo trong 3 giây
       placement: 'topRight',
     });
   };
@@ -233,11 +235,16 @@ const MedicineSupplies = () => {
     try {
       setLoading(true);
       
+      // Chuyển đổi medicationType từ giá trị hiển thị sang giá trị API
+      const medicationType = values.type === 'Thuốc' ? 'MEDICATION' : 'MEDICAL_SUPPLY';
+      
       // Chuyển đổi dữ liệu để gửi đến API
       const medicationData = {
         name: values.name,
         description: values.description || '',
         quantity: parseInt(values.quantity, 10),
+        quantityType: values.unit || 'viên',
+        medicationType: medicationType,
         expiryDate: values.expiry.format('MM/YYYY')
       };
       
@@ -293,7 +300,7 @@ const MedicineSupplies = () => {
       name: item.name,
       type: item.type,
       quantity: item.quantity,
-      unit: item.unit,
+      unit: item.quantityType || item.unit,
       description: item.description || '',
       expiry: item.rawExpiryDate ? moment(item.rawExpiryDate) : null
     });
@@ -312,11 +319,16 @@ const MedicineSupplies = () => {
       // Lấy medicationId từ currentItem
       const medicationId = currentItem.id;
       
+      // Chuyển đổi medicationType từ giá trị hiển thị sang giá trị API
+      const medicationType = values.type === 'Thuốc' ? 'MEDICATION' : 'MEDICAL_SUPPLY';
+      
       // Chuyển đổi dữ liệu để gửi đến API
       const medicationData = {
         name: values.name,
         description: values.description || '',
         quantity: parseInt(values.quantity, 10),
+        quantityType: values.unit || 'viên',
+        medicationType: medicationType,
         expiryDate: values.expiry.format('MM/YYYY')
       };
       
@@ -650,9 +662,21 @@ const MedicineSupplies = () => {
                 name="unit"
                 label="Đơn vị"
                 initialValue="viên"
-                rules={[{ required: true, message: 'Vui lòng nhập đơn vị' }]}
+                rules={[{ required: true, message: 'Vui lòng chọn đơn vị' }]}
               >
-                <Input placeholder="vd: viên, chai, gói" />
+                <Select placeholder="Chọn đơn vị">
+                  <Option value="viên">Viên</Option>
+                  <Option value="hộp">Hộp</Option>
+                  <Option value="lọ">Lọ</Option>
+                  <Option value="ống">Ống</Option>
+                  <Option value="tuýp">Tuýp</Option>
+                  <Option value="gói">Gói</Option>
+                  <Option value="chai">Chai</Option>
+                  <Option value="vỉ">Vỉ</Option>
+                  <Option value="miếng">Miếng</Option>
+                  <Option value="cái">Cái</Option>
+                  <Option value="bộ">Bộ</Option>
+                </Select>
               </Form.Item>
             </Col>
           </Row>
@@ -736,9 +760,21 @@ const MedicineSupplies = () => {
               <Form.Item
                 name="unit"
                 label="Đơn vị"
-                rules={[{ required: true, message: 'Vui lòng nhập đơn vị' }]}
+                rules={[{ required: true, message: 'Vui lòng chọn đơn vị' }]}
               >
-                <Input placeholder="vd: viên, chai, gói" />
+                <Select placeholder="Chọn đơn vị">
+                  <Option value="viên">Viên</Option>
+                  <Option value="hộp">Hộp</Option>
+                  <Option value="lọ">Lọ</Option>
+                  <Option value="ống">Ống</Option>
+                  <Option value="tuýp">Tuýp</Option>
+                  <Option value="gói">Gói</Option>
+                  <Option value="chai">Chai</Option>
+                  <Option value="vỉ">Vỉ</Option>
+                  <Option value="miếng">Miếng</Option>
+                  <Option value="cái">Cái</Option>
+                  <Option value="bộ">Bộ</Option>
+                </Select>
               </Form.Item>
             </Col>
           </Row>

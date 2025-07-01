@@ -19,16 +19,14 @@ const getUserRole = () => {
 // Hàm chuyển đổi từ roleId sang role string
 const getRoleNameFromId = (roleId) => {
   switch (Number(roleId)) {
-    case ROLE_IDS.STUDENT:
-      return USER_ROLES.STUDENT;
-    case ROLE_IDS.PARENT:
-      return USER_ROLES.PARENT;
-    case ROLE_IDS.NURSE:
-      return USER_ROLES.NURSE;
-    case ROLE_IDS.MANAGER:
-      return USER_ROLES.MANAGER;
     case ROLE_IDS.ADMIN:
       return USER_ROLES.ADMIN;
+    case ROLE_IDS.NURSE:
+      return USER_ROLES.NURSE;
+    case ROLE_IDS.PARENT:
+      return USER_ROLES.PARENT;
+    case ROLE_IDS.STUDENT:
+      return USER_ROLES.STUDENT;
     default:
       return null;
   }

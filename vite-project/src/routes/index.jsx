@@ -42,7 +42,9 @@ const router = createBrowserRouter([
   // Route riêng cho StaffPage, không dùng Layout chung
   {
     path: '/staff',
-    element: <StaffPage />
+    element: <ProtectedRoute allowedRoles={[USER_ROLES.NURSE, USER_ROLES.ADMIN]}>
+      <StaffPage />
+    </ProtectedRoute>
   },
   
   // Sử dụng Layout chung cho các trang khác
@@ -90,7 +92,7 @@ const router = createBrowserRouter([
         element: <ProtectedRoute><ComingSoonPage /></ProtectedRoute>
       },
       
-      // Routes cho phụ huynh, y tá, quản lý và admin
+      // Routes cho phụ huynh, y tá và admin
       {
         path: 'vaccination',
         element: <VaccinationPage />
@@ -112,10 +114,10 @@ const router = createBrowserRouter([
         element: <HealthHistoryPage />
       },
       
-      // Routes chỉ dành cho quản lý và admin
+      // Routes chỉ dành cho admin
       {
         path: 'dashboard',
-        element: <ProtectedRoute allowedRoles={[USER_ROLES.MANAGER, USER_ROLES.ADMIN]}>
+        element: <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
           <ComingSoonPage />
         </ProtectedRoute>
       },
