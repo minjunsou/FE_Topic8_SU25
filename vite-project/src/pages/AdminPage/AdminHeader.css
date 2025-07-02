@@ -8,4 +8,24 @@
 }
 .admin-user-info {
   font-weight: bold;
+  position: relative;
+}
+.admin-profile-dropdown {
+  position: absolute;
+  right: 0;
+  top: 32px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  min-width: 140px;
+  z-index: 10;
+}
+.admin-profile-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.admin-profile-item:hover {
+  background: #f0f0f0;
 } 

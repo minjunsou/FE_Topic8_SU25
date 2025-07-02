@@ -95,6 +95,9 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
         message.info('Đang chuyển đến trang hồ sơ');
         navigate('/profile');
         break;
+      case 'admin-dashboard':
+        navigate('/dashboard');
+        break;
       case 'logout':
         // Xử lý khi người dùng click vào Logout
         console.log('Logout clicked');
@@ -218,6 +221,10 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
       key: 'profile',
       label: 'Hồ sơ',
     },
+    ...(Number(userRole) === 5 ? [{
+      key: 'admin-dashboard',
+      label: 'Dashboard',
+    }] : []),
     {
       key: 'logout',
       label: 'Đăng xuất',
