@@ -8,6 +8,7 @@ import ComingSoonPage from '../pages/ComingSoonPage';
 import HealthDeclarationPage from '../pages/HealthDeclarationPage';
 import UserProfile from '../pages/UserProfile';
 import StaffPage from '../pages/StaffPage/StaffPage';
+import AdminDashboard from '../pages/AdminPage/AdminDashboard';
 import { ProtectedRoute, GuestRoute } from './ProtectedRoute';
 import { USER_ROLES } from '../constants/userRoles';
 
@@ -118,7 +119,7 @@ const router = createBrowserRouter([
       {
         path: 'dashboard',
         element: <ProtectedRoute allowedRoles={[USER_ROLES.ADMIN]}>
-          <ComingSoonPage />
+          <AdminDashboard />
         </ProtectedRoute>
       },
       
