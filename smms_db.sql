@@ -2,7 +2,7 @@
 -- =====================================================
 -- 2. INSERT CLASSES
 -- =====================================================
-INSERT INTO dbo.class (class_name, description, [school-year]) VALUES
+INSERT INTO dbo.class (class_name, description, school_year) VALUES
 ('1A', 'Grade 1 Class A', 2025),
 ('1B', 'Grade 1 Class B', 2025),
 ('2A', 'Grade 2 Class A', 2025),
@@ -29,20 +29,20 @@ DECLARE @student5_id UNIQUEIDENTIFIER = NEWID();
 DECLARE @student6_id UNIQUEIDENTIFIER = NEWID();
 
 INSERT INTO dbo.account (account_id, username, email, password, role_id, full_name, dob, gender, phone, locked, class_id) VALUES
-(@admin1_id, 'admin1', 'admin1@school.edu', '$2a$10$encrypted_password_hash', 1, 'Alice Johnson', '1980-05-15', 'F', '555-0101', 0, NULL),
-(@admin2_id, 'admin2', 'admin2@school.edu', '$2a$10$encrypted_password_hash', 1, 'Bob Smith', '1975-08-22', 'M', '555-0102', 0, NULL),
-(@nurse1_id, 'nurse1', 'nurse1@school.edu', '$2a$10$encrypted_password_hash', 2, 'Carol Davis', '1985-03-10', 'F', '555-0201', 0, NULL),
-(@nurse2_id, 'nurse2', 'nurse2@school.edu', '$2a$10$encrypted_password_hash', 2, 'David Wilson', '1982-11-18', 'M', '555-0202', 0, NULL),
-(@parent1_id, 'parent1', 'parent1@email.com', '$2a$10$encrypted_password_hash', 3, 'Emma Brown', '1988-04-12', 'F', '555-0301', 0, NULL),
-(@parent2_id, 'parent2', 'parent2@email.com', '$2a$10$encrypted_password_hash', 3, 'Frank Miller', '1986-09-25', 'M', '555-0302', 0, NULL),
-(@parent3_id, 'parent3', 'parent3@email.com', '$2a$10$encrypted_password_hash', 3, 'Grace Lee', '1990-01-30', 'F', '555-0303', 0, NULL),
-(@parent4_id, 'parent4', 'parent4@email.com', '$2a$10$encrypted_password_hash', 3, 'Henry Taylor', '1987-07-14', 'M', '555-0304', 0, NULL),
-(@student1_id, 'student1', 'student1@school.edu', '$2a$10$encrypted_password_hash', 4, 'Isabella Garcia', '2015-06-20', 'F', '555-0401', 0, 1),
-(@student2_id, 'student2', 'student2@school.edu', '$2a$10$encrypted_password_hash', 4, 'Jack Anderson', '2015-03-15', 'M', '555-0402', 0, 1),
-(@student3_id, 'student3', 'student3@school.edu', '$2a$10$encrypted_password_hash', 4, 'Katie Martinez', '2014-11-08', 'F', '555-0403', 0, 2),
-(@student4_id, 'student4', 'student4@school.edu', '$2a$10$encrypted_password_hash', 4, 'Liam Thompson', '2014-08-12', 'M', '555-0404', 0, 2),
-(@student5_id, 'student5', 'student5@school.edu', '$2a$10$encrypted_password_hash', 4, 'Mia Rodriguez', '2013-12-25', 'F', '555-0405', 0, 3),
-(@student6_id, 'student6', 'student6@school.edu', '$2a$10$encrypted_password_hash', 4, 'Noah White', '2013-05-18', 'M', '555-0406', 0, 3);
+(@admin1_id, 'admin1', 'admin1@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 5, 'Alice Johnson', '1980-05-15', 'F', '555-0101', 0, NULL),
+(@admin2_id, 'admin2', 'admin2@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 5, 'Bob Smith', '1975-08-22', 'M', '555-0102', 0, NULL),
+(@nurse1_id, 'nurse1', 'nurse1@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 3, 'Carol Davis', '1985-03-10', 'F', '555-0201', 0, NULL),
+(@nurse2_id, 'nurse2', 'nurse2@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 3, 'David Wilson', '1982-11-18', 'M', '555-0202', 0, NULL),
+(@parent1_id, 'parent1', 'parent1@email.com', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 2, 'Emma Brown', '1988-04-12', 'F', '555-0301', 0, NULL),
+(@parent2_id, 'parent2', 'parent2@email.com', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 2, 'Frank Miller', '1986-09-25', 'M', '555-0302', 0, NULL),
+(@parent3_id, 'parent3', 'parent3@email.com', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 2, 'Grace Lee', '1990-01-30', 'F', '555-0303', 0, NULL),
+(@parent4_id, 'parent4', 'parent4@email.com', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 2, 'Henry Taylor', '1987-07-14', 'M', '555-0304', 0, NULL),
+(@student1_id, 'student1', 'student1@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 1, 'Isabella Garcia', '2015-06-20', 'F', '555-0401', 0, 1),
+(@student2_id, 'student2', 'student2@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 1, 'Jack Anderson', '2015-03-15', 'M', '555-0402', 0, 1),
+(@student3_id, 'student3', 'student3@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 1, 'Katie Martinez', '2014-11-08', 'F', '555-0403', 0, 2),
+(@student4_id, 'student4', 'student4@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 1, 'Liam Thompson', '2014-08-12', 'M', '555-0404', 0, 2),
+(@student5_id, 'student5', 'student5@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 1, 'Mia Rodriguez', '2013-12-25', 'F', '555-0405', 0, 3),
+(@student6_id, 'student6', 'student6@school.edu', '$2a$10$AaTC12NmxAQm/f370oqJ3eHwBU2AVLYwXQ3yu.a7zi/BpkbtsGYbG', 1, 'Noah White', '2013-05-18', 'M', '555-0406', 0, 3);
 
 -- =====================================================
 -- 4. INSERT STUDENT-PARENT RELATIONSHIPS
