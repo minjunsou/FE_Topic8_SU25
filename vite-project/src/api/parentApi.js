@@ -6,6 +6,7 @@ const parentApi = {
    * @param {string} parentId - ID của phụ huynh
    * @returns {Promise} - Promise chứa danh sách con của phụ huynh
    */
+
   getParentChildren: async (parentId) => {
     try {
       if (!parentId) {
@@ -44,6 +45,7 @@ const parentApi = {
    * @param {Object} medicationData - Dữ liệu yêu cầu thuốc
    * @returns {Promise} - Promise chứa kết quả tạo yêu cầu thuốc
    */
+
   createMedicationRequest: async (studentId, parentId, medicationData) => {
     try {
       if (!studentId || !parentId) {
@@ -107,6 +109,7 @@ const parentApi = {
    * @param {Object} updateData - Dữ liệu cập nhật
    * @returns {Promise} - Promise chứa kết quả cập nhật
    */
+  
   updateMedicationRequest: async (childId, medicationSentId, updateData) => {
     try {
       if (!childId || !medicationSentId) {
@@ -128,6 +131,32 @@ const parentApi = {
       return response.data;
     } catch (error) {
       console.error(`Lỗi khi cập nhật yêu cầu thuốc ID ${medicationSentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy thông tin sức khỏe mới nhất của học sinh
+   * @param {string} childId - ID của học sinh
+   * @returns {Promise} - Promise chứa thông tin sức khỏe của học sinh
+   */
+  getMedicalProfile: async (childId) => {
+    try {
+      if (!childId) {
+        throw new Error('childId là bắt buộc để lấy thông tin sức khỏe');
+      }
+
+      console.log(`Đang gọi API để lấy thông tin sức khỏe của học sinh ID: ${childId}`);
+      
+      // Gọi API lấy thông tin sức khỏe mới nhất
+      const response = await axiosInstance.get(`/medicalProfiles/latest/${childId}`);
+      
+      // Log response để debug
+      console.log('API response medical profile:', response);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi lấy thông tin sức khỏe của học sinh ID ${childId}:`, error);
       throw error;
     }
   },

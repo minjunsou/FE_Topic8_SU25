@@ -151,10 +151,10 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
   const getRoleByRoleId = (roleId) => {
     const roleIdNum = Number(roleId);
     switch (roleIdNum) {
-      case 1: return 'admin';   // Admin
-      case 2: return 'nurse';   // Y tá trường
-      case 3: return 'parent';  // Phụ huynh
-      case 4: return 'student'; // Học sinh
+      case 5: return 'admin';   // Admin
+      case 3: return 'nurse';   // Y tá trường
+      case 2: return 'parent';  // Phụ huynh
+      case 1: return 'student'; // Học sinh
       default: return 'student';
     }
   };
