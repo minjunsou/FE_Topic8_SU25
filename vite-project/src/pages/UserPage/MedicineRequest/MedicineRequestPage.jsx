@@ -490,25 +490,25 @@ const MedicineRequestPage = () => {
           const studentId = values.studentId;
           
           // Kiểm tra và chuyển đổi ngày bắt đầu và ngày kết thúc
-          const startDate = moment(values.startDate, 'DD/MM/YYYY');
-          const endDate = moment(values.endDate, 'DD/MM/YYYY');
+          // const startDate = moment(values.startDate, 'DD/MM/YYYY');
+          // const endDate = moment(values.endDate, 'DD/MM/YYYY');
           
-          if (!startDate.isValid() || !endDate.isValid()) {
-            message.error('Thời gian dùng thuốc không hợp lệ!');
-            return;
-          }
+          // if (!startDate.isValid() || !endDate.isValid()) {
+          //   message.error('Thời gian dùng thuốc không hợp lệ!');
+          //   return;
+          // }
           
-          if (endDate.isBefore(startDate)) {
-            message.error('Ngày kết thúc phải sau ngày bắt đầu!');
-            return;
-          }
+          // if (endDate.isBefore(startDate)) {
+          //   message.error('Ngày kết thúc phải sau ngày bắt đầu!');
+          //   return;
+          // }
           
           // Chuẩn bị dữ liệu gửi đi theo format API
           const medicationData = {
             medicationName: values.medicationName,
             instructions: values.instructions || '',
-            startDate: startDate.format('YYYY-MM-DD'),
-            endDate: endDate.format('YYYY-MM-DD'),
+            // startDate: startDate.format('YYYY-MM-DD'),
+            // endDate: endDate.format('YYYY-MM-DD'),
             frequencyPerDay: parseInt(values.frequencyPerDay),
             timingNotes: values.timingNotes || '',
             amount: parseInt(values.amount)

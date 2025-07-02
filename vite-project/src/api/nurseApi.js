@@ -248,6 +248,28 @@ const nurseApi = {
       console.error(`Lỗi khi lấy thông tin thuốc ID ${medicationId}:`, error);
       throw error;
     }
+  },
+
+  /**
+   * Lấy danh sách tất cả các yêu cầu thuốc đang hoạt động
+   * @returns {Promise} - Promise chứa danh sách yêu cầu thuốc
+   */
+  getAllActiveMedicationRequests: async () => {
+    try {
+      console.log('Đang gọi API lấy danh sách yêu cầu thuốc đang hoạt động');
+      const response = await axiosInstance.get('/medication-sent/all-students/active-med-sents');
+      console.log('API response:', response);
+      
+      // Dựa vào cấu trúc response từ API
+      if (response.data && response.data.medicationSentList) {
+        return response.data.medicationSentList;
+      }
+      
+      return response.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách yêu cầu thuốc đang hoạt động:', error);
+      throw error;
+    }
   }
 };
 
