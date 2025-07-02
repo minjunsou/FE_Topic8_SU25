@@ -1,7 +1,55 @@
 .medicine-requests {
+  padding: 10px;
+}
+
+.staff-table-container {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.medicine-requests .ant-table-wrapper {
+  padding: 16px;
+}
+
+.medicine-requests .ant-table-thead > tr > th {
+  background-color: #f0f7ff;
+  font-weight: 600;
+}
+
+.medicine-requests .ant-badge-status-text {
+  font-weight: 500;
+}
+
+.medicine-requests .ant-table-row:hover {
+  background-color: #f5faff;
+}
+
+.medicine-requests .ant-space-vertical {
   width: 100%;
 }
- 
-.staff-table-container {
-  overflow-x: auto;
+
+.medicine-requests .ant-tag {
+  margin-right: 0;
+}
+
+.medicine-requests .ant-tag .anticon {
+  margin-right: 4px;
+}
+
+.medicine-request-item {
+  border-left: 3px solid #1890ff;
+  padding-left: 10px;
+  margin-bottom: 8px;
+}
+
+.medicine-request-title {
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.medicine-request-info {
+  color: #666;
+  font-size: 12px;
 } 

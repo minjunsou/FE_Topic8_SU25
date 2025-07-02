@@ -3,6 +3,7 @@ import { Layout, message, Card, Typography, Form, Input, Button, Alert } from 'a
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LockOutlined, KeyOutlined } from '@ant-design/icons';
 import { authApi } from '../../api';
+import nurseApi from '../../api/nurseApi';
 
 // Import các component đã tách
 import Dashboard from './components/Dashboard/Dashboard';
@@ -351,21 +352,58 @@ const StaffPage = () => {
   const [medicineRequests, setMedicineRequests] = useState([]);
   const [healthDeclarations, setHealthDeclarations] = useState([]);
   const [medicalIncidents, setMedicalIncidents] = useState([]);
+  const [studentsMap, setStudentsMap] = useState({});
 
-  // Giả lập tải dữ liệu
+  // Tải dữ liệu từ API
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Giả lập gọi API
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Lấy danh sách học sinh để mapping
+        const studentsData = await nurseApi.getAllStudents();
+        console.log('Danh sách học sinh:', studentsData);
         
-        setMedicineRequests(mockMedicineRequests);
+        // Tạo map từ ID học sinh đến thông tin học sinh
+        const studentsMapping = {};
+        if (Array.isArray(studentsData)) {
+          studentsData.forEach(student => {
+            if (student.accountId) {
+              studentsMapping[student.accountId] = student;
+            }
+          });
+        }
+        setStudentsMap(studentsMapping);
+        
+        // Lấy danh sách yêu cầu thuốc
+        const medicationRequestsData = await nurseApi.getAllActiveMedicationRequests();
+        console.log('Yêu cầu thuốc:', medicationRequestsData);
+        
+        // Kết hợp dữ liệu yêu cầu thuốc với thông tin học sinh
+        const enrichedRequests = Array.isArray(medicationRequestsData) 
+          ? medicationRequestsData.map(request => {
+              const studentInfo = studentsMapping[request.studentId] || {};
+              return {
+                ...request,
+                studentName: studentInfo.fullName || 'Không xác định',
+                studentClass: studentInfo.classId || 'Không xác định',
+                key: request.medSentId || Math.random().toString()
+              };
+            })
+          : [];
+        
+        setMedicineRequests(enrichedRequests);
+        
+        // Giữ nguyên dữ liệu mẫu cho các loại dữ liệu khác
         setHealthDeclarations(mockHealthDeclarations);
         setMedicalIncidents(mockMedicalIncidents);
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu:', error);
         message.error('Không thể tải dữ liệu. Vui lòng thử lại sau.');
+        
+        // Dùng dữ liệu mẫu trong trường hợp lỗi
+        setMedicineRequests(mockMedicineRequests);
+        setHealthDeclarations(mockHealthDeclarations);
+        setMedicalIncidents(mockMedicalIncidents);
       } finally {
         setLoading(false);
       }
@@ -427,7 +465,8 @@ const StaffPage = () => {
           <MedicineRequests 
             medicineRequests={medicineRequests}
             handleViewDetail={handleViewDetail}
-            loading={loading} 
+            loading={loading}
+            studentsMap={studentsMap}
           />
         );
       case 'health-declarations':

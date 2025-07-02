@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, Divider, message, Row, Col, Radio, Space, Alert, Modal, Select } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Button, Card, Typography, Divider, message, Row, Col, Radio, Space, Alert, Modal, Select, Spin } from 'antd';
 import { MedicineBoxOutlined, SendOutlined, EyeOutlined } from '@ant-design/icons';
 import './HealthDeclarationPage.css';
+import parentApi from '../api/parentApi';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -12,28 +13,94 @@ const HealthDeclarationPage = () => {
   const [loading, setLoading] = useState(false);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [formData, setFormData] = useState({});
+  const [children, setChildren] = useState([]);
+  const [loadingChildren, setLoadingChildren] = useState(false);
+  const [selectedChildId, setSelectedChildId] = useState(null);
+  const [selectedChildName, setSelectedChildName] = useState('');
 
-  // Danh sách học sinh mẫu
-  const studentList = [
-    { id: 1, name: 'Nguyễn Văn An' },
-    { id: 2, name: 'Trần Thị Bình' },
-    { id: 3, name: 'Lê Hoàng Cường' },
-    { id: 4, name: 'Phạm Minh Đức' },
-    { id: 5, name: 'Hoàng Thị Em' },
-    { id: 6, name: 'Vũ Quang Huy' },
-    { id: 7, name: 'Đặng Thị Lan' },
-  ];
+  useEffect(() => {
+    const fetchChildren = async () => {
+      try {
+        setLoadingChildren(true);
+        // Lấy thông tin user từ localStorage
+        const userInfoString = localStorage.getItem('userInfo');
+        if (!userInfoString) {
+          message.error('Không tìm thấy thông tin người dùng, vui lòng đăng nhập lại');
+          return;
+        }
+        
+        const userInfo = JSON.parse(userInfoString);
+        const parentId = userInfo.accountId;
+        
+        if (!parentId) {
+          message.error('Không tìm thấy ID phụ huynh, vui lòng đăng nhập lại');
+          return;
+        }
+        
+        console.log('Đang lấy danh sách con của phụ huynh ID:', parentId);
+        const childrenData = await parentApi.getParentChildren(parentId);
+        console.log('Danh sách con của phụ huynh:', childrenData);
+        
+        if (Array.isArray(childrenData)) {
+          // Đảm bảo mỗi child có childId duy nhất và không null
+          const validChildren = childrenData.filter(child => child && child.childId);
+          setChildren(validChildren);
+        } else {
+          console.error('Dữ liệu con không phải là mảng:', childrenData);
+          message.error('Không thể lấy danh sách con, định dạng dữ liệu không hợp lệ');
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách con:', error);
+        message.error('Không thể lấy danh sách con. Vui lòng thử lại sau!');
+      } finally {
+        setLoadingChildren(false);
+      }
+    };
+
+    fetchChildren();
+  }, []);
+
+  const handleChildSelect = (value, option) => {
+    if (!value) return;
+    
+    console.log('Học sinh được chọn:', value, option);
+    setSelectedChildId(value);
+    setSelectedChildName(option.children);
+    
+    // Cập nhật form field
+    form.setFieldsValue({
+      studentId: value
+    });
+  };
 
   const onFinish = async (values) => {
     setLoading(true);
     console.log('Form values:', values);
+    console.log('Học sinh đã chọn - ID:', selectedChildId, 'Tên:', selectedChildName);
     
     try {
-      // Giả lập gửi dữ liệu
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Chuẩn bị dữ liệu theo định dạng API
+      const medicalData = {
+        allergies: values.allergies || "",
+        chronicDiseases: values.chronicDiseases || "",
+        hearingStatus: values.hearingStatus || "Normal",
+        immunizationStatus: values.immunizationStatus || "Complete",
+        pastTreatments: values.pastTreatments || "",
+        visionStatusLeft: values.leftEye || "20/20",
+        visionStatusRight: values.rightEye || "20/20"
+      };
+      
+      // Tạo recordId ngẫu nhiên từ 1 đến 1000
+      const randomRecordId = Math.floor(Math.random() * 1000) + 1;
+      console.log('Sử dụng recordId ngẫu nhiên:', randomRecordId);
+      
+      // Gọi API để tạo hồ sơ y tế thông qua parentApi với recordId ngẫu nhiên
+      await parentApi.createMedicalProfile(selectedChildId, medicalData, randomRecordId);
       
       message.success('Gửi thông tin khai báo thành công!');
       form.resetFields();
+      setSelectedChildId(null);
+      setSelectedChildName('');
     } catch (error) {
       console.error('Lỗi khi gửi thông tin:', error);
       message.error('Đã xảy ra lỗi khi gửi thông tin. Vui lòng thử lại sau!');
@@ -54,23 +121,20 @@ const HealthDeclarationPage = () => {
   };
 
   const renderPreviewContent = () => {
-    // Tìm tên học sinh từ ID được chọn
-    const selectedStudent = studentList.find(student => student.id === formData.studentId);
-    const studentName = selectedStudent ? selectedStudent.name : 'Chưa chọn';
-
     return (
       <div className="preview-content">
         <div className="preview-section">
           <Title level={5}>Thông tin cơ bản</Title>
-          <p><strong>Họ và tên học sinh:</strong> {studentName}</p>
+          <p><strong>Họ và tên học sinh:</strong> {selectedChildName || 'Chưa chọn'}</p>
         </div>
 
         <Divider />
 
         <div className="preview-section">
           <Title level={5}>Tiền sử bệnh</Title>
-          <p><strong>Tiền sử đã mắc:</strong> {formData.medicalHistory || 'Không có'}</p>
+          <p><strong>Dị ứng:</strong> {formData.allergies || 'Không có'}</p>
           <p><strong>Bệnh mãn tính:</strong> {formData.chronicDiseases || 'Không có'}</p>
+          <p><strong>Điều trị trước đây:</strong> {formData.pastTreatments || 'Không có'}</p>
         </div>
 
         <Divider />
@@ -79,42 +143,15 @@ const HealthDeclarationPage = () => {
           <Title level={5}>Tình trạng sức khỏe hiện tại</Title>
           <Row gutter={16}>
             <Col span={12}>
-              <p><strong>Chiều cao (cm):</strong> {formData.weight || 'Chưa cung cấp'}</p>
+              <p><strong>Thị lực (mắt trái):</strong> {formData.leftEye || '20/20'}</p>
             </Col>
             <Col span={12}>
-              <p><strong>Cân nặng (kg):</strong> {formData.height || 'Chưa cung cấp'}</p>
+              <p><strong>Thị lực (mắt phải):</strong> {formData.rightEye || '20/20'}</p>
             </Col>
           </Row>
-          <Row gutter={16}>
-            <Col span={12}>
-              <p><strong>Thị lực (mắt trái):</strong> {formData.leftEye || 'Chưa cung cấp'}</p>
-            </Col>
-            <Col span={12}>
-              <p><strong>Thị lực (mắt phải):</strong> {formData.rightEye || 'Chưa cung cấp'}</p>
-            </Col>
-          </Row>
-          <p>
-            <strong>Trạng thái sức khỏe:</strong> {
-              formData.healthStatus === 'good' ? 'Khỏe mạnh bình thường' : 
-              formData.healthStatus === 'sick' ? 'Đang mắc bệnh' : 
-              'Chưa cung cấp'
-            }
-          </p>
+          <p><strong>Tình trạng thính giác:</strong> {formData.hearingStatus || 'Normal'}</p>
+          <p><strong>Tình trạng tiêm chủng:</strong> {formData.immunizationStatus || 'Complete'}</p>
         </div>
-
-        <Divider />
-
-        <div className="preview-section">
-          <Title level={5}>Lịch sử tiêm chủng</Title>
-          <p><strong>Các mũi tiêm đã thực hiện:</strong> {formData.vaccineHistory || 'Không có'}</p>
-        </div>
-
-        <Divider />
-
-        {/* <div className="preview-section">
-          <Title level={5}>Thông tin bổ sung</Title>
-          <p><strong>Ghi chú thêm:</strong> {formData.additionalInfo || 'Không có'}</p>
-        </div> */}
       </div>
     );
   };
@@ -138,6 +175,10 @@ const HealthDeclarationPage = () => {
             layout="vertical"
             onFinish={onFinish}
             requiredMark={false}
+            initialValues={{
+              hearingStatus: "Normal",
+              immunizationStatus: "Complete"
+            }}
           >
             <div className="form-section">
               <Title level={4}>Thông tin cơ bản</Title>
@@ -147,20 +188,40 @@ const HealthDeclarationPage = () => {
                     name="studentId"
                     label="Họ và tên học sinh"
                     rules={[{ required: true, message: 'Vui lòng chọn học sinh!' }]}
+                    validateStatus={selectedChildId ? 'success' : undefined}
+                    help={selectedChildId ? null : 'Vui lòng chọn học sinh!'}
                   >
                     <Select 
                       placeholder="Chọn học sinh" 
                       showSearch
                       optionFilterProp="children"
+                      loading={loadingChildren}
+                      disabled={loadingChildren}
+                      onChange={handleChildSelect}
+                      value={selectedChildId}
                       filterOption={(input, option) =>
                         option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
                       }
+                      notFoundContent={loadingChildren ? <Spin size="small" /> : 'Không tìm thấy học sinh nào'}
                     >
-                      {studentList.map(student => (
-                        <Option key={student.id} value={student.id}>{student.name}</Option>
+                      {children.map((child, index) => (
+                        <Option 
+                          key={child.childId || `child-${index}`} 
+                          value={child.childId}
+                        >
+                          {child.fullName}
+                        </Option>
                       ))}
                     </Select>
                   </Form.Item>
+                  {selectedChildId && (
+                    <Alert
+                      message={`Đã chọn học sinh: ${selectedChildName}`}
+                      type="success"
+                      showIcon
+                      style={{ marginBottom: 16 }}
+                    />
+                  )}
                 </Col>
               </Row>
             </div>
@@ -172,10 +233,10 @@ const HealthDeclarationPage = () => {
               <Row gutter={16}>
                 <Col xs={24}>
                   <Form.Item
-                    name="medicalHistory"
-                    label="Tiền sử đã mắc"
+                    name="allergies"
+                    label="Dị ứng"
                   >
-                    <Input placeholder="Liệt kê các bệnh mà đã từng mắc (nếu có)" />
+                    <Input placeholder="Liệt kê các dị ứng (nếu có)" />
                   </Form.Item>
                 </Col>
                 <Col xs={24}>
@@ -183,7 +244,15 @@ const HealthDeclarationPage = () => {
                     name="chronicDiseases"
                     label="Bệnh mãn tính"
                   >
-                    <TextArea rows={4} placeholder="Liệt kê các bệnh mãn tính trên người (nếu có)" />
+                    <TextArea rows={4} placeholder="Liệt kê các bệnh mãn tính (nếu có)" />
+                  </Form.Item>
+                </Col>
+                <Col xs={24}>
+                  <Form.Item
+                    name="pastTreatments"
+                    label="Điều trị trước đây"
+                  >
+                    <TextArea rows={4} placeholder="Liệt kê các điều trị đã thực hiện trước đây (nếu có)" />
                   </Form.Item>
                 </Col>
               </Row>
@@ -196,26 +265,10 @@ const HealthDeclarationPage = () => {
               <Row gutter={16}>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    name="weight"
-                    label="Chiều cao (cm)"
-                  >
-                    <Input type="number" placeholder="VD: 165" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Form.Item
-                    name="height"
-                    label="Cân nặng (kg)"
-                  >
-                    <Input type="number" placeholder="VD: 55" />
-                  </Form.Item>
-                </Col>
-                <Col xs={24} sm={12}>
-                  <Form.Item
                     name="leftEye"
                     label="Thị lực (mắt trái)"
                   >
-                    <Input placeholder="VD: 10/10" />
+                    <Input placeholder="VD: 20/20" />
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>
@@ -223,65 +276,38 @@ const HealthDeclarationPage = () => {
                     name="rightEye"
                     label="Thị lực (mắt phải)"
                   >
-                    <Input placeholder="VD: 10/10" />
+                    <Input placeholder="VD: 20/20" />
                   </Form.Item>
                 </Col>
               </Row>
 
               <Form.Item
-                name="healthStatus"
-                label="Trạng sức"
+                name="hearingStatus"
+                label="Tình trạng thính giác"
               >
                 <Radio.Group>
                   <Space direction="vertical">
-                    <Radio value="good">Khỏe mạnh bình thường</Radio>
-                    <Radio value="sick">Đang mắc bệnh</Radio>
+                    <Radio value="Normal">Bình thường</Radio>
+                    <Radio value="Impaired">Suy giảm</Radio>
                   </Space>
                 </Radio.Group>
               </Form.Item>
 
-              {form.getFieldValue('healthStatus') === 'sick' && (
-                <Alert
-                  message="Chú ý"
-                  description="Nếu học sinh đang mắc bệnh, vui lòng liên hệ với nhà trường để được hướng dẫn thêm."
-                  type="warning"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                />
-              )}
+              <Form.Item
+                name="immunizationStatus"
+                label="Tình trạng tiêm chủng"
+              >
+                <Radio.Group>
+                  <Space direction="vertical">
+                    <Radio value="Complete">Đầy đủ</Radio>
+                    <Radio value="Incomplete">Chưa đầy đủ</Radio>
+                    <Radio value="None">Chưa tiêm chủng</Radio>
+                  </Space>
+                </Radio.Group>
+              </Form.Item>
             </div>
 
             <Divider />
-
-            <div className="form-section">
-              <Title level={4}>Lịch sử tiêm chủng</Title>
-              <Row gutter={16}>
-                <Col xs={24}>
-                  <Form.Item
-                    name="vaccineHistory"
-                    label="Các mũi tiêm đã thực hiện"
-                  >
-                    <TextArea rows={4} placeholder="Liệt kê các mũi tiêm đã thực hiện (tên vaccine, ngày tiêm)" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </div>
-
-            <Divider />
-
-            {/* <div className="form-section">
-              <Title level={4}>Thông tin bổ sung</Title>
-              <Row gutter={16}>
-                <Col xs={24}>
-                  <Form.Item
-                    name="additionalInfo"
-                    label="Ghi chú thêm"
-                  >
-                    <TextArea rows={4} placeholder="Thông tin bổ sung khác cần chú ý (nếu có)" />
-                  </Form.Item>
-                </Col>
-              </Row>
-            </div> */}
 
             <Form.Item className="form-submit-button">
               <Space size="middle" style={{ display: 'flex', justifyContent: 'center' }}>
@@ -291,6 +317,7 @@ const HealthDeclarationPage = () => {
                   icon={<EyeOutlined />}
                   onClick={handlePreview}
                   size="large"
+                  disabled={!selectedChildId}
                 >
                   Xem trước
                 </Button>
@@ -300,6 +327,7 @@ const HealthDeclarationPage = () => {
                   size="large"
                   icon={<SendOutlined />}
                   loading={loading}
+                  disabled={!selectedChildId}
                 >
                   Gửi thông tin
                 </Button>
@@ -336,4 +364,4 @@ const HealthDeclarationPage = () => {
   );
 };
 
-export default HealthDeclarationPage; 
+export default HealthDeclarationPage;

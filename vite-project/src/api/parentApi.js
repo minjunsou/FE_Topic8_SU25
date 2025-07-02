@@ -39,6 +39,38 @@ const parentApi = {
   },
 
   /**
+   * Tạo hồ sơ y tế cho học sinh
+   * @param {string} childId - ID của học sinh
+   * @param {Object} medicalData - Dữ liệu hồ sơ y tế
+   * @param {string|number} [recordId=1] - ID của bản ghi (mặc định là 1)
+   * @returns {Promise} - Promise chứa kết quả tạo hồ sơ y tế
+   */
+  createMedicalProfile: async (childId, medicalData, recordId = 1) => {
+    try {
+      if (!childId) {
+        throw new Error('childId là bắt buộc để tạo hồ sơ y tế');
+      }
+
+      console.log(`Đang gọi API tạo hồ sơ y tế cho học sinh ID: ${childId}, recordId: ${recordId}`);
+      console.log('Dữ liệu hồ sơ y tế:', medicalData);
+      
+      // Luôn sử dụng recordId (mặc định là 1 nếu không được cung cấp)
+      const endpoint = `/medicalProfiles/create/${childId}/${recordId}`;
+      
+      // Gọi API tạo hồ sơ y tế
+      const response = await axiosInstance.post(endpoint, medicalData);
+      
+      // Log response để debug
+      console.log('API response:', response);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi tạo hồ sơ y tế cho học sinh ID ${childId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Tạo yêu cầu thuốc cho học sinh
    * @param {string} studentId - ID của học sinh
    * @param {string} parentId - ID của phụ huynh
