@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Avatar, Typography, Descriptions, Button, message, Skeleton, Form, Input, Modal } from 'antd';
+import { Card, Avatar, Typography, Descriptions, Button, message, Skeleton, Form, Input, Modal, Select } from 'antd';
 import { UserOutlined, EditOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { userApi } from '../../api';
 import './UserProfile.css';
 
 const { Title } = Typography;
+const { Option } = Select;
 
 const UserInfo = () => {
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form] = Form.useForm();
   const [userData, setUserData] = useState(null);
+  const [accountId, setAccountId] = useState(null);
 
-  // Lấy dữ liệu người dùng từ localStorage
+  // Lấy dữ liệu người dùng từ localStorage và API
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -23,23 +27,35 @@ const UserInfo = () => {
         if (storedUserInfo) {
           const parsedUserInfo = JSON.parse(storedUserInfo);
           console.log('User info loaded from localStorage:', parsedUserInfo);
-        
-          // Chuyển đổi dữ liệu từ API sang định dạng hiển thị
-          const formattedUserData = {
-            id: parsedUserInfo.accountId || '',
-            name: parsedUserInfo.fullName || parsedUserInfo.name || parsedUserInfo.username || '',
-            email: parsedUserInfo.email || '',
-            phone: parsedUserInfo.phone || '',
-            address: parsedUserInfo.address || '',
-            role: getRoleName(parsedUserInfo.roleId),
-          avatar: null, // URL hình ảnh nếu có
-            joinDate: new Date().toLocaleDateString('vi-VN'), // Giả sử không có thông tin ngày tham gia
-            gender: parsedUserInfo.gender === null ? 'Chưa cập nhật' : parsedUserInfo.gender === true ? 'Nam' : 'Nữ',
-            dob: parsedUserInfo.dob || 'Chưa cập nhật'
-        };
-        
-          setUserData(formattedUserData);
-          form.setFieldsValue(formattedUserData);
+          
+          // Lưu accountId để sử dụng sau này
+          const userAccountId = parsedUserInfo.accountId;
+          setAccountId(userAccountId);
+          
+          try {
+            // Gọi API để lấy thông tin người dùng mới nhất
+            const apiResponse = await userApi.getUserProfile(userAccountId);
+            console.log('User profile from API:', apiResponse);
+            
+            // Sử dụng dữ liệu từ API nếu có
+            if (apiResponse) {
+              // Chuyển đổi dữ liệu từ API sang định dạng hiển thị
+              const formattedUserData = formatUserData(apiResponse);
+              setUserData(formattedUserData);
+              form.setFieldsValue(formattedUserData);
+            } else {
+              // Nếu API không trả về dữ liệu, sử dụng dữ liệu từ localStorage
+              const formattedUserData = formatUserData(parsedUserInfo);
+              setUserData(formattedUserData);
+              form.setFieldsValue(formattedUserData);
+            }
+          } catch (apiError) {
+            console.error('Lỗi khi gọi API lấy thông tin người dùng:', apiError);
+            // Nếu API lỗi, sử dụng dữ liệu từ localStorage
+            const formattedUserData = formatUserData(parsedUserInfo);
+            setUserData(formattedUserData);
+            form.setFieldsValue(formattedUserData);
+          }
         } else {
           // Nếu không có dữ liệu trong localStorage, hiển thị thông báo
           message.warning('Không tìm thấy thông tin người dùng');
@@ -49,8 +65,6 @@ const UserInfo = () => {
             name: 'Người dùng',
             email: '',
             phone: '',
-            address: '',
-            role: 'Người dùng',
             gender: 'Chưa cập nhật',
             dob: 'Chưa cập nhật',
             joinDate: new Date().toLocaleDateString('vi-VN')
@@ -70,6 +84,21 @@ const UserInfo = () => {
     fetchUserData();
   }, [form]);
 
+  // Hàm định dạng dữ liệu người dùng
+  const formatUserData = (userInfo) => {
+    return {
+      id: userInfo.accountId || '',
+      name: userInfo.fullName || userInfo.name || userInfo.username || '',
+      email: userInfo.email || '',
+      phone: userInfo.phone || '',
+      role: getRoleName(userInfo.roleId),
+      avatar: null, // URL hình ảnh nếu có
+      joinDate: new Date().toLocaleDateString('vi-VN'), // Giả sử không có thông tin ngày tham gia
+      gender: userInfo.gender || '',
+      dob: userInfo.dob || ''
+    };
+  };
+
   // Hàm chuyển đổi roleId sang tên vai trò
   const getRoleName = (roleId) => {
     const roleIdNum = Number(roleId);
@@ -80,6 +109,14 @@ const UserInfo = () => {
       case 4: return 'Học sinh';
       default: return 'Người dùng';
     }
+  };
+
+  // Hàm chuyển đổi mã giới tính sang hiển thị
+  const getGenderDisplay = (gender) => {
+    if (gender === null || gender === undefined) return 'Chưa cập nhật';
+    if (gender === 'M') return 'Nam';
+    if (gender === 'F') return 'Nữ';
+    return 'Chưa cập nhật';
   };
 
   const handleEdit = () => {
@@ -94,19 +131,67 @@ const UserInfo = () => {
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
+      setSaving(true);
       
-      // Giả lập lưu dữ liệu
-      setLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!accountId) {
+        message.error('Không tìm thấy ID người dùng');
+        return;
+      }
       
-      setUserData({...userData, ...values});
-      message.success('Cập nhật thông tin thành công');
-      setEditing(false);
+      // Chuẩn bị dữ liệu để gửi lên API
+      const updateData = {
+        fullName: values.name,
+        phone: values.phone,
+        gender: values.gender,
+        dob: values.dob
+      };
+      
+      console.log('Dữ liệu cập nhật:', updateData);
+      
+      try {
+        // Gọi API cập nhật thông tin người dùng
+        const response = await userApi.updateUserProfile(accountId, updateData);
+        console.log('API response:', response);
+        
+        // Cập nhật dữ liệu người dùng trong state và localStorage
+        const updatedUserData = {
+          ...userData,
+          ...values,
+          gender: values.gender // Giữ nguyên giá trị gender để hiển thị
+        };
+        
+        setUserData(updatedUserData);
+        
+        // Cập nhật thông tin trong localStorage
+        const storedUserInfo = localStorage.getItem('userInfo');
+        if (storedUserInfo) {
+          const parsedUserInfo = JSON.parse(storedUserInfo);
+          const updatedUserInfo = {
+            ...parsedUserInfo,
+            fullName: values.name,
+            phone: values.phone,
+            gender: values.gender,
+            dob: values.dob
+          };
+          
+          localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+        }
+        
+        message.success('Cập nhật thông tin thành công');
+        setEditing(false);
+      } catch (error) {
+        console.error('Lỗi khi cập nhật thông tin người dùng:', error);
+        if (error.response) {
+          message.error(`Không thể cập nhật thông tin: ${error.response.data.message || 'Đã xảy ra lỗi'}`);
+        } else {
+          message.error('Không thể cập nhật thông tin. Vui lòng thử lại sau.');
+        }
+      }
     } catch (error) {
       console.error('Lỗi khi lưu dữ liệu:', error);
       message.error('Có lỗi xảy ra khi cập nhật thông tin');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -139,7 +224,7 @@ const UserInfo = () => {
               type="primary" 
               icon={<SaveOutlined />} 
               onClick={handleSave}
-              loading={loading}
+              loading={saving}
             >
               Lưu
             </Button>
@@ -199,10 +284,25 @@ const UserInfo = () => {
           </Form.Item>
           
           <Form.Item
-            name="address"
-            label="Địa chỉ"
+            name="gender"
+            label="Giới tính"
+            rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
           >
-            <Input.TextArea rows={3} />
+            <Select placeholder="Chọn giới tính">
+              <Option value="M">Nam</Option>
+              <Option value="F">Nữ</Option>
+            </Select>
+          </Form.Item>
+          
+          <Form.Item
+            name="dob"
+            label="Ngày sinh (YYYY-MM-DD)"
+            rules={[
+              { required: true, message: 'Vui lòng nhập ngày sinh' },
+              { pattern: /^\d{4}-\d{2}-\d{2}$/, message: 'Định dạng ngày sinh không hợp lệ (YYYY-MM-DD)' }
+            ]}
+          >
+            <Input placeholder="Ví dụ: 1990-01-01" />
           </Form.Item>
         </Form>
       ) : (
@@ -210,9 +310,8 @@ const UserInfo = () => {
           <Descriptions.Item label="Họ và tên">{userData?.name}</Descriptions.Item>
           <Descriptions.Item label="Email">{userData?.email}</Descriptions.Item>
           <Descriptions.Item label="Số điện thoại">{userData?.phone}</Descriptions.Item>
-          <Descriptions.Item label="Địa chỉ">{userData?.address}</Descriptions.Item>
-          <Descriptions.Item label="Giới tính">{userData?.gender}</Descriptions.Item>
-          <Descriptions.Item label="Ngày sinh">{userData?.dob}</Descriptions.Item>
+          <Descriptions.Item label="Giới tính">{getGenderDisplay(userData?.gender)}</Descriptions.Item>
+          <Descriptions.Item label="Ngày sinh">{userData?.dob || 'Chưa cập nhật'}</Descriptions.Item>
           <Descriptions.Item label="Vai trò">{userData?.role}</Descriptions.Item>
           <Descriptions.Item label="Ngày tham gia">{userData?.joinDate}</Descriptions.Item>
         </Descriptions>
