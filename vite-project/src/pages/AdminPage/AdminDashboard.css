@@ -1,0 +1,42 @@
+.admin-dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+}
+.admin-sidebar {
+  width: 220px;
+  background: #222;
+  color: #fff;
+  padding: 24px 12px;
+}
+.admin-main-content {
+  flex: 1;
+  background: #f7f7f7;
+}
+.admin-header {
+  background: #fff;
+  padding: 16px 24px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.admin-content {
+  padding: 32px;
+}
+.import-section {
+  margin-top: 32px;
+}
+.import-btn {
+  background: #1976d2;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-block;
+}
+.import-btn:hover {
+  background: #1565c0;
+}
+.import-result {
+  margin-top: 16px;
+} 
