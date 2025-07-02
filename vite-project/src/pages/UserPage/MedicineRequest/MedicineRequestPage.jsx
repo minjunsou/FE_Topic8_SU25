@@ -342,28 +342,28 @@ const MedicineRequestPage = () => {
       width: 200,
       ellipsis: true,
     },
-    {
-      title: 'Ngày bắt đầu',
-      dataIndex: 'startDate',
-      key: 'startDate',
-      width: 110,
-      render: (date) => {
-        if (!date) return 'N/A';
-        const formattedDate = moment(date).format('DD/MM/YYYY');
-        return formattedDate === 'Invalid date' ? 'N/A' : formattedDate;
-      }
-    },
-    {
-      title: 'Ngày kết thúc',
-      dataIndex: 'endDate',
-      key: 'endDate',
-      width: 110,
-      render: (date) => {
-        if (!date) return 'N/A';
-        const formattedDate = moment(date).format('DD/MM/YYYY');
-        return formattedDate === 'Invalid date' ? 'N/A' : formattedDate;
-      }
-    },
+    // {
+    //   title: 'Ngày bắt đầu',
+    //   dataIndex: 'startDate',
+    //   key: 'startDate',
+    //   width: 110,
+    //   render: (date) => {
+    //     if (!date) return 'N/A';
+    //     const formattedDate = moment(date).format('DD/MM/YYYY');
+    //     return formattedDate === 'Invalid date' ? 'N/A' : formattedDate;
+    //   }
+    // },
+    // {
+    //   title: 'Ngày kết thúc',
+    //   dataIndex: 'endDate',
+    //   key: 'endDate',
+    //   width: 110,
+    //   render: (date) => {
+    //     if (!date) return 'N/A';
+    //     const formattedDate = moment(date).format('DD/MM/YYYY');
+    //     return formattedDate === 'Invalid date' ? 'N/A' : formattedDate;
+    //   }
+    // },
     {
       title: 'Ghi chú',
       dataIndex: 'timingNotes',
@@ -782,7 +782,7 @@ const MedicineRequestPage = () => {
           </Form.Item>
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            <Form.Item
+            {/* <Form.Item
               name="startDate"
               label="Ngày bắt đầu"
               rules={[
@@ -812,9 +812,9 @@ const MedicineRequestPage = () => {
               style={{ width: '100%' }}
             >
               <DateInput placeholder="DD/MM/YYYY" />
-            </Form.Item>
+            </Form.Item> */}
 
-            <Form.Item
+            {/* <Form.Item
               name="endDate"
               label="Ngày kết thúc"
               rules={[
@@ -851,7 +851,7 @@ const MedicineRequestPage = () => {
               style={{ width: '100%' }}
             >
               <DateInput placeholder="DD/MM/YYYY" />
-            </Form.Item>
+            </Form.Item> */}
           </div>
 
           <Form.Item
@@ -1016,7 +1016,7 @@ const MedicineRequestPage = () => {
           </Form.Item>
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            <Form.Item
+            {/* <Form.Item
               name="startDate"
               label="Ngày bắt đầu"
               rules={[
@@ -1085,7 +1085,7 @@ const MedicineRequestPage = () => {
               style={{ width: '100%' }}
             >
               <DateInput placeholder="DD/MM/YYYY" />
-            </Form.Item>
+            </Form.Item> */}
           </div>
 
           <Form.Item

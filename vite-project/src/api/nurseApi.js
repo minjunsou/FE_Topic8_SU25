@@ -45,7 +45,7 @@ const nurseApi = {
       const defaultParams = {
         page: 0,
         size: 100,
-        roleId: 3, // ID vai trò phụ huynh
+        roleId: 2, // ID vai trò phụ huynh
         sortBy: 'fullName',
         direction: 'asc'
       };
@@ -81,7 +81,7 @@ const nurseApi = {
       const defaultParams = {
         page: 0,
         size: 100,
-        roleId: 4, // ID vai trò học sinh
+        roleId: 1, // ID vai trò học sinh
         sortBy: 'fullName',
         direction: 'asc'
       };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Descriptions, Button, message, Skeleton, Select, Empty, Tabs, Avatar } from 'antd';
-import { UserOutlined, TeamOutlined } from '@ant-design/icons';
+import { Card, Typography, Descriptions, Button, message, Skeleton, Select, Empty, Tabs, Avatar, Spin } from 'antd';
+import { UserOutlined, TeamOutlined, MedicineBoxOutlined } from '@ant-design/icons';
+import { parentApi } from '../../api';
 import './UserProfile.css';
 
 const { Title, Text } = Typography;
@@ -11,68 +12,72 @@ const ChildrenInfo = () => {
   const [loading, setLoading] = useState(true);
   const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState(null);
+  const [medicalProfile, setMedicalProfile] = useState(null);
+  const [loadingMedical, setLoadingMedical] = useState(false);
 
-  // Giả lập lấy dữ liệu con
+  // Lấy danh sách con từ API
   useEffect(() => {
     const fetchChildrenData = async () => {
       try {
-        // Giả lập API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        setLoading(true);
         
-        // Dữ liệu mẫu
-        const mockData = [
-          {
-            id: 1,
-            name: 'Nguyễn Minh Anh',
-            age: 10,
-            grade: '5A',
-            class: '5A1',
-            school: 'Trường Tiểu học Nguyễn Bỉnh Khiêm',
-            healthStatus: 'Khỏe mạnh',
-            avatar: null,
-            birthdate: '15/08/2014',
-            bloodType: 'O+',
-            allergies: 'Không',
-            chronicDiseases: 'Không',
-            height: 142,
-            weight: 38,
-            lastCheckup: '20/05/2023',
-            vaccinations: [
-              { name: 'Vắc-xin Sởi-Quai bị-Rubella (MMR)', date: '10/02/2018' },
-              { name: 'Vắc-xin Bại liệt (IPV)', date: '15/06/2019' },
-              { name: 'Vắc-xin Viêm gan B', date: '22/09/2020' }
-            ]
-          },
-          {
-            id: 2,
-            name: 'Nguyễn Đức Minh',
-            age: 7,
-            grade: '2B',
-            class: '2B3',
-            school: 'Trường Tiểu học Nguyễn Bỉnh Khiêm',
-            healthStatus: 'Khỏe mạnh',
-            avatar: null,
-            birthdate: '05/03/2017',
-            bloodType: 'A+',
-            allergies: 'Hải sản',
-            chronicDiseases: 'Không',
-            height: 125,
-            weight: 28,
-            lastCheckup: '15/04/2023',
-            vaccinations: [
-              { name: 'Vắc-xin Sởi-Quai bị-Rubella (MMR)', date: '12/05/2020' },
-              { name: 'Vắc-xin Bại liệt (IPV)', date: '18/08/2021' },
-              { name: 'Vắc-xin Viêm gan B', date: '25/10/2022' }
-            ]
-          }
-        ];
+        // Lấy accountId từ localStorage
+        const storedUserInfo = localStorage.getItem('userInfo');
+        if (!storedUserInfo) {
+          message.error('Không tìm thấy thông tin người dùng');
+          setLoading(false);
+          return;
+        }
         
-        setChildren(mockData);
-        if (mockData.length > 0) {
-          setSelectedChild(mockData[0]);
+        const parsedUserInfo = JSON.parse(storedUserInfo);
+        const userAccountId = parsedUserInfo.accountId;
+        
+        if (!userAccountId) {
+          message.error('Không tìm thấy ID người dùng');
+          setLoading(false);
+          return;
+        }
+        
+        console.log('Đang lấy danh sách con cho phụ huynh ID:', userAccountId);
+        
+        // Gọi API để lấy danh sách con
+        const childrenData = await parentApi.getParentChildren(userAccountId);
+        console.log('Danh sách con từ API:', childrenData);
+        
+        if (!childrenData || childrenData.length === 0) {
+          console.log('Không có dữ liệu con');
+          setChildren([]);
+          setLoading(false);
+          return;
+        }
+        
+        // Định dạng lại dữ liệu con
+        const formattedChildren = childrenData.map(child => ({
+          id: child.childId || child.accountId || child.id,
+          name: child.fullName || child.name,
+          age: calculateAge(child.dob),
+          grade: child.classId || 'N/A',
+          class: child.className || child.classId || 'N/A',
+          school: child.schoolName || 'Trường học',
+          healthStatus: child.healthStatus || 'Chưa cập nhật',
+          avatar: null,
+          birthdate: formatDate(child.dob) || 'Chưa cập nhật',
+          dob: child.dob || ''
+        }));
+        
+        console.log('Dữ liệu con đã định dạng:', formattedChildren);
+        setChildren(formattedChildren);
+        
+        // Chọn học sinh đầu tiên nếu có
+        if (formattedChildren.length > 0) {
+          const firstChild = formattedChildren[0];
+          setSelectedChild(firstChild);
+          
+          // Lấy thông tin sức khỏe của học sinh đầu tiên
+          fetchMedicalProfile(firstChild.id);
         }
       } catch (error) {
-        console.error('Lỗi khi tải dữ liệu:', error);
+        console.error('Lỗi khi tải dữ liệu con:', error);
         message.error('Không thể tải thông tin học sinh');
       } finally {
         setLoading(false);
@@ -82,10 +87,82 @@ const ChildrenInfo = () => {
     fetchChildrenData();
   }, []);
 
+  // Hàm lấy thông tin sức khỏe của học sinh
+  const fetchMedicalProfile = async (childId) => {
+    if (!childId) {
+      console.warn('Không có childId để lấy thông tin sức khỏe');
+      return;
+    }
+    
+    try {
+      setLoadingMedical(true);
+      console.log(`Đang gọi API để lấy thông tin sức khỏe của học sinh ID: ${childId}`);
+      
+      // Gọi API lấy thông tin sức khỏe
+      const medicalData = await parentApi.getMedicalProfile(childId);
+      console.log('Thông tin sức khỏe từ API:', medicalData);
+      
+      if (!medicalData) {
+        console.log('Không có dữ liệu sức khỏe');
+        setMedicalProfile(null);
+        return;
+      }
+      
+      setMedicalProfile(medicalData);
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin sức khỏe:', error);
+      message.error('Không thể tải thông tin sức khỏe');
+      setMedicalProfile(null);
+    } finally {
+      setLoadingMedical(false);
+    }
+  };
+
+  // Hàm tính tuổi từ ngày sinh
+  const calculateAge = (dob) => {
+    if (!dob) return 'N/A';
+    
+    try {
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      return age;
+    } catch (error) {
+      console.error('Lỗi khi tính tuổi:', error);
+      return 'N/A';
+    }
+  };
+
+  // Hàm định dạng ngày tháng
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+      
+      return date.toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error('Lỗi khi định dạng ngày tháng:', error);
+      return null;
+    }
+  };
+
   const handleChildChange = (childId) => {
     const selected = children.find(child => child.id === childId);
     if (selected) {
       setSelectedChild(selected);
+      fetchMedicalProfile(childId);
     }
   };
 
@@ -166,26 +243,42 @@ const ChildrenInfo = () => {
             </TabPane>
             
             <TabPane tab="Thông tin sức khỏe" key="2">
-              <Descriptions bordered column={1}>
-                <Descriptions.Item label="Tình trạng sức khỏe">{selectedChild.healthStatus}</Descriptions.Item>
-                <Descriptions.Item label="Chiều cao">{selectedChild.height} cm</Descriptions.Item>
-                <Descriptions.Item label="Cân nặng">{selectedChild.weight} kg</Descriptions.Item>
-                <Descriptions.Item label="Nhóm máu">{selectedChild.bloodType}</Descriptions.Item>
-                <Descriptions.Item label="Dị ứng">{selectedChild.allergies}</Descriptions.Item>
-                <Descriptions.Item label="Bệnh mãn tính">{selectedChild.chronicDiseases}</Descriptions.Item>
-                <Descriptions.Item label="Khám sức khỏe gần nhất">{selectedChild.lastCheckup}</Descriptions.Item>
-              </Descriptions>
+              {loadingMedical ? (
+                <div style={{ textAlign: 'center', padding: '30px' }}>
+                  <Spin size="large" tip="Đang tải thông tin sức khỏe..." />
+                </div>
+              ) : medicalProfile ? (
+                <Descriptions bordered column={1}>
+                  {/* <Descriptions.Item label="Tình trạng sức khỏe">{medicalProfile.healthStatus || 'Chưa cập nhật'}</Descriptions.Item> */}
+                  <Descriptions.Item label="Dị ứng">{medicalProfile.allergies || 'Không'}</Descriptions.Item>
+                  <Descriptions.Item label="Bệnh mãn tính">{medicalProfile.chronicDiseases || 'Không'}</Descriptions.Item>
+                  <Descriptions.Item label="Tình trạng thính giác">{medicalProfile.hearingStatus || 'Chưa cập nhật'}</Descriptions.Item>
+                  <Descriptions.Item label="Thị lực (mắt trái)">{medicalProfile.visionStatusLeft || 'Chưa cập nhật'}</Descriptions.Item>
+                  <Descriptions.Item label="Thị lực (mắt phải)">{medicalProfile.visionStatusRight || 'Chưa cập nhật'}</Descriptions.Item>
+                  <Descriptions.Item label="Tình trạng tiêm chủng">{medicalProfile.immunizationStatus || 'Chưa cập nhật'}</Descriptions.Item>
+                  <Descriptions.Item label="Điều trị trước đây">{medicalProfile.pastTreatments || 'Không'}</Descriptions.Item>
+                  {/* <Descriptions.Item label="Cập nhật lần cuối">{medicalProfile.lastUpdated ? formatDate(medicalProfile.lastUpdated) : 'Chưa cập nhật'}</Descriptions.Item> */}
+                </Descriptions>
+              ) : (
+                <Empty description="Không có thông tin sức khỏe" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              )}
             </TabPane>
             
             <TabPane tab="Tiêm chủng" key="3">
-              <div className="vaccination-list">
-                {selectedChild.vaccinations.map((vaccine, index) => (
-                  <div key={index} className="vaccination-item">
-                    <Text strong>{vaccine.name}</Text>
-                    <Text type="secondary">Ngày tiêm: {vaccine.date}</Text>
+              {loadingMedical ? (
+                <div style={{ textAlign: 'center', padding: '30px' }}>
+                  <Spin size="large" tip="Đang tải thông tin tiêm chủng..." />
+                </div>
+              ) : medicalProfile && medicalProfile.immunizationStatus === "Complete" ? (
+                <div className="vaccination-info">
+                  <div className="vaccination-status-complete">
+                    <MedicineBoxOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
+                    <Text strong style={{ marginLeft: '10px', fontSize: '16px' }}>Đã hoàn thành tất cả các mũi tiêm chủng cần thiết</Text>
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <Empty description="Không có thông tin tiêm chủng" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              )}
             </TabPane>
           </Tabs>
         </div>
