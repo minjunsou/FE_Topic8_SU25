@@ -7,7 +7,7 @@ import axios from './axiosConfig';
  * @param {Object} data - { username, password, fullName, dob, gender, phone, roleId }
  * @returns {Promise<AccountResponse>}
  */
-export const createAccount = (data) => axios.post('/api/v1/accounts', data);
+export const createAccount = (data) => axios.post('/v1/accounts', data);
 
 /**
  * Cập nhật tài khoản
@@ -15,21 +15,21 @@ export const createAccount = (data) => axios.post('/api/v1/accounts', data);
  * @param {Object} data - { fullName, dob, gender, phone, emailNotificationsEnabled, notificationTypes }
  * @returns {Promise<AccountResponse>}
  */
-export const updateAccount = (accountId, data) => axios.put(`/api/v1/accounts/${accountId}`, data);
+export const updateAccount = (accountId, data) => axios.put(`/v1/accounts/${accountId}`, data);
 
 /**
  * Lấy danh sách tài khoản (phân trang, lọc)
  * @param {Object} params - { page, size, name, roleId, sortBy, direction }
  * @returns {Promise<PagedAccountResponse>}
  */
-export const getAccounts = (params) => axios.get('/api/v1/accounts', { params });
+export const getAccounts = (params) => axios.get('/v1/accounts', { params });
 
 /**
  * Import tài khoản từ file Excel
  * @param {FormData} formData - { file }
  * @returns {Promise<ImportAccountResponse>}
  */
-export const importAccounts = (formData) => axios.post('/api/v1/accounts/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+export const importAccounts = (formData) => axios.post('/v1/accounts/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
 
 // ===================== CLASS =====================
 /**
@@ -37,14 +37,14 @@ export const importAccounts = (formData) => axios.post('/api/v1/accounts/import'
  * @param {Object} data - { className, description, schoolYear }
  * @returns {Promise<ClassResponse>}
  */
-export const createClass = (data) => axios.post('/api/v1/classes', data);
+export const createClass = (data) => axios.post('/v1/classes', data);
 
 /**
  * Lấy danh sách lớp theo khối
  * @param {string} grade
  * @returns {Promise<ClassResponse[]>}
  */
-export const getClassesByGrade = (grade) => axios.get('/api/v1/classes/by-grade', { params: { grade } });
+export const getClassesByGrade = (grade) => axios.get('/v1/classes/by-grade', { params: { grade } });
 
 // ===================== MEDICATION =====================
 /**
@@ -52,20 +52,20 @@ export const getClassesByGrade = (grade) => axios.get('/api/v1/classes/by-grade'
  * @param {Object} data - { name, description, quantity, quantityType, medicationType, expiryDate }
  * @returns {Promise<MedicationResponse>}
  */
-export const createMedication = (data) => axios.post('/api/v1/medications', data);
+export const createMedication = (data) => axios.post('/v1/medications', data);
 
 /**
  * Lấy tất cả thuốc
  * @returns {Promise<MedicationResponse[]>}
  */
-export const getAllMedications = () => axios.get('/api/v1/medications');
+export const getAllMedications = () => axios.get('/v1/medications');
 
 /**
  * Tìm kiếm thuốc theo tên
  * @param {string} name
  * @returns {Promise<MedicationResponse[]>}
  */
-export const searchMedications = (name) => axios.get('/api/v1/medications/search', { params: { name } });
+export const searchMedications = (name) => axios.get('/v1/medications/search', { params: { name } });
 
 // ===================== HEALTH EVENT =====================
 /**
@@ -75,13 +75,13 @@ export const searchMedications = (name) => axios.get('/api/v1/medications/search
  * @param {Object} data - HealthEventRequest
  * @returns {Promise<HealthEventResponse>}
  */
-export const createHealthEvent = (studentId, nurseId, data) => axios.post(`/api/v1/healthEvents/create/${studentId}/${nurseId}`, data);
+export const createHealthEvent = (studentId, nurseId, data) => axios.post(`/v1/healthEvents/create/${studentId}/${nurseId}`, data);
 
 /**
  * Lấy tất cả sự kiện sức khỏe
  * @returns {Promise<HealthEventResponse[]>}
  */
-export const getAllHealthEvents = () => axios.get('/api/v1/healthEvents/get-all');
+export const getAllHealthEvents = () => axios.get('/v1/healthEvents/get-all');
 
 // ===================== HEALTH CHECK RECORD =====================
 /**
@@ -91,13 +91,13 @@ export const getAllHealthEvents = () => axios.get('/api/v1/healthEvents/get-all'
  * @param {string} nurseId
  * @returns {Promise<HealthCheckRecordResponse>}
  */
-export const createHealthCheckRecord = (data, studentId, nurseId) => axios.post('/api/v1/health-check-records/create', data, { params: { studentId, nurseId } });
+export const createHealthCheckRecord = (data, studentId, nurseId) => axios.post('/v1/health-check-records/create', data, { params: { studentId, nurseId } });
 
 /**
  * Lấy tất cả phiếu khám sức khỏe
  * @returns {Promise<HealthCheckRecordResponse[]>}
  */
-export const getAllHealthCheckRecords = () => axios.get('/api/v1/health-check-records/getAll');
+export const getAllHealthCheckRecords = () => axios.get('/v1/health-check-records/getAll');
 
 // ===================== VACCINATION RECORD =====================
 /**
@@ -106,13 +106,13 @@ export const getAllHealthCheckRecords = () => axios.get('/api/v1/health-check-re
  * @param {string} nurseId
  * @returns {Promise<VaccinationRecordResponse>}
  */
-export const createVaccinationRecord = (data, nurseId) => axios.post('/api/v1/vaccination-records', data, { params: { nurseId } });
+export const createVaccinationRecord = (data, nurseId) => axios.post('/v1/vaccination-records', data, { params: { nurseId } });
 
 /**
  * Lấy tất cả phiếu tiêm chủng
  * @returns {Promise<VaccinationRecordResponse[]>}
  */
-export const getAllVaccinationRecords = () => axios.get('/api/v1/vaccination-records');
+export const getAllVaccinationRecords = () => axios.get('/v1/vaccination-records');
 
 // ===================== HEALTH CHECK NOTICE =====================
 /**
@@ -120,13 +120,13 @@ export const getAllVaccinationRecords = () => axios.get('/api/v1/vaccination-rec
  * @param {Object} data - HealthCheckNoticeRequest
  * @returns {Promise<HealthCheckNoticeResponse>}
  */
-export const createHealthCheckNotice = (data) => axios.post('/api/v1/health-check-notices/create', data);
+export const createHealthCheckNotice = (data) => axios.post('/v1/health-check-notices/create', data);
 
 /**
  * Lấy tất cả thông báo khám sức khỏe
  * @returns {Promise<HealthCheckNoticeResponse[]>}
  */
-export const getAllHealthCheckNotices = () => axios.get('/api/v1/health-check-notices/getAll');
+export const getAllHealthCheckNotices = () => axios.get('/v1/health-check-notices/getAll');
 
 // ===================== VACCINATION NOTICE =====================
 /**
@@ -134,20 +134,20 @@ export const getAllHealthCheckNotices = () => axios.get('/api/v1/health-check-no
  * @param {Object} data - VaccinationNoticeRequest
  * @returns {Promise<VaccinationNoticeResponse>}
  */
-export const createVaccinationNotice = (data) => axios.post('/api/v1/vaccination-notices', data);
+export const createVaccinationNotice = (data) => axios.post('/v1/vaccination-notices', data);
 
 /**
  * Lấy tất cả thông báo tiêm chủng
  * @returns {Promise<VaccinationNoticeResponse[]>}
  */
-export const getAllVaccinationNotices = () => axios.get('/api/v1/vaccination-notices');
+export const getAllVaccinationNotices = () => axios.get('/v1/vaccination-notices');
 
 /**
  * Tìm kiếm thông báo tiêm chủng theo tên vắc xin
  * @param {string} vaccineName
  * @returns {Promise<VaccinationNoticeResponse[]>}
  */
-export const searchVaccinationNotices = (vaccineName) => axios.get('/api/v1/vaccination-notices/search', { params: { vaccineName } });
+export const searchVaccinationNotices = (vaccineName) => axios.get('/v1/vaccination-notices/search', { params: { vaccineName } });
 
 // ===================== CONSULTATION SCHEDULE =====================
 /**
@@ -155,7 +155,7 @@ export const searchVaccinationNotices = (vaccineName) => axios.get('/api/v1/vacc
  * @param {Object} data - ConsultationScheduleRequest
  * @returns {Promise<ConsultationScheduleResponse>}
  */
-export const scheduleConsultation = (data) => axios.post('/api/v1/consultations/schedule', data);
+export const scheduleConsultation = (data) => axios.post('/v1/consultations/schedule', data);
 
 /**
  * Tìm kiếm lịch tư vấn theo ngày
@@ -163,7 +163,7 @@ export const scheduleConsultation = (data) => axios.post('/api/v1/consultations/
  * @param {string} sort - asc|desc
  * @returns {Promise<ConsultationScheduleResponse[]>}
  */
-export const searchConsultationsByDate = (date, sort = 'asc') => axios.get('/api/v1/consultations/search', { params: { date, sort } });
+export const searchConsultationsByDate = (date, sort = 'asc') => axios.get('/v1/consultations/search', { params: { date, sort } });
 
 /**
  * Lấy slot trống của nhân viên
@@ -171,21 +171,21 @@ export const searchConsultationsByDate = (date, sort = 'asc') => axios.get('/api
  * @param {string} date - yyyy-MM-dd
  * @returns {Promise<ConsultationSlot[]>}
  */
-export const getAvailableSlotsForStaff = (staffId, date) => axios.get('/api/v1/consultations/staff-availability', { params: { staffId, date } });
+export const getAvailableSlotsForStaff = (staffId, date) => axios.get('/v1/consultations/staff-availability', { params: { staffId, date } });
 
 // ===================== VACCINE =====================
 /**
  * Lấy tất cả vaccine
  * @returns {Promise<VaccineResponse[]>}
  */
-export const getAllVaccines = () => axios.get('/api/all-vaccines');
+export const getAllVaccines = () => axios.get('/all-vaccines');
 
 /**
  * Tạo vaccine mới
  * @param {Object} data - { name, type, version, releaseDate }
  * @returns {Promise<VaccineResponse>}
  */
-export const createVaccine = (data) => axios.post('/api/create-vaccine', data);
+export const createVaccine = (data) => axios.post('/create-vaccine', data);
 
 /**
  * Tạo lô vaccine mới cho vaccine
@@ -193,14 +193,14 @@ export const createVaccine = (data) => axios.post('/api/create-vaccine', data);
  * @param {Object} data - { stockInDate, expiryDate, quantity }
  * @returns {Promise<VaccineBatchResponse>}
  */
-export const createVaccineBatch = (vaccineId, data) => axios.post(`/api/${vaccineId}/create-vaccine-batch`, data);
+export const createVaccineBatch = (vaccineId, data) => axios.post(`/${vaccineId}/create-vaccine-batch`, data);
 
 /**
  * Lấy tất cả lô của một vaccine
  * @param {number} vaccineId
  * @returns {Promise<VaccineBatchResponse[]>}
  */
-export const getVaccineBatches = (vaccineId) => axios.get(`/api/vaccines/${vaccineId}/batches`);
+export const getVaccineBatches = (vaccineId) => axios.get(`/vaccines/${vaccineId}/batches`);
 
 /**
  * Giảm số lượng lô vaccine
@@ -208,4 +208,4 @@ export const getVaccineBatches = (vaccineId) => axios.get(`/api/vaccines/${vacci
  * @param {number} quantityToReduce
  * @returns {Promise<{message: string}>}
  */
-export const reduceVaccineBatchQuantity = (batchId, quantityToReduce) => axios.patch(`/api/vaccine-batches/${batchId}/reduce`, { quantityToReduce }); 
+export const reduceVaccineBatchQuantity = (batchId, quantityToReduce) => axios.patch(`/vaccine-batches/${batchId}/reduce`, { quantityToReduce }); 
