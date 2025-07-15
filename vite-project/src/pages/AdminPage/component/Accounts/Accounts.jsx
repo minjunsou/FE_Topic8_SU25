@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Input, Select, Space, message, Spin, Modal, Form, DatePicker } from 'antd';
+import { Table, Button, Input, Select, Space, message, Spin, Modal, Form, DatePicker, Switch } from 'antd';
 import { PlusOutlined, UploadOutlined, ReloadOutlined } from '@ant-design/icons';
-import { getAccounts, createAccount, importAccounts } from '../../../../api/adminApi';
+import { getAccounts, createAccount, importAccounts, updateAccount } from '../../../../api/adminApi';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -42,6 +42,12 @@ export default function Accounts() {
   const [importResult, setImportResult] = useState(null);
   const [fileList, setFileList] = useState([]);
 
+  // Modal Sửa tài khoản
+  const [openEdit, setOpenEdit] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editForm] = Form.useForm();
+  const [editingAccount, setEditingAccount] = useState(null);
+
   const fetchAccounts = async () => {
     setLoading(true);
     try {
@@ -81,7 +87,7 @@ export default function Accounts() {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button type="link">Sửa</Button>
+          <Button type="link" onClick={() => handleEdit(record)}>Sửa</Button>
           {/* <Button type="link" danger>Xóa</Button> */}
         </Space>
       ),
@@ -150,6 +156,35 @@ export default function Accounts() {
       message.error(err?.response?.data?.message || 'Import thất bại');
     } finally {
       setImportLoading(false);
+    }
+  };
+
+  const handleEdit = (record) => {
+    setEditingAccount(record);
+    editForm.setFieldsValue({
+      ...record,
+      dob: record.dob ? dayjs(record.dob) : null,
+    });
+    setOpenEdit(true);
+  };
+
+  const handleEditOk = async () => {
+    try {
+      const values = await editForm.validateFields();
+      setEditLoading(true);
+      const payload = {
+        ...values,
+        dob: values.dob ? values.dob.format('YYYY-MM-DD') : undefined,
+      };
+      await updateAccount(editingAccount.accountId, payload);
+      message.success('Cập nhật tài khoản thành công');
+      setOpenEdit(false);
+      fetchAccounts();
+    } catch (err) {
+      if (err.errorFields) return;
+      message.error(err?.response?.data?.message || 'Cập nhật tài khoản thất bại');
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -255,6 +290,27 @@ export default function Accounts() {
             )}
           </div>
         )}
+      </Modal>
+      <Modal
+        title="Sửa tài khoản"
+        open={openEdit}
+        onOk={handleEditOk}
+        onCancel={() => setOpenEdit(false)}
+        confirmLoading={editLoading}
+        okText="Lưu"
+        cancelText="Hủy"
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+        >
+          <Form.Item name="fullName" label="Họ tên" rules={[{ required: true, message: 'Bắt buộc' }]}><Input /></Form.Item>
+          <Form.Item name="dob" label="Ngày sinh" rules={[{ required: true, message: 'Bắt buộc' }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" inputReadOnly /></Form.Item>
+          <Form.Item name="gender" label="Giới tính" rules={[{ required: true, message: 'Bắt buộc' }]}><Select options={genderOptions} /></Form.Item>
+          <Form.Item name="phone" label="Số điện thoại" rules={[{ required: true, message: 'Bắt buộc' }, { pattern: /^\d{9,11}$/, message: 'Số điện thoại không hợp lệ' }]}><Input /></Form.Item>
+          <Form.Item name="emailNotificationsEnabled" label="Nhận email thông báo" valuePropName="checked"><Switch /></Form.Item>
+          <Form.Item name="notificationTypes" label="Loại thông báo"><Input /></Form.Item>
+        </Form>
       </Modal>
     </div>
   );

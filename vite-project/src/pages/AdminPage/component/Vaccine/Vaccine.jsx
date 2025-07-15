@@ -3,6 +3,7 @@ import { Table, Button, Space, message, Spin, Modal, Input, DatePicker, Form, In
 import { PlusOutlined, ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import { getAllVaccines, getVaccineBatches, createVaccine } from '../../../../api/adminApi';
 
+
 export default function Vaccine() {
   const [vaccines, setVaccines] = useState([]);
   const [loading, setLoading] = useState(false);

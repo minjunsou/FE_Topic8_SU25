@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Input, Select, Space, message, Spin } from 'antd';
+import { Table, Button, Input, Select, Space, message, Spin, Modal, Form, InputNumber } from 'antd';
 import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { getClassesByGrade } from '../../../../api/adminApi';
+import { getClassesByGrade, createClass } from '../../../../api/adminApi';
 
 const gradeOptions = [
-  { value: '', label: 'Tất cả khối' },
   { value: '1', label: 'Khối 1' },
   { value: '2', label: 'Khối 2' },
   { value: '3', label: 'Khối 3' },
@@ -22,7 +21,12 @@ const gradeOptions = [
 export default function Classes() {
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [grade, setGrade] = useState('');
+  const [grade, setGrade] = useState('1');
+
+  // Modal Thêm lớp học
+  const [openAdd, setOpenAdd] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [form] = Form.useForm();
 
   const fetchClasses = async () => {
     setLoading(true);
@@ -40,6 +44,28 @@ export default function Classes() {
     fetchClasses();
     // eslint-disable-next-line
   }, [grade]);
+
+  const handleAdd = () => {
+    form.resetFields();
+    form.setFieldsValue({ schoolYear: new Date().getFullYear() });
+    setOpenAdd(true);
+  };
+
+  const handleAddOk = async () => {
+    try {
+      const values = await form.validateFields();
+      setAddLoading(true);
+      await createClass(values);
+      message.success('Thêm lớp học thành công');
+      setOpenAdd(false);
+      fetchClasses();
+    } catch (err) {
+      if (err.errorFields) return;
+      message.error(err?.response?.data?.message || 'Thêm lớp học thất bại');
+    } finally {
+      setAddLoading(false);
+    }
+  };
 
   const columns = [
     { title: 'Tên lớp', dataIndex: 'className', key: 'className' },
@@ -72,7 +98,7 @@ export default function Classes() {
           Làm mới
         </Button>
         <div style={{ flex: 1 }} />
-        <Button type="primary" icon={<PlusOutlined />}>Thêm lớp học</Button>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>Thêm lớp học</Button>
       </div>
       <Spin spinning={loading} tip="Đang tải...">
         <Table
@@ -82,6 +108,24 @@ export default function Classes() {
           pagination={false}
         />
       </Spin>
+      <Modal
+        title="Thêm lớp học mới"
+        open={openAdd}
+        onOk={handleAddOk}
+        onCancel={() => setOpenAdd(false)}
+        confirmLoading={addLoading}
+        okText="Thêm"
+        cancelText="Hủy"
+      >
+        <Form
+          form={form}
+          layout="vertical"
+        >
+          <Form.Item name="className" label="Tên lớp" rules={[{ required: true, message: 'Bắt buộc' }]}><Input /></Form.Item>
+          <Form.Item name="description" label="Mô tả"><Input /></Form.Item>
+          <Form.Item name="schoolYear" label="Năm học" rules={[{ required: true, message: 'Bắt buộc' }]}><InputNumber min={2000} max={2100} style={{ width: '100%' }} /></Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 } 

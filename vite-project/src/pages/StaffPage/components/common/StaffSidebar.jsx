@@ -100,6 +100,12 @@ const StaffSidebar = ({
       label: 'Đổi mật khẩu',
       onClick: () => onMenuClick('change-password')
     },
+    {
+      key: 'vaccine',
+      icon: <KeyOutlined />,
+      label: 'Vaccine',
+      onClick: () => onMenuClick('vaccine')
+    },
   ];
 
   return (

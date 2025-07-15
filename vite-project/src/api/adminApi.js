@@ -67,6 +67,28 @@ export const getAllMedications = () => axios.get('/v1/medications');
  */
 export const searchMedications = (name) => axios.get('/v1/medications/search', { params: { name } });
 
+/**
+ * Cập nhật thuốc
+ * @param {number} id
+ * @param {Object} data - { name, description, quantity, quantityType, medicationType, expiryDate }
+ * @returns {Promise<MedicationResponse>}
+ */
+export const updateMedication = (id, data) => axios.put(`/api/v1/medications/${id}`, data);
+
+/**
+ * Xóa thuốc
+ * @param {number} id
+ * @returns {Promise<{message: string}>}
+ */
+export const deleteMedication = (id) => axios.delete(`/api/v1/medications/${id}`);
+
+/**
+ * Lấy danh sách thuốc sắp hết (low stock)
+ * @param {number} threshold - ngưỡng số lượng (mặc định 10)
+ * @returns {Promise<MedicationResponse[]>}
+ */
+export const getLowStockMedications = (threshold = 10) => axios.get('/api/v1/medications/low-stock', { params: { threshold } });
+
 // ===================== HEALTH EVENT =====================
 /**
  * Tạo sự kiện sức khỏe
