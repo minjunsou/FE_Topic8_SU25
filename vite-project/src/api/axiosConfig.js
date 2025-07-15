@@ -2,8 +2,8 @@ import axios from 'axios';
 
 // Tạo instance của axios với cấu hình mặc định
 const axiosInstance = axios.create({
-  // Sử dụng URL tương đối để Vite proxy có thể xử lý
-  baseURL: '/api',
+  // Sử dụng URL trực tiếp với port 8080 thay vì proxy
+  baseURL: 'http://localhost:8080/api',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

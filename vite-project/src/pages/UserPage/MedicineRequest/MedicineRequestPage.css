@@ -1,301 +1,100 @@
 .medicine-request-page {
   padding: 20px;
-  background-color: #f5f5f5;
-  min-height: calc(100vh - 64px);
-  margin-top: 100px;
-}
-
-.medicine-request-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  margin-bottom: 30px;
 }
 
 .medicine-request-card {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  overflow: hidden;
 }
 
-.medicine-request-title {
-  margin-bottom: 16px !important;
+.card-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  color: #1890ff;
+  margin-bottom: 20px;
 }
 
-.medicine-request-description {
-  margin-bottom: 24px !important;
-  color: rgba(0, 0, 0, 0.65);
+.filter-section {
+  margin-bottom: 20px;
 }
 
-.medicine-request-tabs {
-  margin-top: 16px;
-}
-
-.medicine-request-actions {
+/* Styles for timing sections */
+.timing-section {
   margin-bottom: 24px;
+  padding: 16px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background-color: #fafafa;
 }
 
-.create-request-btn {
-  background-color: #1890ff;
-  border-color: #1890ff;
+.timing-section h4 {
+  margin-bottom: 16px;
+  color: #1890ff;
   font-weight: 500;
 }
 
-.create-request-btn:hover {
-  background-color: #40a9ff;
-  border-color: #40a9ff;
-}
-
-.request-detail .detail-section {
-  margin-bottom: 24px;
-  border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 16px;
-}
-
-.request-detail .detail-section:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-  margin-bottom: 0;
-}
-
-.request-detail p {
+.timing-header {
   margin-bottom: 8px;
 }
 
-.request-detail p:last-child {
-  margin-bottom: 0;
+.medication-item-container {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  background-color: white;
+  position: relative;
 }
 
-/* Style cho container và bảng lịch sử yêu cầu thuốc */
-.medication-history-table-container {
-  width: 100%;
-  margin-bottom: 20px;
+/* Delete button styles */
+.delete-medication-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #ff4d4f;
 }
 
-.medication-history-table {
-  table-layout: fixed;
+.add-medication-container {
+  margin-top: 16px;
 }
 
-.medication-history-table th.ant-table-cell,
-.medication-history-table td.ant-table-cell {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* Status tag styles */
+.status-pending {
+  background-color: #faad14;
 }
 
-.filter-container {
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 20px;
+.status-approved {
+  background-color: #52c41a;
 }
 
-/* Responsive styles */
+.status-rejected {
+  background-color: #f5222d;
+}
+
+.status-completed {
+  background-color: #1890ff;
+}
+
+/* Detail modal styles */
+.detail-section {
+  margin-bottom: 16px;
+}
+
+.detail-section .ant-descriptions-item-label {
+  font-weight: 500;
+}
+
+.detail-divider {
+  margin: 16px 0;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .medicine-request-page {
-    padding: 16px;
-  }
-  
-  .medicine-request-container {
-    max-width: 100%;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .filter-container > div {
+  .card-header {
     flex-direction: column;
     align-items: flex-start;
   }
   
-  .filter-container .ant-select {
-    width: 100% !important;
-    margin-bottom: 10px;
+  .action-section {
+    margin-top: 16px;
   }
-  
-  .filter-container button {
-    width: 100%;
-  }
-}
-
-/* Table styles */
-.ant-table-wrapper {
-  background-color: white;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.ant-table-thead > tr > th {
-  background-color: #f0f5ff !important;
-  color: #1890ff;
-  font-weight: 600;
-}
-
-/* Tag styles */
-.ant-tag {
-  border-radius: 4px;
-  padding: 2px 8px;
-}
-
-/* Modal styles */
-.ant-modal-header {
-  border-bottom: 1px solid #f0f0f0;
-  padding: 16px 24px;
-}
-
-.ant-modal-title {
-  color: #1890ff;
-  font-weight: 600;
-}
-
-.ant-modal-footer {
-  border-top: 1px solid #f0f0f0;
-  padding: 16px 24px;
-}
-
-/* Fix DatePicker z-index issue */
-.ant-picker-dropdown {
-  z-index: 1060 !important;
-}
-
-/* Đảm bảo container của DatePicker có position: relative */
-.ant-form-item {
-  position: relative;
-}
-
-/* Ngăn DatePicker bị che phủ bởi các phần tử khác */
-.ant-picker-range-wrapper {
-  z-index: 1000;
-}
-
-/* Tạo không gian cho DatePicker */
-.ant-picker-range {
-  width: 100%;
-  min-height: 32px;
-}
-
-/* Style chung cho modal */
-.ant-modal-content {
-  border-radius: 8px;
-  overflow: visible !important;
-}
-
-.ant-modal-header {
-  border-radius: 8px 8px 0 0;
-}
-
-.ant-modal-body {
-  overflow: visible !important;
-}
-
-/* Style riêng cho modal chỉnh sửa */
-.edit-medication-modal .ant-modal-body {
-  overflow: visible !important;
-  padding: 24px;
-}
-
-.edit-medication-modal .ant-picker-dropdown {
-  z-index: 1060 !important;
-}
-
-.edit-medication-modal .ant-form-item-control-input {
-  position: relative;
-  z-index: auto;
-}
-
-/* Sửa lỗi modal bị tối */
-.edit-medication-modal.ant-modal {
-  background-color: transparent !important;
-}
-
-.edit-medication-modal .ant-modal-content {
-  background-color: #fff !important;
-  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 9px 28px 8px rgba(0, 0, 0, 0.05) !important;
-}
-
-/* Tăng z-index cho modal và dropdown */
-.ant-modal-wrap {
-  z-index: 1050 !important;
-}
-
-.ant-modal-mask {
-  z-index: 1040 !important;
-}
-
-/* Đảm bảo các thành phần của DatePicker hiển thị đúng */
-.ant-picker-panel {
-  background: #fff;
-  border-radius: 4px;
-  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08),
-    0 9px 28px 8px rgba(0, 0, 0, 0.05);
-}
-
-.ant-picker-panel-container {
-  overflow: hidden;
-  vertical-align: top;
-  background: #fff;
-  border-radius: 4px;
-  box-shadow: 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 6px 16px 0 rgba(0, 0, 0, 0.08),
-    0 9px 28px 8px rgba(0, 0, 0, 0.05);
-  transition: margin 0.3s;
-}
-
-/* Cải thiện hiển thị DatePicker trong modal chỉnh sửa */
-.edit-medication-modal .ant-picker {
-  background-color: #fff;
-  border: 1px solid #d9d9d9;
-}
-
-.edit-medication-modal .ant-picker:hover,
-.edit-medication-modal .ant-picker-focused {
-  border-color: #40a9ff;
-}
-
-.edit-medication-modal .ant-picker-input > input {
-  cursor: pointer;
-}
-
-/* Tăng z-index cho DatePicker dropdown */
-.ant-picker-dropdown {
-  z-index: 1100 !important;
-}
-
-/* Đảm bảo modal luôn hiển thị trên cùng */
-.ant-modal {
-  z-index: 1050 !important;
-}
-
-/* CSS cho trường nhập ngày tháng */
-.ant-form-item-has-error .ant-input {
-  border-color: #ff4d4f !important;
-}
-
-.ant-form-item-has-error .ant-form-item-explain {
-  color: #ff4d4f;
-  font-size: 12px;
-  margin-top: 2px;
-}
-
-/* Thêm hướng dẫn nhập ngày tháng */
-.ant-form-item-label > label[for="startDate"]::after,
-.ant-form-item-label > label[for="endDate"]::after {
-  content: " (DD/MM/YYYY)";
-  font-size: 12px;
-  color: #888;
-  font-weight: normal;
-}
-
-/* CSS cho component DateInput tùy chỉnh */
-.ant-input[maxlength="10"] {
-  font-family: monospace;
-  letter-spacing: 0.5px;
-}
-
-/* Thêm icon lịch cho trường nhập ngày tháng */
-.ant-form-item-label > label[for="startDate"]::before,
-.ant-form-item-label > label[for="endDate"]::before {
-  content: "\1F4C5";
-  margin-right: 5px;
 } 
