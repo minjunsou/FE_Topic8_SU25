@@ -5,7 +5,8 @@ import {
   ExperimentOutlined, 
   SolutionOutlined, 
   HistoryOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  CalendarOutlined
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import './UserProfile.css';
@@ -58,6 +59,13 @@ const MedicalServices = () => {
       icon: <FileTextOutlined />,
       path: '/health-declaration',
       color: '#13c2c2'
+    },
+    {
+      title: 'Đặt lịch hẹn',
+      description: 'Đặt lịch hẹn khám với bác sĩ trường học',
+      icon: <CalendarOutlined />,
+      path: '/appointment',
+      color: '#1d39c4'
     }
   ];
 

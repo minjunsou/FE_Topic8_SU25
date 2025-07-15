@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Typography, Table, Button, Tag, Modal, Form, Select, Radio, Divider, message, Tabs, Row, Col, Alert } from 'antd';
 import { CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined, MedicineBoxOutlined } from '@ant-design/icons';
 import './HealthCheckPage.css';
+import parentApi from '../../../api/parentApi';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -15,95 +16,190 @@ const HealthCheckPage = () => {
   const [selectedResult, setSelectedResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('upcoming');
+  const [upcomingHealthChecks, setUpcomingHealthChecks] = useState([]);
+  const [healthCheckHistory, setHealthCheckHistory] = useState([]);
+  const [userChildren, setUserChildren] = useState([]);
 
-  // Danh sách học sinh của phụ huynh
-  const studentList = [
-    { id: 1, name: 'Nguyễn Văn An', class: '10A1' },
-    { id: 2, name: 'Nguyễn Thị Bình', class: '7B2' },
-  ];
+  // Lấy thông tin user từ localStorage
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const parentId = userInfo?.accountId;
 
-  // Dữ liệu mẫu cho các đợt kiểm tra sức khỏe sắp tới
-  const upcomingHealthChecksData = [
-    {
-      key: '1',
-      id: 'HC001',
-      name: 'Kiểm tra sức khỏe định kỳ học kỳ 1',
-      date: '10/09/2025',
-      location: 'Phòng y tế trường',
-      status: 'pending',
-      description: 'Kiểm tra sức khỏe tổng quát, đo chiều cao, cân nặng, thị lực, và khám răng miệng',
-      deadline: '05/09/2025',
-    },
-    {
-      key: '2',
-      id: 'HC002',
-      name: 'Kiểm tra sức khỏe chuyên khoa mắt',
-      date: '15/10/2025',
-      location: 'Phòng y tế trường',
-      status: 'pending',
-      description: 'Kiểm tra thị lực và sức khỏe mắt cho học sinh các lớp 6-12',
-      deadline: '10/10/2025',
-    },
-  ];
+  // Fetch data khi component được mount
+  useEffect(() => {
+    if (parentId) {
+      fetchHealthCheckNotices();
+      fetchUserChildren();
+    }
+  }, [parentId]);
 
-  // Dữ liệu mẫu cho lịch sử kiểm tra sức khỏe
-  const healthCheckHistoryData = [
-    {
-      key: '1',
-      id: 'HC001',
-      name: 'Kiểm tra sức khỏe định kỳ học kỳ 2',
-      date: '15/02/2025',
-      location: 'Phòng y tế trường',
-      status: 'completed',
-      student: 'Nguyễn Văn An',
-      result: {
-        height: 165,
-        weight: 55,
-        bmi: 20.2,
-        bmiStatus: 'Bình thường',
-        leftEye: '10/10',
-        rightEye: '10/10',
-        bloodPressure: '110/70',
-        dentalStatus: 'Tốt',
-        generalHealth: 'Tốt',
-        recommendations: 'Không có khuyến nghị đặc biệt'
+  // Lấy danh sách thông báo kiểm tra sức khỏe
+  const fetchHealthCheckNotices = async () => {
+    setLoading(true);
+    try {
+      const notices = await parentApi.getHealthCheckNotices(parentId);
+      
+      // Chuyển đổi dữ liệu cho bảng upcomingHealthChecks
+      const upcoming = notices.map(notice => ({
+        key: notice.id.toString(),
+        id: notice.id,
+        name: notice.title,
+        date: notice.date,
+        location: 'Phòng y tế trường',
+        status: notice.status || 'pending',
+        description: notice.description,
+        deadline: new Date(new Date(notice.date).getTime() - 5 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
+      }));
+      
+      setUpcomingHealthChecks(upcoming);
+      
+      // Lấy lịch sử kiểm tra sức khỏe cho từng học sinh
+      if (userChildren.length > 0) {
+        fetchHealthCheckHistory();
       }
-    },
-    {
-      key: '2',
-      id: 'HC002',
-      name: 'Kiểm tra sức khỏe răng miệng',
-      date: '20/03/2025',
-      location: 'Phòng y tế trường',
-      status: 'completed',
-      student: 'Nguyễn Văn An',
-      result: {
-        dentalStatus: 'Cần điều trị sâu răng nhẹ',
-        recommendations: 'Nên đến nha sĩ để điều trị sâu răng ở răng hàm dưới bên phải'
+    } catch (error) {
+      console.error('Error fetching health check notices:', error);
+      message.error('Không thể lấy danh sách thông báo kiểm tra sức khỏe');
+      // Sử dụng dữ liệu mẫu trong trường hợp lỗi
+      setUpcomingHealthChecks([
+        {
+          key: '1',
+          id: 'HC001',
+          name: 'Kiểm tra sức khỏe định kỳ học kỳ 1',
+          date: '10/09/2025',
+          location: 'Phòng y tế trường',
+          status: 'pending',
+          description: 'Kiểm tra sức khỏe tổng quát, đo chiều cao, cân nặng, thị lực, và khám răng miệng',
+          deadline: '05/09/2025',
+        },
+        {
+          key: '2',
+          id: 'HC002',
+          name: 'Kiểm tra sức khỏe chuyên khoa mắt',
+          date: '15/10/2025',
+          location: 'Phòng y tế trường',
+          status: 'pending',
+          description: 'Kiểm tra thị lực và sức khỏe mắt cho học sinh các lớp 6-12',
+          deadline: '10/10/2025',
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lấy danh sách con của phụ huynh
+  const fetchUserChildren = async () => {
+    try {
+      const children = await parentApi.getChildren(parentId);
+      setUserChildren(children.map(child => ({
+        id: child.studentId,
+        name: child.fullName,
+        class: child.classId || 'N/A'
+      })));
+    } catch (error) {
+      console.error('Error fetching user children:', error);
+      message.error('Không thể lấy danh sách học sinh');
+      // Sử dụng dữ liệu mẫu trong trường hợp lỗi
+      setUserChildren([
+        { id: 1, name: 'Nguyễn Văn An', class: '10A1' },
+        { id: 2, name: 'Nguyễn Thị Bình', class: '7B2' },
+      ]);
+    }
+  };
+
+  // Lấy lịch sử kiểm tra sức khỏe cho từng học sinh
+  const fetchHealthCheckHistory = async () => {
+    setLoading(true);
+    try {
+      const historyData = [];
+      
+      for (const child of userChildren) {
+        const history = await parentApi.getChildHealthCheckHistory(parentId, child.id);
+        
+        // Chuyển đổi dữ liệu lịch sử cho bảng
+        const childHistory = history.map(record => ({
+          key: record.id.toString(),
+          id: record.id,
+          name: record.checkNotice?.title || 'Kiểm tra sức khỏe',
+          date: record.date,
+          location: 'Phòng y tế trường',
+          status: 'completed',
+          student: child.name,
+          result: {
+            height: record.details?.height || 0,
+            weight: record.details?.weight || 0,
+            bmi: record.details?.height && record.details?.weight ? 
+              (record.details.weight / ((record.details.height / 100) ** 2)).toFixed(1) : 0,
+            bmiStatus: getBmiStatus(record.details?.height, record.details?.weight),
+            leftEye: record.details?.leftEye || 'N/A',
+            rightEye: record.details?.rightEye || 'N/A',
+            bloodPressure: record.details?.bloodPressure || 'N/A',
+            dentalStatus: record.details?.dentalStatus || 'N/A',
+            generalHealth: record.details?.generalHealth || 'N/A',
+            recommendations: record.details?.recommendations || 'Không có khuyến nghị đặc biệt'
+          }
+        }));
+        
+        historyData.push(...childHistory);
       }
-    },
-    {
-      key: '3',
-      id: 'HC003',
-      name: 'Kiểm tra sức khỏe định kỳ học kỳ 2',
-      date: '15/02/2025',
-      location: 'Phòng y tế trường',
-      status: 'completed',
-      student: 'Nguyễn Thị Bình',
-      result: {
-        height: 155,
-        weight: 45,
-        bmi: 18.7,
-        bmiStatus: 'Bình thường',
-        leftEye: '8/10',
-        rightEye: '9/10',
-        bloodPressure: '100/65',
-        dentalStatus: 'Tốt',
-        generalHealth: 'Tốt',
-        recommendations: 'Nên kiểm tra thị lực định kỳ'
-      }
-    },
-  ];
+      
+      setHealthCheckHistory(historyData);
+    } catch (error) {
+      console.error('Error fetching health check history:', error);
+      message.error('Không thể lấy lịch sử kiểm tra sức khỏe');
+      // Sử dụng dữ liệu mẫu trong trường hợp lỗi
+      setHealthCheckHistory([
+        {
+          key: '1',
+          id: 'HC001',
+          name: 'Kiểm tra sức khỏe định kỳ học kỳ 2',
+          date: '15/02/2025',
+          location: 'Phòng y tế trường',
+          status: 'completed',
+          student: 'Nguyễn Văn An',
+          result: {
+            height: 165,
+            weight: 55,
+            bmi: 20.2,
+            bmiStatus: 'Bình thường',
+            leftEye: '10/10',
+            rightEye: '10/10',
+            bloodPressure: '110/70',
+            dentalStatus: 'Tốt',
+            generalHealth: 'Tốt',
+            recommendations: 'Không có khuyến nghị đặc biệt'
+          }
+        },
+        {
+          key: '2',
+          id: 'HC002',
+          name: 'Kiểm tra sức khỏe răng miệng',
+          date: '20/03/2025',
+          location: 'Phòng y tế trường',
+          status: 'completed',
+          student: 'Nguyễn Văn An',
+          result: {
+            dentalStatus: 'Cần điều trị sâu răng nhẹ',
+            recommendations: 'Nên đến nha sĩ để điều trị sâu răng ở răng hàm dưới bên phải'
+          }
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Tính toán trạng thái BMI
+  const getBmiStatus = (height, weight) => {
+    if (!height || !weight) return 'N/A';
+    
+    const bmi = weight / ((height / 100) ** 2);
+    
+    if (bmi < 18.5) return 'Thiếu cân';
+    if (bmi < 25) return 'Bình thường';
+    if (bmi < 30) return 'Thừa cân';
+    return 'Béo phì';
+  };
 
   // Cột cho bảng các đợt kiểm tra sức khỏe sắp tới
   const upcomingColumns = [
@@ -227,29 +323,37 @@ const HealthCheckPage = () => {
   // Xử lý khi xác nhận tham gia kiểm tra sức khỏe
   const handleConfirm = () => {
     form.validateFields()
-      .then(values => {
+      .then(async values => {
         setLoading(true);
         
-        // Giả lập gửi dữ liệu
-        setTimeout(() => {
-          console.log('Form values:', values);
-          console.log('Selected health check:', selectedHealthCheck);
+        try {
+          const status = values.confirmStatus === 'yes' ? 'CONFIRMED' : 'DECLINED';
+          
+          await parentApi.confirmHealthCheck(
+            selectedHealthCheck.id,
+            values.studentId,
+            parentId,
+            status
+          );
           
           message.success('Đã xác nhận tham gia kiểm tra sức khỏe thành công!');
           setConfirmModalVisible(false);
-          setLoading(false);
           
-          // Cập nhật trạng thái của đợt kiểm tra sức khỏe
-          const updatedData = upcomingHealthChecksData.map(item => {
+          // Cập nhật trạng thái của đợt kiểm tra sức khỏe trong UI
+          const updatedHealthChecks = upcomingHealthChecks.map(item => {
             if (item.key === selectedHealthCheck.key) {
-              return { ...item, status: values.confirmStatus === 'yes' ? 'confirmed' : 'declined' };
+              return { ...item, status: status.toLowerCase() };
             }
             return item;
           });
           
-          // Trong thực tế, bạn sẽ cần cập nhật state hoặc gọi API để cập nhật dữ liệu
-          // setUpcomingHealthChecksData(updatedData);
-        }, 1000);
+          setUpcomingHealthChecks(updatedHealthChecks);
+        } catch (error) {
+          console.error('Lỗi khi xác nhận kiểm tra sức khỏe:', error);
+          message.error('Đã xảy ra lỗi khi xác nhận. Vui lòng thử lại sau!');
+        } finally {
+          setLoading(false);
+        }
       })
       .catch(info => {
         console.log('Validate failed:', info);
@@ -271,7 +375,7 @@ const HealthCheckPage = () => {
             <TabPane tab="Đợt kiểm tra sắp tới" key="upcoming">
               <Table 
                 columns={upcomingColumns} 
-                dataSource={upcomingHealthChecksData} 
+                dataSource={upcomingHealthChecks} 
                 rowKey="key"
                 expandable={{
                   expandedRowRender: (record) => (
@@ -285,7 +389,7 @@ const HealthCheckPage = () => {
             <TabPane tab="Lịch sử kiểm tra" key="history">
               <Table 
                 columns={historyColumns} 
-                dataSource={healthCheckHistoryData} 
+                dataSource={healthCheckHistory} 
                 rowKey="key" 
               />
             </TabPane>
@@ -331,9 +435,9 @@ const HealthCheckPage = () => {
                 rules={[{ required: true, message: 'Vui lòng chọn học sinh!' }]}
               >
                 <Select placeholder="Chọn học sinh">
-                  {studentList.map(student => (
-                    <Option key={student.id} value={student.id}>
-                      {student.name} - Lớp {student.class}
+                  {userChildren.map(child => (
+                    <Option key={child.id} value={child.id}>
+                      {child.name} - Lớp {child.class}
                     </Option>
                   ))}
                 </Select>

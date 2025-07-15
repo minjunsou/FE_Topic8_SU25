@@ -18,6 +18,7 @@ import HealthCheckPage from '../pages/UserPage/HealthCheck/HealthCheckPage';
 import MedicalIncidentsPage from '../pages/UserPage/MedicalIncidents/MedicalIncidentsPage';
 import HealthHistoryPage from '../pages/UserPage/HealthHistory/HealthHistoryPage';
 import MedicineRequestPage from '../pages/UserPage/MedicineRequest/MedicineRequestPage';
+import AppointmentPage from '../pages/UserPage/Appointment/AppointmentPage';
 
 // Import các component trang (sẽ được tạo sau)
 // import AboutPage from '../pages/AboutPage';
@@ -113,6 +114,10 @@ const router = createBrowserRouter([
       {
         path: 'health-history',
         element: <HealthHistoryPage />
+      },
+      {
+        path: 'appointment',
+        element: <AppointmentPage />
       },
       
       // Routes chỉ dành cho admin

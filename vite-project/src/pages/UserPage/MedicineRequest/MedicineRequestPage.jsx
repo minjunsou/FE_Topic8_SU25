@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Table, Button, Tag, Modal, Form, Select, Input, DatePicker, Tabs, message, Spin, InputNumber } from 'antd';
-import { CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined, MedicineBoxOutlined, ReloadOutlined, EditOutlined } from '@ant-design/icons';
+import { Card, Typography, Table, Button, Tag, Modal, Form, Select, Input, DatePicker, Tabs, message, Spin, InputNumber, Radio, Space, Checkbox, Tooltip, Divider, Popconfirm } from 'antd';
+import { CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined, MedicineBoxOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import './MedicineRequestPage.css';
 import parentApi from '../../../api/parentApi';
 import moment from 'moment';
@@ -51,15 +51,14 @@ const DateInput = ({ value, onChange, placeholder, disabled }) => {
   );
 };
 
+// Component nhập thông tin thuốc - removing this unused component
+
 const MedicineRequestPage = () => {
   const [form] = Form.useForm();
-  const [editForm] = Form.useForm();
   const [requestModalVisible, setRequestModalVisible] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [editLoading, setEditLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
   const [studentList, setStudentList] = useState([]);
   const [fetchingStudents, setFetchingStudents] = useState(false);
@@ -68,7 +67,10 @@ const MedicineRequestPage = () => {
   const [selectedChildId, setSelectedChildId] = useState(null);
   const [medicationHistory, setMedicationHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-
+  
+  // State mới cho buổi dùng thuốc
+  const [selectedTimings, setSelectedTimings] = useState(['sang']);
+  
   // Lấy danh sách học sinh của phụ huynh từ API
   useEffect(() => {
     const fetchChildren = async () => {
@@ -231,58 +233,92 @@ const MedicineRequestPage = () => {
         // Tìm tên học sinh từ danh sách học sinh
         const student = studentList.find(s => s.id === item.studentId);
         
-        // Xử lý ngày tháng
-        let startDate = '';
-        let endDate = '';
-        let requestDate = '';
-        
-        try {
-          // Xử lý ngày bắt đầu
-          if (item.startDate) {
-            const parsedDate = moment(item.startDate);
-            if (parsedDate.isValid()) {
-              startDate = item.startDate;
-            }
-          }
-          
-          // Xử lý ngày kết thúc
-          if (item.endDate) {
-            const parsedDate = moment(item.endDate);
-            if (parsedDate.isValid()) {
-              endDate = item.endDate;
-            }
-          }
-          
-          // Xử lý ngày yêu cầu
-          if (item.sentAt) {
-            const parsedDate = moment(item.sentAt);
+        // Định dạng ngày yêu cầu
+        let requestDate = 'N/A';
+        if (item.requestDate) {
+          try {
+            const parsedDate = moment(item.requestDate);
             if (parsedDate.isValid()) {
               requestDate = parsedDate.format('DD/MM/YYYY');
-            } else {
-              requestDate = 'N/A';
             }
-          } else {
-            requestDate = startDate ? moment(startDate).format('DD/MM/YYYY') : 'N/A';
+          } catch (error) {
+            console.error('Lỗi khi parse ngày yêu cầu:', error);
           }
-        } catch (error) {
-          console.error('Lỗi khi xử lý ngày tháng:', error);
+        }
+
+        // Định dạng ngày gửi
+        let sentDate = 'N/A';
+        if (item.sentDate) {
+          try {
+            const parsedDate = moment(item.sentDate);
+            if (parsedDate.isValid()) {
+              sentDate = parsedDate.format('DD/MM/YYYY');
+            }
+          } catch (error) {
+            console.error('Lỗi khi parse ngày gửi:', error);
+          }
+        }
+        
+        // Xử lý thông tin thuốc từ dosages
+        let medicineInfo = 'Không có thông tin';
+        let timingInfo = 'Không có thông tin';
+        
+        if (item.dosages && item.dosages.length > 0) {
+          const medicationItems = [];
+          const timings = [];
+          
+          item.dosages.forEach(dosage => {
+            // Thêm thông tin buổi dùng thuốc
+            if (dosage.timingNotes) {
+              let timingLabel = '';
+              
+              switch (dosage.timingNotes) {
+                case 'sang':
+                  timingLabel = 'Sáng';
+                  break;
+                case 'trua':
+                  timingLabel = 'Trưa';
+                  break;
+                case 'chieu':
+                  timingLabel = 'Chiều';
+                  break;
+                default:
+                  timingLabel = dosage.timingNotes;
+              }
+              
+              timings.push(timingLabel);
+            }
+            
+            // Thêm thông tin thuốc
+            if (dosage.medicationItems && dosage.medicationItems.length > 0) {
+              dosage.medicationItems.forEach(med => {
+                if (med.medicationName) {
+                  medicationItems.push(`${med.medicationName} (${med.amount || 1})`);
+                }
+              });
+            }
+          });
+          
+          if (medicationItems.length > 0) {
+            medicineInfo = medicationItems.join(', ');
+          }
+          
+          if (timings.length > 0) {
+            timingInfo = timings.join(', ');
+          }
         }
         
         return {
           key: index.toString(),
-          id: item.medSentId || item.id || `MR${index + 1}`,
+          id: item.id || `MR${index + 1}`,
           studentId: item.studentId,
           student: student ? student.name : 'Không xác định',
           class: student ? student.class : '',
-          medicine: item.medicationName || 'N/A',
-          quantity: item.frequencyPerDay || 0,
-          amount: item.amount || 0,
-          reason: item.instructions || 'N/A',
+          medicine: medicineInfo,
+          timingNotes: timingInfo,
           requestDate: requestDate,
-          status: item.status || 'pending',
-          timingNotes: item.timingNotes || 'N/A',
-          startDate: startDate,
-          endDate: endDate,
+          sentDate: sentDate,
+          status: item.status || 'PENDING',
           // Thêm dữ liệu gốc để sử dụng khi cần
           rawData: item
         };
@@ -313,86 +349,155 @@ const MedicineRequestPage = () => {
     fetchMedicationHistory(childId);
   };
 
+  // Xử lý khi thay đổi buổi dùng thuốc
+  const handleTimingChange = (checkedValues) => {
+    if (checkedValues.length === 0) {
+      // Không cho phép bỏ chọn tất cả các buổi
+      message.warning('Vui lòng chọn ít nhất một buổi dùng thuốc');
+      setSelectedTimings(['sang']); // Mặc định chọn buổi sáng
+      return;
+    }
+    
+    setSelectedTimings(checkedValues);
+    
+    // Reset form fields for dosages in the create form
+    const currentValues = form.getFieldsValue();
+    const newValues = { ...currentValues };
+    
+    // Initialize dosages array with current timings
+    newValues.dosages = checkedValues.map(timing => {
+      // Giữ lại dữ liệu cũ nếu có
+      const existingDosage = currentValues.dosages?.find(d => d.timingNotes === timing);
+      if (existingDosage) {
+        return existingDosage;
+      }
+      
+      return {
+        timingNotes: timing,
+        medicationItems: [{ medicationName: '', amount: 1 }]
+      };
+    });
+    
+    form.setFieldsValue(newValues);
+  };
+
   // Cột cho bảng lịch sử yêu cầu thuốc
   const historyColumns = [
     {
-      title: 'ID Yêu cầu',
+      title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 100,
+      width: 80,
+      ellipsis: true,
     },
     {
-      title: 'Tên thuốc',
+      title: 'Học sinh',
+      dataIndex: 'student',
+      key: 'student',
+      width: 150,
+      ellipsis: true,
+    },
+    {
+      title: 'Thuốc',
       dataIndex: 'medicine',
       key: 'medicine',
-      width: 150,
-      ellipsis: true,
-    },
-    {
-      title: 'Liều lượng',
-      dataIndex: 'quantity',
-      key: 'quantity',
-      width: 100,
-      render: (quantity) => `${quantity} lần/ngày`
-    },
-    {
-      title: 'Hướng dẫn',
-      dataIndex: 'reason',
-      key: 'reason',
       width: 200,
       ellipsis: true,
+      render: (text) => (
+        <Tooltip title={text}>
+          <span>{text}</span>
+        </Tooltip>
+      ),
     },
-    // {
-    //   title: 'Ngày bắt đầu',
-    //   dataIndex: 'startDate',
-    //   key: 'startDate',
-    //   width: 110,
-    //   render: (date) => {
-    //     if (!date) return 'N/A';
-    //     const formattedDate = moment(date).format('DD/MM/YYYY');
-    //     return formattedDate === 'Invalid date' ? 'N/A' : formattedDate;
-    //   }
-    // },
-    // {
-    //   title: 'Ngày kết thúc',
-    //   dataIndex: 'endDate',
-    //   key: 'endDate',
-    //   width: 110,
-    //   render: (date) => {
-    //     if (!date) return 'N/A';
-    //     const formattedDate = moment(date).format('DD/MM/YYYY');
-    //     return formattedDate === 'Invalid date' ? 'N/A' : formattedDate;
-    //   }
-    // },
     {
-      title: 'Ghi chú',
+      title: 'Buổi dùng thuốc',
       dataIndex: 'timingNotes',
       key: 'timingNotes',
-      width: 150,
+      width: 120,
       ellipsis: true,
+      render: (text) => (
+        <Tooltip title={text}>
+          <span>{text}</span>
+        </Tooltip>
+      ),
     },
+    {
+      title: 'Ngày yêu cầu',
+      dataIndex: 'requestDate',
+      key: 'requestDate',
+      width: 120,
+    },
+    {
+      title: 'Ngày gửi',
+      dataIndex: 'sentDate',
+      key: 'sentDate',
+      width: 120,
+    },
+    // {
+    //   title: 'Trạng thái',
+    //   dataIndex: 'status',
+    //   key: 'status',
+    //   width: 120,
+    //   render: (status) => {
+    //     let color = '';
+    //     let text = '';
+        
+    //     switch (status) {
+    //       case 'APPROVED':
+    //         color = 'green';
+    //         text = 'Đã duyệt';
+    //         break;
+    //       case 'REJECTED':
+    //         color = 'red';
+    //         text = 'Từ chối';
+    //         break;
+    //       case 'PENDING':
+    //       default:
+    //         color = 'orange';
+    //         text = 'Đang xử lý';
+    //         break;
+    //     }
+        
+    //     return (
+    //       <Tag color={color}>
+    //         {text}
+    //       </Tag>
+    //     );
+    //   },
+    // },
     {
       title: 'Thao tác',
       key: 'action',
-      width: 180,
+      width: 150,
       render: (_, record) => (
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <Space>
           <Button 
             type="primary" 
+            size="small" 
             onClick={() => showDetailModal(record)}
-            size="small"
           >
             Chi tiết
           </Button>
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />}
-            onClick={() => showEditModal(record)}
-            size="small"
-          >
-            Sửa
-          </Button>
-        </div>
+          
+          {record.status === 'PENDING' && (
+            <Popconfirm
+              title="Xóa yêu cầu thuốc"
+              description="Bạn có chắc chắn muốn xóa yêu cầu thuốc này không?"
+              onConfirm={() => handleDeleteRequest(record)}
+              okText="Có"
+              cancelText="Không"
+            >
+              <Button 
+                type="default" 
+                danger
+                size="small" 
+                icon={<DeleteOutlined />}
+              >
+                Xóa
+              </Button>
+            </Popconfirm>
+          )}
+        </Space>
       ),
     },
   ];
@@ -400,62 +505,14 @@ const MedicineRequestPage = () => {
   // Hiển thị modal tạo yêu cầu thuốc
   const showRequestModal = () => {
     setRequestModalVisible(true);
-    form.resetFields(); 
+    form.resetFields();
+    setSelectedTimings(['sang']); // Mặc định chọn buổi sáng
   };
 
   // Hiển thị modal chi tiết yêu cầu thuốc
   const showDetailModal = (record) => {
     setSelectedRequest(record);
     setDetailModalVisible(true);
-  };
-
-  // Hiển thị modal chỉnh sửa yêu cầu thuốc
-  const showEditModal = (record) => {
-    setSelectedRequest(record);
-    setEditModalVisible(true);
-    
-    // Đặt lại form trước khi thiết lập giá trị mới
-    editForm.resetFields();
-    
-    // Khởi tạo giá trị mặc định cho ngày bắt đầu và ngày kết thúc
-    let startDateStr = '';
-    let endDateStr = '';
-    
-    try {
-      // Nếu có ngày bắt đầu hợp lệ, định dạng thành chuỗi DD/MM/YYYY
-      if (record.startDate && typeof record.startDate === 'string') {
-        const parsedStartDate = moment(record.startDate);
-        if (parsedStartDate.isValid()) {
-          startDateStr = parsedStartDate.format('DD/MM/YYYY');
-        }
-      }
-      
-      // Nếu có ngày kết thúc hợp lệ, định dạng thành chuỗi DD/MM/YYYY
-      if (record.endDate && typeof record.endDate === 'string') {
-        const parsedEndDate = moment(record.endDate);
-        if (parsedEndDate.isValid()) {
-          endDateStr = parsedEndDate.format('DD/MM/YYYY');
-        }
-      }
-      
-      console.log('Ngày bắt đầu:', startDateStr);
-      console.log('Ngày kết thúc:', endDateStr);
-    } catch (error) {
-      console.error('Lỗi khi parse ngày tháng:', error);
-    }
-    
-    // Thiết lập giá trị mặc định cho form sau khi modal đã hiển thị hoàn toàn
-    setTimeout(() => {
-      editForm.setFieldsValue({
-        medicationName: record.medicine || '',
-        instructions: record.reason || '',
-        frequencyPerDay: record.quantity || 1,
-        timingNotes: record.timingNotes || '',
-        amount: record.amount || 1,
-        startDate: startDateStr,
-        endDate: endDateStr
-      });
-    }, 300);
   };
 
   // Xử lý khi tạo yêu cầu thuốc
@@ -489,29 +546,16 @@ const MedicineRequestPage = () => {
           // Lấy studentId từ form
           const studentId = values.studentId;
           
-          // Kiểm tra và chuyển đổi ngày bắt đầu và ngày kết thúc
-          // const startDate = moment(values.startDate, 'DD/MM/YYYY');
-          // const endDate = moment(values.endDate, 'DD/MM/YYYY');
-          
-          // if (!startDate.isValid() || !endDate.isValid()) {
-          //   message.error('Thời gian dùng thuốc không hợp lệ!');
-          //   return;
-          // }
-          
-          // if (endDate.isBefore(startDate)) {
-          //   message.error('Ngày kết thúc phải sau ngày bắt đầu!');
-          //   return;
-          // }
-          
-          // Chuẩn bị dữ liệu gửi đi theo format API
+          // Chuẩn bị dữ liệu gửi đi theo format API mới
           const medicationData = {
-            medicationName: values.medicationName,
-            instructions: values.instructions || '',
-            // startDate: startDate.format('YYYY-MM-DD'),
-            // endDate: endDate.format('YYYY-MM-DD'),
-            frequencyPerDay: parseInt(values.frequencyPerDay),
-            timingNotes: values.timingNotes || '',
-            amount: parseInt(values.amount)
+            requestDate: moment().format('YYYY-MM-DD'),
+            dosages: values.dosages.map(dosage => ({
+              timingNotes: dosage.timingNotes,
+              medicationItems: dosage.medicationItems.map(item => ({
+                medicationName: item.medicationName,
+                amount: parseInt(item.amount)
+              }))
+            }))
           };
           
           console.log('Dữ liệu gửi đi:', {
@@ -554,79 +598,144 @@ const MedicineRequestPage = () => {
       });
   };
   
-  // Xử lý khi cập nhật yêu cầu thuốc
-  const handleUpdateRequest = () => {
-    editForm.validateFields()
-      .then(async (values) => {
-        try {
-          setEditLoading(true);
-          
-          if (!selectedRequest || !selectedRequest.id || !selectedChildId) {
-            message.error('Thiếu thông tin cần thiết để cập nhật yêu cầu thuốc');
-            return;
-          }
-          
-          // Kiểm tra và chuyển đổi ngày bắt đầu và ngày kết thúc
-          const startDate = moment(values.startDate, 'DD/MM/YYYY');
-          const endDate = moment(values.endDate, 'DD/MM/YYYY');
-          
-          if (!startDate.isValid() || !endDate.isValid()) {
-            message.error('Thời gian dùng thuốc không hợp lệ!');
-            return;
-          }
-          
-          if (endDate.isBefore(startDate)) {
-            message.error('Ngày kết thúc phải sau ngày bắt đầu!');
-            return;
-          }
-          
-          // Chuẩn bị dữ liệu gửi đi theo format API
-          const updateData = {
-            medicationName: values.medicationName,
-            instructions: values.instructions || '',
-            startDate: startDate.format('YYYY-MM-DD'),
-            endDate: endDate.format('YYYY-MM-DD'),
-            frequencyPerDay: parseInt(values.frequencyPerDay),
-            timingNotes: values.timingNotes || '',
-            amount: parseInt(values.amount)
-          };
-          
-          console.log('Dữ liệu cập nhật:', {
-            childId: selectedChildId,
-            medicationSentId: selectedRequest.id,
-            updateData
-          });
-          
-          // Gọi API cập nhật yêu cầu thuốc
-          const response = await parentApi.updateMedicationRequest(
-            selectedChildId,
-            selectedRequest.id,
-            updateData
-          );
-          
-          console.log('API response:', response);
-          
-          message.success('Đã cập nhật yêu cầu thuốc thành công!');
-          setEditModalVisible(false);
-          
-          // Tải lại danh sách yêu cầu
-          fetchMedicationHistory(selectedChildId);
-          
-        } catch (error) {
-          console.error('Lỗi khi cập nhật yêu cầu thuốc:', error);
-          if (error.response) {
-            console.error('Error response:', error.response.data);
-            message.error(`Không thể cập nhật yêu cầu thuốc: ${error.response.data.message || 'Đã xảy ra lỗi'}`);
-          } else {
-            message.error('Không thể cập nhật yêu cầu thuốc. Vui lòng thử lại sau.');
-          }
-        } finally {
-          setEditLoading(false);
-        }
-      })
-      .catch(info => {
-        console.log('Validate failed:', info);
-      });
+  // Xử lý khi xóa yêu cầu thuốc
+  const handleDeleteRequest = async (record) => {
+    try {
+      if (!record || !record.id || !record.studentId) {
+        message.error('Thiếu thông tin cần thiết để xóa yêu cầu thuốc');
+        return;
+      }
+
+      console.log(`Đang xóa yêu cầu thuốc ID: ${record.id} của học sinh ID: ${record.studentId}`);
+      
+      // Gọi API xóa yêu cầu thuốc
+      await parentApi.deleteMedicationRequest(record.studentId, record.id);
+      
+      message.success('Đã xóa yêu cầu thuốc thành công!');
+      
+      // Tải lại danh sách yêu cầu
+      if (selectedChildId) {
+        fetchMedicationHistory(selectedChildId);
+      }
+    } catch (error) {
+      console.error('Lỗi khi xóa yêu cầu thuốc:', error);
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        message.error(`Không thể xóa yêu cầu thuốc: ${error.response.data.message || 'Đã xảy ra lỗi'}`);
+      } else {
+        message.error('Không thể xóa yêu cầu thuốc. Vui lòng thử lại sau.');
+      }
+    }
+  };
+
+  // Render form tạo yêu cầu thuốc
+  const renderRequestForm = () => {
+    const timingLabels = {
+      'sang': 'Buổi sáng',
+      'trua': 'Buổi trưa',
+      'chieu': 'Buổi chiều'
+    };
+
+    return (
+      <Form
+        form={form}
+        layout="vertical"
+        initialValues={{
+          dosages: selectedTimings.map(timing => ({
+            timingNotes: timing,
+            medicationItems: [{ medicationName: '', amount: 1 }]
+          }))
+        }}
+      >
+        <Form.Item
+          name="studentId"
+          label="Chọn học sinh"
+          rules={[{ required: true, message: 'Vui lòng chọn học sinh' }]}
+        >
+          <Select placeholder="Chọn học sinh" loading={fetchingStudents} disabled={fetchingStudents}>
+            {studentList.map(student => (
+              <Option key={student.id} value={student.id}>
+                {student.name} {student.class ? `- Lớp ${student.class}` : ''}
+              </Option>
+            ))}
+          </Select>
+        </Form.Item>
+
+        <Form.Item label="Buổi dùng thuốc">
+          <Checkbox.Group 
+            options={[
+              { label: 'Buổi sáng', value: 'sang' },
+              { label: 'Buổi trưa', value: 'trua' },
+              { label: 'Buổi chiều', value: 'chieu' }
+            ]}
+            value={selectedTimings}
+            onChange={handleTimingChange}
+          />
+        </Form.Item>
+
+        {selectedTimings.map((timing, dosageIndex) => (
+          <div key={timing} className="timing-section">
+            <div className="timing-header">
+              <h4>{timingLabels[timing]}</h4>
+            </div>
+            <Form.Item
+              name={['dosages', dosageIndex, 'timingNotes']}
+              hidden
+              initialValue={timing}
+            >
+              <Input />
+            </Form.Item>
+            
+            <Form.List name={['dosages', dosageIndex, 'medicationItems']}>
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(field => (
+                    <div key={field.key} className="medication-item-container">
+                      <Form.Item
+                        name={[field.name, 'medicationName']}
+                        label="Tên thuốc"
+                        rules={[{ required: true, message: 'Vui lòng nhập tên thuốc' }]}
+                      >
+                        <Input placeholder="Nhập tên thuốc" />
+                      </Form.Item>
+                      
+                      <Form.Item
+                        name={[field.name, 'amount']}
+                        label="Liều lượng"
+                        rules={[{ required: true, message: 'Vui lòng nhập liều lượng' }]}
+                      >
+                        <InputNumber min={1} placeholder="Số lượng" style={{ width: '100%' }} />
+                      </Form.Item>
+                      
+                      {fields.length > 1 && (
+                        <Button 
+                          type="text" 
+                          danger 
+                          icon={<DeleteOutlined />} 
+                          onClick={() => remove(field.name)}
+                          className="delete-medication-btn"
+                        />
+                      )}
+                    </div>
+                  ))}
+                  
+                  <Form.Item className="add-medication-container">
+                    <Button 
+                      type="dashed" 
+                      onClick={() => add({ medicationName: '', amount: 1 })} 
+                      block
+                      icon={<PlusOutlined />}
+                    >
+                      Thêm thuốc
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
+          </div>
+        ))}
+      </Form>
+    );
   };
 
   return (
@@ -728,170 +837,13 @@ const MedicineRequestPage = () => {
         }
         open={requestModalVisible}
         onCancel={() => setRequestModalVisible(false)}
-        footer={[
-          <Button key="back" onClick={() => setRequestModalVisible(false)}>
-            Hủy
-          </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
-            loading={loading} 
-            onClick={handleCreateRequest}
-          >
-            Gửi yêu cầu
-          </Button>,
-        ]}
+        onOk={handleCreateRequest}
+        okText="Gửi yêu cầu"
+        cancelText="Hủy"
+        confirmLoading={loading}
+        width={700}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="studentId"
-            label="Chọn học sinh"
-            rules={[{ required: true, message: 'Vui lòng chọn học sinh!' }]}
-          >
-            <Select 
-              placeholder="Chọn học sinh" 
-              loading={fetchingStudents}
-              notFoundContent={fetchingStudents ? <Spin size="small" /> : 'Không có học sinh nào'}
-              disabled={fetchingStudents || studentList.length === 0}
-            >
-              {studentList.map(student => (
-                <Option key={student.id} value={student.id}>
-                  {student.name}
-                  {student.class ? (isNaN(student.class) ? ` - Lớp ${student.class}` : ` - Lớp ${student.class}`) : ''}
-                </Option>
-              ))}
-            </Select>
-            {fetchingStudents && (
-              <div style={{ color: 'blue', marginTop: '8px' }}>
-                Đang tải danh sách học sinh...
-              </div>
-            )}
-            {studentList.length === 0 && !fetchingStudents && (
-              <div style={{ color: 'red', marginTop: '8px' }}>
-                Không tìm thấy học sinh. Vui lòng liên hệ nhà trường để cập nhật thông tin.
-              </div>
-            )}
-          </Form.Item>
-
-          <Form.Item
-            name="medicationName"
-            label="Tên thuốc"
-            rules={[{ required: true, message: 'Vui lòng nhập tên thuốc!' }]}
-          >
-            <Input placeholder="Nhập tên thuốc (ví dụ: Paracetamol, Ibuprofen...)" />
-          </Form.Item>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {/* <Form.Item
-              name="startDate"
-              label="Ngày bắt đầu"
-              rules={[
-                { required: true, message: 'Vui lòng nhập ngày bắt đầu!' },
-                {
-                  pattern: /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/,
-                  message: 'Vui lòng nhập đúng định dạng DD/MM/YYYY!'
-                },
-                {
-                  validator: (_, value) => {
-                    if (!value) return Promise.resolve();
-                    try {
-                      const date = moment(value, 'DD/MM/YYYY');
-                      if (!date.isValid()) {
-                        return Promise.reject('Ngày không hợp lệ!');
-                      }
-                      if (date.isBefore(moment().startOf('day'))) {
-                        return Promise.reject('Ngày bắt đầu không thể trước ngày hiện tại!');
-                      }
-                      return Promise.resolve();
-                    } catch (error) {
-                      return Promise.reject('Ngày không hợp lệ!');
-                    }
-                  }
-                }
-              ]}
-              style={{ width: '100%' }}
-            >
-              <DateInput placeholder="DD/MM/YYYY" />
-            </Form.Item> */}
-
-            {/* <Form.Item
-              name="endDate"
-              label="Ngày kết thúc"
-              rules={[
-                { required: true, message: 'Vui lòng nhập ngày kết thúc!' },
-                {
-                  pattern: /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/,
-                  message: 'Vui lòng nhập đúng định dạng DD/MM/YYYY!'
-                },
-                {
-                  validator: (_, value) => {
-                    if (!value) return Promise.resolve();
-                    try {
-                      const endDate = moment(value, 'DD/MM/YYYY');
-                      if (!endDate.isValid()) {
-                        return Promise.reject('Ngày không hợp lệ!');
-                      }
-                      
-                      // Kiểm tra ngày kết thúc có sau ngày bắt đầu không
-                      const startDateValue = form.getFieldValue('startDate');
-                      if (startDateValue) {
-                        const startDate = moment(startDateValue, 'DD/MM/YYYY');
-                        if (startDate.isValid() && endDate.isBefore(startDate)) {
-                          return Promise.reject('Ngày kết thúc phải sau ngày bắt đầu!');
-                        }
-                      }
-                      
-                      return Promise.resolve();
-                    } catch (error) {
-                      return Promise.reject('Ngày không hợp lệ!');
-                    }
-                  }
-                }
-              ]}
-              style={{ width: '100%' }}
-            >
-              <DateInput placeholder="DD/MM/YYYY" />
-            </Form.Item> */}
-          </div>
-
-          <Form.Item
-            name="frequencyPerDay"
-            label="Số lần uống mỗi ngày"
-            rules={[
-              { required: true, message: 'Vui lòng nhập số lần uống mỗi ngày!' },
-              { type: 'number', min: 1, max: 10, message: 'Số lần uống phải từ 1-10 lần/ngày!' },
-            ]}
-          >
-            <InputNumber min={1} max={10} style={{ width: '100%' }} placeholder="Ví dụ: 1, 2, 3..." />
-          </Form.Item>
-
-          <Form.Item
-            name="amount"
-            label="Liều lượng mỗi lần"
-            rules={[
-              { required: true, message: 'Vui lòng nhập liều lượng mỗi lần!' },
-              { type: 'number', min: 1, message: 'Liều lượng phải lớn hơn 0!' },
-            ]}
-          >
-            <InputNumber min={1} style={{ width: '100%' }} placeholder="Ví dụ: 1 viên, 2 viên..." />
-          </Form.Item>
-
-          <Form.Item
-            name="timingNotes"
-            label="Thời điểm uống thuốc"
-            rules={[{ required: true, message: 'Vui lòng nhập thời điểm uống thuốc!' }]}
-          >
-            <TextArea rows={2} placeholder="Ví dụ: Sáng sau ăn, trưa sau ăn, tối trước khi đi ngủ..." />
-          </Form.Item>
-
-          <Form.Item
-            name="instructions"
-            label="Hướng dẫn sử dụng"
-            rules={[{ required: true, message: 'Vui lòng nhập hướng dẫn sử dụng!' }]}
-          >
-            <TextArea rows={4} placeholder="Nhập hướng dẫn chi tiết về cách sử dụng thuốc" />
-          </Form.Item>
-        </Form>
+        {renderRequestForm()}
       </Modal>
 
       {/* Modal chi tiết yêu cầu thuốc */}
@@ -918,214 +870,62 @@ const MedicineRequestPage = () => {
               <p><strong>Học sinh:</strong> {selectedRequest.student}</p>
               {selectedRequest.class && <p><strong>Lớp:</strong> {selectedRequest.class}</p>}
               
-              {selectedRequest.requestDate && (
-                <p><strong>Ngày yêu cầu:</strong> {selectedRequest.requestDate}</p>
-              )}
+              <p><strong>Ngày yêu cầu:</strong> {selectedRequest.requestDate}</p>
+              <p><strong>Ngày gửi:</strong> {selectedRequest.sentDate}</p>
+              
+              <p>
+                <strong>Trạng thái:</strong>{' '}
+                {selectedRequest.status === 'APPROVED' && <Tag color="green">Đã duyệt</Tag>}
+                {selectedRequest.status === 'REJECTED' && <Tag color="red">Từ chối</Tag>}
+                {selectedRequest.status === 'PENDING' && <Tag color="orange">Đang xử lý</Tag>}
+              </p>
             </div>
 
+            <Divider className="detail-divider" />
+            
             <div className="detail-section">
               <Title level={5}>Thông tin thuốc</Title>
-              <p><strong>Tên thuốc:</strong> {selectedRequest.medicine}</p>
-              <p><strong>Số lần uống mỗi ngày:</strong> {selectedRequest.quantity} lần/ngày</p>
-              {selectedRequest.amount && (
-                <p><strong>Liều lượng mỗi lần:</strong> {selectedRequest.amount} viên</p>
+              
+              {selectedRequest.rawData && selectedRequest.rawData.dosages && selectedRequest.rawData.dosages.length > 0 ? (
+                selectedRequest.rawData.dosages.map((dosage, index) => {
+                  // Xác định label cho buổi dùng thuốc
+                  let timingLabel = dosage.timingNotes;
+                  switch (dosage.timingNotes) {
+                    case 'sang':
+                      timingLabel = 'Buổi sáng';
+                      break;
+                    case 'trua':
+                      timingLabel = 'Buổi trưa';
+                      break;
+                    case 'chieu':
+                      timingLabel = 'Buổi chiều';
+                      break;
+                  }
+                  
+                  return (
+                    <div key={index} style={{ marginBottom: '16px' }}>
+                      <h4>{timingLabel}</h4>
+                      
+                      {dosage.medicationItems && dosage.medicationItems.length > 0 ? (
+                        <ul style={{ paddingLeft: '20px' }}>
+                          {dosage.medicationItems.map((med, medIndex) => (
+                            <li key={medIndex}>
+                              <strong>{med.medicationName}</strong> - Liều lượng: {med.amount}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>Không có thông tin thuốc</p>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <p>Không có thông tin thuốc</p>
               )}
-              <p><strong>Thời gian dùng:</strong> {
-                (() => {
-                  const startDate = selectedRequest.startDate 
-                    ? moment(selectedRequest.startDate).isValid() 
-                      ? moment(selectedRequest.startDate).format('DD/MM/YYYY') 
-                      : 'N/A' 
-                    : 'N/A';
-                    
-                  const endDate = selectedRequest.endDate 
-                    ? moment(selectedRequest.endDate).isValid() 
-                      ? moment(selectedRequest.endDate).format('DD/MM/YYYY') 
-                      : 'N/A' 
-                    : 'N/A';
-                    
-                  return `${startDate} - ${endDate}`;
-                })()
-              }</p>
-              <p><strong>Hướng dẫn sử dụng:</strong> {selectedRequest.reason}</p>
-              <p><strong>Ghi chú thời gian uống:</strong> {selectedRequest.timingNotes || 'Không có'}</p>
             </div>
-
-            {/* Nếu API trả về các thông tin khác về trạng thái, có thể hiển thị ở đây */}
-            {selectedRequest.approvedDate && (
-              <div className="detail-section">
-                <Title level={5}>Thông tin phê duyệt</Title>
-                <p><strong>Ngày phê duyệt:</strong> {selectedRequest.approvedDate}</p>
-              </div>
-            )}
-
-            {selectedRequest.completedDate && (
-              <div className="detail-section">
-                <Title level={5}>Thông tin cấp phát</Title>
-                <p><strong>Ngày cấp phát:</strong> {selectedRequest.completedDate}</p>
-              </div>
-            )}
-
-            {selectedRequest.rejectedReason && (
-              <div className="detail-section">
-                <Title level={5}>Thông tin từ chối</Title>
-                <p><strong>Lý do từ chối:</strong> {selectedRequest.rejectedReason}</p>
-              </div>
-            )}
           </div>
         )}
-      </Modal>
-      
-      {/* Modal chỉnh sửa yêu cầu thuốc */}
-      <Modal
-        title={
-          <span>
-            <EditOutlined /> Chỉnh sửa yêu cầu thuốc
-          </span>
-        }
-        open={editModalVisible}
-        onCancel={() => setEditModalVisible(false)}
-        footer={[
-          <Button key="back" onClick={() => setEditModalVisible(false)}>
-            Hủy
-          </Button>,
-          <Button 
-            key="submit" 
-            type="primary" 
-            loading={editLoading} 
-            onClick={handleUpdateRequest}
-          >
-            Cập nhật
-          </Button>,
-        ]}
-        width={700}
-        maskClosable={false}
-        destroyOnClose={true}
-        className="edit-medication-modal"
-        bodyStyle={{ overflow: 'visible' }}
-        style={{ top: 20 }}
-        zIndex={1050}
-      >
-        <Form form={editForm} layout="vertical" preserve={false}>
-          <Form.Item
-            name="medicationName"
-            label="Tên thuốc"
-            rules={[{ required: true, message: 'Vui lòng nhập tên thuốc!' }]}
-          >
-            <Input placeholder="Nhập tên thuốc (ví dụ: Paracetamol, Ibuprofen...)" />
-          </Form.Item>
-
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {/* <Form.Item
-              name="startDate"
-              label="Ngày bắt đầu"
-              rules={[
-                { required: true, message: 'Vui lòng nhập ngày bắt đầu!' },
-                {
-                  pattern: /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/,
-                  message: 'Vui lòng nhập đúng định dạng DD/MM/YYYY!'
-                },
-                {
-                  validator: (_, value) => {
-                    if (!value) return Promise.resolve();
-                    try {
-                      const date = moment(value, 'DD/MM/YYYY');
-                      if (!date.isValid()) {
-                        return Promise.reject('Ngày không hợp lệ!');
-                      }
-                      if (date.isBefore(moment().startOf('day'))) {
-                        return Promise.reject('Ngày bắt đầu không thể trước ngày hiện tại!');
-                      }
-                      return Promise.resolve();
-                    } catch (error) {
-                      return Promise.reject('Ngày không hợp lệ!');
-                    }
-                  }
-                }
-              ]}
-              style={{ width: '100%' }}
-            >
-              <DateInput placeholder="DD/MM/YYYY" />
-            </Form.Item>
-
-            <Form.Item
-              name="endDate"
-              label="Ngày kết thúc"
-              rules={[
-                { required: true, message: 'Vui lòng nhập ngày kết thúc!' },
-                {
-                  pattern: /^(0[1-9]|[12][0-9]|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/,
-                  message: 'Vui lòng nhập đúng định dạng DD/MM/YYYY!'
-                },
-                {
-                  validator: (_, value) => {
-                    if (!value) return Promise.resolve();
-                    try {
-                      const endDate = moment(value, 'DD/MM/YYYY');
-                      if (!endDate.isValid()) {
-                        return Promise.reject('Ngày không hợp lệ!');
-                      }
-                      
-                      // Kiểm tra ngày kết thúc có sau ngày bắt đầu không
-                      const startDateValue = editForm.getFieldValue('startDate');
-                      if (startDateValue) {
-                        const startDate = moment(startDateValue, 'DD/MM/YYYY');
-                        if (startDate.isValid() && endDate.isBefore(startDate)) {
-                          return Promise.reject('Ngày kết thúc phải sau ngày bắt đầu!');
-                        }
-                      }
-                      
-                      return Promise.resolve();
-                    } catch (error) {
-                      return Promise.reject('Ngày không hợp lệ!');
-                    }
-                  }
-                }
-              ]}
-              style={{ width: '100%' }}
-            >
-              <DateInput placeholder="DD/MM/YYYY" />
-            </Form.Item> */}
-          </div>
-
-          <Form.Item
-            name="frequencyPerDay"
-            label="Số lần uống mỗi ngày"
-            rules={[
-              { required: true, message: 'Vui lòng nhập số lần uống mỗi ngày!' },
-              { type: 'number', min: 1, max: 10, message: 'Số lần uống phải từ 1-10 lần/ngày!' },
-            ]}
-          >
-            <InputNumber min={1} max={10} style={{ width: '100%' }} placeholder="Ví dụ: 1, 2, 3..." />
-          </Form.Item>
-
-          <Form.Item
-            name="amount"
-            label="Liều lượng mỗi lần"
-            rules={[
-              { required: true, message: 'Vui lòng nhập liều lượng mỗi lần!' },
-              { type: 'number', min: 1, message: 'Liều lượng phải lớn hơn 0!' },
-            ]}
-          >
-            <InputNumber min={1} style={{ width: '100%' }} placeholder="Ví dụ: 1 viên, 2 viên..." />
-          </Form.Item>
-
-          <Form.Item
-            name="timingNotes"
-            label="Thời điểm uống thuốc"
-            rules={[{ required: true, message: 'Vui lòng nhập thời điểm uống thuốc!' }]}
-          >
-            <TextArea rows={2} placeholder="Ví dụ: Sáng sau ăn, trưa sau ăn, tối trước khi đi ngủ..." />
-          </Form.Item>
-
-          <Form.Item
-            name="instructions"
-            label="Hướng dẫn sử dụng"
-            rules={[{ required: true, message: 'Vui lòng nhập hướng dẫn sử dụng!' }]}
-          >
-            <TextArea rows={4} placeholder="Nhập hướng dẫn chi tiết về cách sử dụng thuốc" />
-          </Form.Item>
-        </Form>
       </Modal>
     </div>
   );

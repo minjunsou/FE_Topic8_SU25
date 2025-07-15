@@ -7,7 +7,8 @@ import {
   AlertOutlined,
   MedicineBoxTwoTone,
   KeyOutlined,
-  ProfileOutlined
+  ProfileOutlined,
+  ExperimentOutlined
 } from '@ant-design/icons';
 
 const { TabPane } = Tabs;
@@ -74,7 +75,7 @@ const StaffTabs = ({
           tab={
             <span>
               <FileTextOutlined />
-              Khai báo sức khỏe
+              Khai báo y tế
               <Badge 
                 count={healthDeclarations.filter(d => d.status === 'new').length} 
                 style={{ marginLeft: 8 }}
@@ -82,6 +83,15 @@ const StaffTabs = ({
             </span>
           } 
           key="health-declarations" 
+        />
+        <TabPane 
+          tab={
+            <span>
+              <ExperimentOutlined />
+              Kiểm tra sức khỏe
+            </span>
+          } 
+          key="health-checks" 
         />
         <TabPane 
           tab={
