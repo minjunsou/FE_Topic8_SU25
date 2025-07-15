@@ -14,10 +14,8 @@ const parentApi = {
       }
       
       console.log(`Đang gọi API để lấy danh sách con của phụ huynh ID: ${parentId}`);
-      // Sử dụng đúng endpoint theo yêu cầu - http://localhost:8080/api/v1/accounts/{parentId}/children
       const response = await axiosInstance.get(`/v1/accounts/${parentId}/children`);
       
-      // Log response để debug
       console.log('API response:', response);
       
       // Từ hình ảnh đã cung cấp, API trả về là { children: [...] }
@@ -74,10 +72,23 @@ const parentApi = {
    * Tạo yêu cầu thuốc cho học sinh
    * @param {string} studentId - ID của học sinh
    * @param {string} parentId - ID của phụ huynh
-   * @param {Object} medicationData - Dữ liệu yêu cầu thuốc
+   * @param {Object} medicationData - Dữ liệu yêu cầu thuốc với format mới:
+   * {
+   *   requestDate: "YYYY-MM-DD",
+   *   dosages: [
+   *     {
+   *       timingNotes: "sang|trua|chieu", // Buổi dùng thuốc
+   *       medicationItems: [
+   *         {
+   *           medicationName: "Tên thuốc",
+   *           amount: 1 // Số lượng
+   *         }
+   *       ]
+   *     }
+   *   ]
+   * }
    * @returns {Promise} - Promise chứa kết quả tạo yêu cầu thuốc
    */
-
   createMedicationRequest: async (studentId, parentId, medicationData) => {
     try {
       if (!studentId || !parentId) {
@@ -87,13 +98,11 @@ const parentApi = {
       console.log(`Đang gọi API tạo yêu cầu thuốc cho học sinh ID: ${studentId}, phụ huynh ID: ${parentId}`);
       console.log('Dữ liệu yêu cầu thuốc:', medicationData);
       
-      // Gọi API tạo yêu cầu thuốc
       const response = await axiosInstance.post(
         `/medication-sent/create/${studentId}/${parentId}`,
         medicationData
       );
       
-      // Log response để debug
       console.log('API response:', response);
       
       return response.data;
@@ -192,6 +201,92 @@ const parentApi = {
       throw error;
     }
   },
+
+  /**
+   * Đặt lịch hẹn khám với bác sĩ
+   * @param {string} childId - ID của học sinh
+   * @param {string} parentId - ID của phụ huynh
+   * @param {Object} appointmentData - Dữ liệu đặt lịch hẹn
+   * @returns {Promise} - Promise chứa kết quả đặt lịch hẹn
+   */
+  scheduleAppointment: async (childId, parentId, appointmentData) => {
+    try {
+      if (!childId || !parentId) {
+        throw new Error('childId và parentId là bắt buộc để đặt lịch hẹn');
+      }
+
+      console.log(`Đang gọi API đặt lịch hẹn cho học sinh ID: ${childId}, phụ huynh ID: ${parentId}`);
+      console.log('Dữ liệu lịch hẹn:', appointmentData);
+      
+      const response = await axiosInstance.post(
+        `/appointments/schedule/${childId}/${parentId}`,
+        appointmentData
+      );
+      
+      console.log('API response:', response);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi đặt lịch hẹn cho học sinh ID ${childId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+ * Lấy danh sách thông báo kiểm tra sức khỏe dành cho phụ huynh
+ * @param {string} parentId - ID của phụ huynh
+ * @returns {Promise} - Promise chứa danh sách thông báo
+ */
+getHealthCheckNotices: async (parentId) => {
+  try {
+    const response = await axiosInstance.get(`/v1/parents/${parentId}/health-check-notices`);
+    return response.data.data || [];
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách thông báo kiểm tra sức khỏe:', error);
+    throw error;
+  }
+},
+
+/**
+ * Xác nhận tham gia kiểm tra sức khỏe
+ * @param {number} noticeId - ID của thông báo kiểm tra sức khỏe
+ * @param {string} studentId - ID của học sinh
+ * @param {string} parentId - ID của phụ huynh
+ * @param {string} status - Trạng thái xác nhận (CONFIRMED/DECLINED)
+ * @returns {Promise} - Promise chứa kết quả xác nhận
+ */
+confirmHealthCheck: async (noticeId, studentId, parentId, status) => {
+  try {
+    const requestBody = {
+      checkNoticeId: noticeId,
+      studentId: studentId,
+      parentId: parentId,
+      status: status
+    };
+    
+    const response = await axiosInstance.post('/v1/health-check-confirmations', requestBody);
+    return response.data;
+  } catch (error) {
+    console.error('Lỗi khi xác nhận kiểm tra sức khỏe:', error);
+    throw error;
+  }
+},
+
+/**
+ * Lấy lịch sử kiểm tra sức khỏe của con
+ * @param {string} parentId - ID của phụ huynh
+ * @param {string} studentId - ID của học sinh
+ * @returns {Promise} - Promise chứa lịch sử kiểm tra sức khỏe
+ */
+getChildHealthCheckHistory: async (parentId, studentId) => {
+  try {
+    const response = await axiosInstance.get(`/v1/parents/${parentId}/students/${studentId}/health-check-records`);
+    return response.data.data || [];
+  } catch (error) {
+    console.error(`Lỗi khi lấy lịch sử kiểm tra sức khỏe cho học sinh ID ${studentId}:`, error);
+    throw error;
+  }
+},
 };
 
 export default parentApi;

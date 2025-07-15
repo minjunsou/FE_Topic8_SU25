@@ -15,6 +15,7 @@ import ProfileManagement from './components/ProfileManagement/ProfileManagement'
 import StaffSidebar from './components/common/StaffSidebar';
 import StaffTabs from './components/common/StaffTabs';
 import LoadingIndicator from './components/common/LoadingIndicator';
+import HealthChecks from './components/HealthChecks/HealthChecks';
 
 import './StaffPage.css';
 
@@ -417,6 +418,7 @@ const StaffPage = () => {
     const path = location.pathname;
     if (path.includes('medicine-requests')) return 'medicine-requests';
     if (path.includes('health-declarations')) return 'health-declarations';
+    if (path.includes('health-checks')) return 'health-checks';
     if (path.includes('medical-incidents')) return 'medical-incidents';
     if (path.includes('medicine-supplies')) return 'medicine-supplies';
     if (path.includes('profiles')) return 'profiles';
@@ -471,12 +473,14 @@ const StaffPage = () => {
         );
       case 'health-declarations':
         return (
-          <HealthDeclarations 
-            healthDeclarations={healthDeclarations}
-            handleViewHealthDetail={handleViewHealthDetail}
-            loading={loading} 
-          />
+          <HealthDeclarations />
         );
+
+      case 'health-checks':
+        return (
+          <HealthChecks />
+        );
+
       case 'medical-incidents':
         return (
           <MedicalIncidents 
@@ -525,6 +529,9 @@ const StaffPage = () => {
         onMenuClick={setActiveTab}
         onNavigate={navigate}
         onLogout={handleLogout}
+        unreadIncidents={medicalIncidents?.filter(i => i.status === 'new').length || 0}
+        pendingRequests={medicineRequests.filter(r => r.status === 'pending').length || 0}
+        unreadDeclarations={healthDeclarations.filter(d => d.status === 'new').length || 0}
       />
       <Layout className="staff-content-layout">
         <Content className="staff-content">

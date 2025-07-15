@@ -270,6 +270,112 @@ const nurseApi = {
       console.error('Lỗi khi lấy danh sách yêu cầu thuốc đang hoạt động:', error);
       throw error;
     }
+  },
+
+  /**
+   * Tạo thông báo kiểm tra sức khỏe mới
+   * @param {Object} healthCheckData - Dữ liệu kiểm tra sức khỏe
+   * @returns {Promise} - Promise chứa kết quả tạo thông báo
+   */
+  createHealthCheckNotice: async (healthCheckData) => {
+    try {
+      const response = await axiosInstance.post('/v1/health-check-notices', healthCheckData);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi tạo thông báo kiểm tra sức khỏe:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy danh sách thông báo kiểm tra sức khỏe
+   * @param {Object} params - Tham số truy vấn
+   * @returns {Promise} - Promise chứa danh sách thông báo
+   */
+  getAllHealthCheckNotices: async (params = {}) => {
+    try {
+      const response = await axiosInstance.get('/v1/health-check-notices', { params });
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách thông báo kiểm tra sức khỏe:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Cập nhật thông tin thông báo kiểm tra sức khỏe
+   * @param {number} noticeId - ID của thông báo cần cập nhật
+   * @param {Object} healthCheckData - Dữ liệu cập nhật
+   * @returns {Promise} - Promise chứa kết quả cập nhật
+   */
+  updateHealthCheckNotice: async (noticeId, healthCheckData) => {
+    try {
+      const response = await axiosInstance.put(`/v1/health-check-notices/${noticeId}`, healthCheckData);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi cập nhật thông báo kiểm tra sức khỏe ID ${noticeId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Xóa thông báo kiểm tra sức khỏe
+   * @param {number} noticeId - ID của thông báo cần xóa
+   * @returns {Promise} - Promise chứa kết quả xóa
+   */
+  deleteHealthCheckNotice: async (noticeId) => {
+    try {
+      const response = await axiosInstance.delete(`/v1/health-check-notices/${noticeId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi xóa thông báo kiểm tra sức khỏe ID ${noticeId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy danh sách xác nhận kiểm tra sức khỏe
+   * @param {number} noticeId - ID của thông báo kiểm tra sức khỏe
+   * @returns {Promise} - Promise chứa danh sách xác nhận
+   */
+  getHealthCheckConfirmations: async (noticeId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/health-check-notices/${noticeId}/confirmations`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy danh sách xác nhận kiểm tra sức khỏe cho thông báo ID ${noticeId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Gửi kết quả kiểm tra sức khỏe cho học sinh
+   * @param {Object} healthCheckResult - Kết quả kiểm tra sức khỏe
+   * @returns {Promise} - Promise chứa kết quả gửi
+   */
+  submitHealthCheckResult: async (healthCheckResult) => {
+    try {
+      const response = await axiosInstance.post('/v1/health-check-records', healthCheckResult);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi gửi kết quả kiểm tra sức khỏe:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy lịch sử kiểm tra sức khỏe của học sinh
+   * @param {string} studentId - ID của học sinh
+   * @returns {Promise} - Promise chứa lịch sử kiểm tra sức khỏe
+   */
+  getStudentHealthCheckHistory: async (studentId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/students/${studentId}/health-check-records`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy lịch sử kiểm tra sức khỏe cho học sinh ID ${studentId}:`, error);
+      throw error;
+    }
   }
 };
 
