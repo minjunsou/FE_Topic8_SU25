@@ -131,12 +131,33 @@ const parentApi = {
       // Log response để debug
       console.log('API response:', response);
       
-      // Kiểm tra định dạng response từ ảnh đã cung cấp
-      if (response.data && response.data.medicationSentList) {
-        return response.data.medicationSentList;
+      // Format mới của response từ API - theo ảnh cung cấp
+      if (response.data && Array.isArray(response.data.medicationSentList)) {
+        const formattedData = response.data.medicationSentList.map(item => {
+          return {
+            id: item.medSentId,
+            studentId: item.studentId,
+            parentId: item.parentId,
+            requestDate: Array.isArray(item.requestDate) 
+              ? `${item.requestDate[0]}-${item.requestDate[1]}-${item.requestDate[2]}` 
+              : (item.requestDate || ''),
+            sentDate: Array.isArray(item.sentAt) 
+              ? `${item.sentAt[0]}-${item.sentAt[1]}-${item.sentAt[2]}` 
+              : (item.sentAt || ''),
+            status: item.isAccepted === true ? 'APPROVED' : 
+                   item.isAccepted === false ? 'REJECTED' : 'PENDING',
+            dosages: item.dosages || []
+          };
+        });
+        return formattedData;
       }
       
-      return response.data || [];
+      // Nếu response là mảng trực tiếp (tương thích ngược)
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      return [];
     } catch (error) {
       console.error(`Lỗi khi lấy lịch sử yêu cầu thuốc của học sinh ID ${childId}:`, error);
       throw error;
@@ -144,26 +165,22 @@ const parentApi = {
   },
 
   /**
-   * Cập nhật yêu cầu thuốc
-   * @param {string} childId - ID của học sinh
-   * @param {string} medicationSentId - ID của yêu cầu thuốc
-   * @param {Object} updateData - Dữ liệu cập nhật
-   * @returns {Promise} - Promise chứa kết quả cập nhật
+   * Xóa yêu cầu thuốc
+   * @param {string} studentId - ID của học sinh
+   * @param {string} medicationSentId - ID của yêu cầu thuốc cần xóa
+   * @returns {Promise} - Promise chứa kết quả xóa yêu cầu thuốc
    */
-  
-  updateMedicationRequest: async (childId, medicationSentId, updateData) => {
+  deleteMedicationRequest: async (studentId, medicationSentId) => {
     try {
-      if (!childId || !medicationSentId) {
-        throw new Error('childId và medicationSentId là bắt buộc để cập nhật yêu cầu thuốc');
+      if (!studentId || !medicationSentId) {
+        throw new Error('studentId và medicationSentId là bắt buộc để xóa yêu cầu thuốc');
       }
 
-      console.log(`Đang gọi API cập nhật yêu cầu thuốc ID: ${medicationSentId} cho học sinh ID: ${childId}`);
-      console.log('Dữ liệu cập nhật:', updateData);
+      console.log(`Đang gọi API xóa yêu cầu thuốc ID: ${medicationSentId} cho học sinh ID: ${studentId}`);
       
-      // Gọi API cập nhật yêu cầu thuốc
-      const response = await axiosInstance.put(
-        `/medication-sent/update/${childId}/${medicationSentId}`,
-        updateData
+      // Gọi API xóa yêu cầu thuốc
+      const response = await axiosInstance.delete(
+        `/medication-sent/delete/${studentId}/${medicationSentId}`
       );
       
       // Log response để debug
@@ -171,7 +188,7 @@ const parentApi = {
       
       return response.data;
     } catch (error) {
-      console.error(`Lỗi khi cập nhật yêu cầu thuốc ID ${medicationSentId}:`, error);
+      console.error(`Lỗi khi xóa yêu cầu thuốc ID ${medicationSentId}:`, error);
       throw error;
     }
   },
