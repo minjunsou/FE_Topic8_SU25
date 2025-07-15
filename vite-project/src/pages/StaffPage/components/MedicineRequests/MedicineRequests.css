@@ -2,24 +2,237 @@
   padding: 10px;
 }
 
-.staff-table-container {
-  background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+.medicine-requests .staff-table-container {
+  width: 100%;
+  overflow-x: auto;
 }
 
-.medicine-requests .ant-table-wrapper {
-  padding: 16px;
+.medicine-requests .ant-table {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .medicine-requests .ant-table-thead > tr > th {
-  background-color: #f0f7ff;
+  background-color: #f5f5f5;
+  color: #333;
   font-weight: 600;
 }
 
+.medicine-requests .ant-badge-status-dot {
+  width: 8px;
+  height: 8px;
+}
+
 .medicine-requests .ant-badge-status-text {
+  font-size: 14px;
+}
+
+/* Styles for medicine request status */
+.medicine-requests .ant-badge-status-success .ant-badge-status-text {
+  color: #52c41a;
+}
+
+.medicine-requests .ant-badge-status-error .ant-badge-status-text {
+  color: #f5222d;
+}
+
+.medicine-requests .ant-badge-status-warning .ant-badge-status-text {
+  color: #faad14;
+}
+
+.medicine-requests .ant-badge-status-processing .ant-badge-status-text {
+  color: #1890ff;
+}
+
+.medicine-requests .ant-badge-status-default .ant-badge-status-text {
+  color: #d9d9d9;
+}
+
+/* Loading container styles */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Empty container styles */
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 300px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+}
+
+/* Modal styles */
+.medication-detail-modal .ant-modal-header {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.medication-detail-modal .modal-title {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.medication-detail-modal .modal-icon {
+  margin-right: 10px;
+  color: #1890ff;
+  font-size: 20px;
+}
+
+.medication-detail-modal .ant-modal-body {
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.medication-detail-content .detail-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.medication-detail-content .detail-item {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+}
+
+.medication-detail-content .detail-item .ant-typography-strong {
+  margin-right: 8px;
+  color: #666;
+}
+
+/* New medication timing UI styles */
+.medication-timing-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.medication-timing-card {
+  flex: 1;
+  min-width: 250px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.timing-header {
+  background-color: #1890ff;
+  color: white;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+}
+
+.timing-icon {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.timing-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.medication-items-container {
+  padding: 12px;
+}
+
+.medication-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background-color: #f9f9f9;
+  border-radius: 6px;
+  border-left: 3px solid #1890ff;
+}
+
+.medication-item:last-child {
+  margin-bottom: 0;
+}
+
+.medication-name {
   font-weight: 500;
+  color: #333;
+}
+
+.medication-amount {
+  color: #666;
+  font-weight: 500;
+}
+
+.no-medication {
+  padding: 16px;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .medicine-requests .ant-table {
+    font-size: 12px;
+  }
+  
+  .medication-detail-modal {
+    width: 95% !important;
+    max-width: 95% !important;
+  }
+  
+  .medication-detail-content .detail-item {
+    margin-bottom: 8px;
+  }
+  
+  .medication-timing-card {
+    min-width: 100%;
+  }
+}
+
+/* New styles for dosage items and medication list */
+.dosage-item {
+  border-bottom: 1px dashed #f0f0f0;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.dosage-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.medication-list {
+  margin-left: 16px;
+}
+
+.medication-list ul {
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
+.medication-list li {
+  font-size: 13px;
 }
 
 .medicine-requests .ant-table-row:hover {

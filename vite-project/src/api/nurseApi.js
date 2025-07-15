@@ -32,31 +32,25 @@ const nurseApi = {
 
   /**
    * Lấy danh sách tất cả phụ huynh
-   * @param {Object} params - Tham số truy vấn
-   * @param {number} params.page - Trang hiện tại (mặc định: 0)
-   * @param {number} params.size - Số lượng mục trên mỗi trang (mặc định: 100)
-   * @param {number} params.roleId - ID vai trò (mặc định: 3 - phụ huynh)
-   * @param {string} params.sortBy - Trường để sắp xếp (mặc định: fullName)
-   * @param {string} params.direction - Hướng sắp xếp (mặc định: asc)
    * @returns {Promise} - Promise chứa danh sách phụ huynh
    */
-  getAllParents: async (params = {}) => {
+  getAllParents: async () => {
     try {
-      const defaultParams = {
-        page: 0,
-        size: 100,
-        roleId: 2, // ID vai trò phụ huynh
-        sortBy: 'fullName',
-        direction: 'asc'
-      };
-      
-      const queryParams = { ...defaultParams, ...params };
-      
-      const response = await axiosInstance.get('/v1/accounts', { params: queryParams });
+      console.log('Fetching all parents data');
+      const response = await axiosInstance.get('/v1/accounts', {
+        params: {
+          page: 0,
+          size: 100,
+          roleId: 2,
+          sortBy: 'fullName',
+          direction: 'asc'
+        }
+      });
       
       // Dựa vào cấu trúc response thực tế từ API
       if (response.data && response.data.accounts) {
-        return response.data.accounts || [];
+        console.log(`Found ${response.data.accounts.length} parents`);
+        return response.data.accounts;
       }
       
       return [];
@@ -68,31 +62,25 @@ const nurseApi = {
 
   /**
    * Lấy danh sách tất cả học sinh
-   * @param {Object} params - Tham số truy vấn
-   * @param {number} params.page - Trang hiện tại (mặc định: 0)
-   * @param {number} params.size - Số lượng mục trên mỗi trang (mặc định: 100)
-   * @param {number} params.roleId - ID vai trò (mặc định: 4 - học sinh)
-   * @param {string} params.sortBy - Trường để sắp xếp (mặc định: fullName)
-   * @param {string} params.direction - Hướng sắp xếp (mặc định: asc)
    * @returns {Promise} - Promise chứa danh sách học sinh
    */
-  getAllStudents: async (params = {}) => {
+  getAllStudents: async () => {
     try {
-      const defaultParams = {
-        page: 0,
-        size: 100,
-        roleId: 1, // ID vai trò học sinh
-        sortBy: 'fullName',
-        direction: 'asc'
-      };
-      
-      const queryParams = { ...defaultParams, ...params };
-      
-      const response = await axiosInstance.get('/v1/accounts', { params: queryParams });
+      console.log('Fetching all students data');
+      const response = await axiosInstance.get('/v1/accounts', {
+        params: {
+          page: 0,
+          size: 100,
+          roleId: 1,
+          sortBy: 'fullName',
+          direction: 'asc'
+        }
+      });
       
       // Dựa vào cấu trúc response thực tế từ API
       if (response.data && response.data.accounts) {
-        return response.data.accounts || [];
+        console.log(`Found ${response.data.accounts.length} students`);
+        return response.data.accounts;
       }
       
       return [];
@@ -260,9 +248,25 @@ const nurseApi = {
       const response = await axiosInstance.get('/medication-sent/all-students/active-med-sents');
       console.log('API response:', response);
       
-      // Dựa vào cấu trúc response từ API
-      if (response.data && response.data.medicationSentList) {
-        return response.data.medicationSentList;
+      // Định dạng lại response theo cấu trúc mới từ API
+      if (response.data && Array.isArray(response.data.medicationSentList)) {
+        return response.data.medicationSentList.map(item => ({
+          medSentId: item.medSentId,
+          studentId: item.studentId,
+          parentId: item.parentId,
+          requestDate: item.requestDate,
+          sentAt: item.sentAt,
+          isAccepted: item.isAccepted,
+          dosages: Array.isArray(item.dosages) ? item.dosages.map(dosage => ({
+            id: dosage.id,
+            timingNotes: dosage.timingNotes,
+            medicationItems: Array.isArray(dosage.medicationItems) ? dosage.medicationItems.map(med => ({
+              id: med.id,
+              medicationName: med.medicationName,
+              amount: med.amount
+            })) : []
+          })) : []
+        }));
       }
       
       return response.data || [];
