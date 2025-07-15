@@ -283,7 +283,7 @@ const nurseApi = {
    */
   createHealthCheckNotice: async (healthCheckData) => {
     try {
-      const response = await axiosInstance.post('/v1/health-check-notices', healthCheckData);
+      const response = await axiosInstance.post('/v1/health-check-notices/create', healthCheckData);
       return response.data;
     } catch (error) {
       console.error('Lỗi khi tạo thông báo kiểm tra sức khỏe:', error);
@@ -293,13 +293,13 @@ const nurseApi = {
 
   /**
    * Lấy danh sách thông báo kiểm tra sức khỏe
-   * @param {Object} params - Tham số truy vấn
    * @returns {Promise} - Promise chứa danh sách thông báo
    */
-  getAllHealthCheckNotices: async (params = {}) => {
+  getAllHealthCheckNotices: async () => {
     try {
-      const response = await axiosInstance.get('/v1/health-check-notices', { params });
-      return response.data.data || [];
+      const response = await axiosInstance.get('/v1/health-check-notices/getAll');
+      // The response format is { time_stamp, data: [...notices] }
+      return response.data;
     } catch (error) {
       console.error('Lỗi khi lấy danh sách thông báo kiểm tra sức khỏe:', error);
       throw error;
@@ -338,14 +338,15 @@ const nurseApi = {
   },
 
   /**
-   * Lấy danh sách xác nhận kiểm tra sức khỏe
+   * Lấy danh sách xác nhận kiểm tra sức khỏe cho một thông báo
    * @param {number} noticeId - ID của thông báo kiểm tra sức khỏe
    * @returns {Promise} - Promise chứa danh sách xác nhận
    */
   getHealthCheckConfirmations: async (noticeId) => {
     try {
-      const response = await axiosInstance.get(`/v1/health-check-notices/${noticeId}/confirmations`);
-      return response.data.data || [];
+      const response = await axiosInstance.get(`/v1/health-check-confirmations/getByNotice/${noticeId}`);
+      // The response format might be { time_stamp, data: [...confirmations] }
+      return response.data;
     } catch (error) {
       console.error(`Lỗi khi lấy danh sách xác nhận kiểm tra sức khỏe cho thông báo ID ${noticeId}:`, error);
       throw error;
@@ -354,15 +355,43 @@ const nurseApi = {
 
   /**
    * Gửi kết quả kiểm tra sức khỏe cho học sinh
+   * @param {string} studentId - ID của học sinh
+   * @param {string} nurseId - ID của y tá
    * @param {Object} healthCheckResult - Kết quả kiểm tra sức khỏe
    * @returns {Promise} - Promise chứa kết quả gửi
    */
-  submitHealthCheckResult: async (healthCheckResult) => {
+  submitHealthCheckResult: async (studentId, nurseId, healthCheckResult) => {
     try {
-      const response = await axiosInstance.post('/v1/health-check-records', healthCheckResult);
+      // Log detailed request information for debugging
+      const endpoint = `/v1/health-check-records/create?studentId=${studentId}&nurseId=${nurseId}`;
+      console.log('Calling API endpoint:', endpoint);
+      console.log('Request payload:', JSON.stringify(healthCheckResult, null, 2));
+      console.log('Student ID:', studentId);
+      console.log('Nurse ID:', nurseId);
+      
+      // Make the API call
+      const response = await axiosInstance.post(endpoint, healthCheckResult);
+      console.log('Health check result API response:', response);
       return response.data;
     } catch (error) {
       console.error('Lỗi khi gửi kết quả kiểm tra sức khỏe:', error);
+      
+      // Enhanced error logging
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('Error request:', error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error message:', error.message);
+      }
+      console.error('Error config:', error.config);
+      
       throw error;
     }
   },
@@ -374,8 +403,9 @@ const nurseApi = {
    */
   getStudentHealthCheckHistory: async (studentId) => {
     try {
-      const response = await axiosInstance.get(`/v1/students/${studentId}/health-check-records`);
-      return response.data.data || [];
+      const response = await axiosInstance.get(`/v1/health-check-records/getByStudent/${studentId}`);
+      // The response format might be { time_stamp, data: [...records] }
+      return response.data;
     } catch (error) {
       console.error(`Lỗi khi lấy lịch sử kiểm tra sức khỏe cho học sinh ID ${studentId}:`, error);
       throw error;
@@ -738,6 +768,70 @@ const nurseApi = {
       throw error;
     }
   },
+
+  createMedicalProfile: async (childId, medicalData, recordId) => {
+    try {
+      if (!childId) {
+        throw new Error('childId là bắt buộc để tạo hồ sơ y tế');
+      }
+
+      console.log(`Đang gọi API tạo hồ sơ y tế cho học sinh ID: ${childId}`);
+      console.log('Dữ liệu hồ sơ y tế:', JSON.stringify(medicalData, null, 2));
+      
+      // Xây dựng endpoint dựa trên việc có recordId hay không
+      let endpoint;
+      if (recordId) {
+        endpoint = `/medicalProfiles/create/${childId}/${recordId}`;
+      } else {
+        endpoint = `/medicalProfiles/create/${childId}/${recordId}`;
+      }
+      
+      console.log('Medical profile API endpoint:', endpoint);
+      
+      // Gọi API tạo hồ sơ y tế
+      const response = await axiosInstance.post(endpoint, medicalData);
+      
+      // Log response để debug
+      console.log('Medical profile API response:', response);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi tạo hồ sơ y tế cho học sinh ID ${childId}:`, error);
+      
+      // Enhanced error logging
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('Error request:', error.request);
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('Error message:', error.message);
+      }
+      console.error('Error config:', error.config);
+      
+      throw error;
+    }
+  },
+  
+  /**
+   * Lấy tất cả hồ sơ sức khỏe của học sinh
+   * @param {string} studentId - ID của học sinh
+   * @returns {Promise} - Promise chứa danh sách hồ sơ sức khỏe
+   */
+  getStudentMedicalProfiles: async (studentId) => {
+    try {
+      const response = await axiosInstance.get(`/medicalProfiles/all/${studentId}`);
+      return response.data.medicalProfiles || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy hồ sơ sức khỏe cho học sinh ID ${studentId}:`, error);
+      throw error;
+    }
+  }
 
 };
 
