@@ -121,6 +121,13 @@ export default function Classes() {
           form={form}
           layout="vertical"
         >
+          <Form.Item name="grade" label="Khối" rules={[{ required: true, message: 'Bắt buộc' }]}> 
+            <Select placeholder="Chọn khối">
+              {gradeOptions.map(g => (
+                <Select.Option key={g.value} value={parseInt(g.value, 10)}>{g.label}</Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
           <Form.Item name="className" label="Tên lớp" rules={[{ required: true, message: 'Bắt buộc' }]}><Input /></Form.Item>
           <Form.Item name="description" label="Mô tả"><Input /></Form.Item>
           <Form.Item name="schoolYear" label="Năm học" rules={[{ required: true, message: 'Bắt buộc' }]}><InputNumber min={2000} max={2100} style={{ width: '100%' }} /></Form.Item>

@@ -73,21 +73,21 @@ export const searchMedications = (name) => axios.get('/v1/medications/search', {
  * @param {Object} data - { name, description, quantity, quantityType, medicationType, expiryDate }
  * @returns {Promise<MedicationResponse>}
  */
-export const updateMedication = (id, data) => axios.put(`/api/v1/medications/${id}`, data);
+export const updateMedication = (id, data) => axios.put(`/v1/medications/${id}`, data);
 
 /**
  * Xóa thuốc
  * @param {number} id
  * @returns {Promise<{message: string}>}
  */
-export const deleteMedication = (id) => axios.delete(`/api/v1/medications/${id}`);
+export const deleteMedication = (id) => axios.delete(`/v1/medications/${id}`);
 
 /**
  * Lấy danh sách thuốc sắp hết (low stock)
  * @param {number} threshold - ngưỡng số lượng (mặc định 10)
  * @returns {Promise<MedicationResponse[]>}
  */
-export const getLowStockMedications = (threshold = 10) => axios.get('/api/v1/medications/low-stock', { params: { threshold } });
+export const getLowStockMedications = (threshold = 10) => axios.get('/v1/medications/low-stock', { params: { threshold } });
 
 // ===================== HEALTH EVENT =====================
 /**
@@ -104,6 +104,21 @@ export const createHealthEvent = (studentId, nurseId, data) => axios.post(`/v1/h
  * @returns {Promise<HealthEventResponse[]>}
  */
 export const getAllHealthEvents = () => axios.get('/v1/healthEvents/get-all');
+
+/**
+ * Cập nhật sự kiện sức khỏe
+ * @param {string|number} eventId
+ * @param {Object} data - HealthEventRequest
+ * @returns {Promise<HealthEventResponse>}
+ */
+export const updateHealthEvent = (eventId, data) => axios.put(`/v1/healthEvents/update/${eventId}`, data);
+
+/**
+ * Xóa sự kiện sức khỏe
+ * @param {string|number} eventId
+ * @returns {Promise<{message: string}>}
+ */
+export const deleteHealthEvent = (eventId) => axios.delete(`/v1/healthEvents/delete/${eventId}`);
 
 // ===================== HEALTH CHECK RECORD =====================
 /**
