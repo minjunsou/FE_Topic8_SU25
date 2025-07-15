@@ -111,6 +111,15 @@ const StaffTabs = ({
           } 
           key="change-password" 
         />
+        <TabPane 
+          tab={
+            <span>
+              <KeyOutlined />
+              Vaccine
+            </span>
+          } 
+          key="vaccine" 
+        />
       </Tabs>
     </div>
   );

@@ -411,6 +411,364 @@ const nurseApi = {
       throw error;
     }
   },
+
+  /**
+   * Vaccination Notice APIs
+   */
+  getAllVaccinationNotices: async () => {
+    try {
+      const response = await axiosInstance.get('/v1/vaccination-notices');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách thông báo tiêm chủng:', error);
+      throw error;
+    }
+  },
+
+  getVaccinationNoticeById: async (id) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-notices/${id}`);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Lỗi khi lấy thông báo tiêm chủng ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  createVaccinationNotice: async (noticeData, vaccineBatchId) => {
+    try {
+      const response = await axiosInstance.post(`/v1/vaccination-notices?vaccineBatchId=${vaccineBatchId}`, noticeData);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi tạo thông báo tiêm chủng:', error);
+      throw error;
+    }
+  },
+
+  updateVaccinationNotice: async (id, noticeData) => {
+    try {
+      const response = await axiosInstance.put(`/v1/vaccination-notices/${id}`, noticeData);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi cập nhật thông báo tiêm chủng ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  deleteVaccinationNotice: async (id) => {
+    try {
+      const response = await axiosInstance.delete(`/v1/vaccination-notices/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi xóa thông báo tiêm chủng ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  searchVaccinationNotices: async (vaccineName) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-notices/search?vaccineName=${encodeURIComponent(vaccineName)}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi khi tìm kiếm thông báo tiêm chủng:', error);
+      throw error;
+    }
+  },
+
+  getTodayVaccinationNotices: async () => {
+    try {
+      const response = await axiosInstance.get('/v1/vaccination-notices/today');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy thông báo tiêm chủng hôm nay:', error);
+      throw error;
+    }
+  },
+
+  getActiveVaccinationNotices: async () => {
+    try {
+      const response = await axiosInstance.get('/v1/vaccination-notices/active');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy thông báo tiêm chủng sắp tới:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lọc thông báo tiêm chủng theo vaccine, batch, ngày tiêm, exact
+   * @param {Object} params - { vaccineId, vaccineBatchId, vaccinationDate, exact }
+   * @returns {Promise}
+   */
+  filterVaccinationNotices: async (params = {}) => {
+    try {
+      const query = new URLSearchParams();
+      if (params.vaccineId) query.append('vaccineId', params.vaccineId);
+      if (params.vaccineBatchId) query.append('vaccineBatchId', params.vaccineBatchId);
+      if (params.vaccinationDate) query.append('vaccinationDate', params.vaccinationDate); // yyyy-MM-dd
+      if (params.exact !== undefined) query.append('exact', params.exact);
+      const response = await axiosInstance.get(`/v1/vaccination-notices/filter?${query.toString()}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lọc thông báo tiêm chủng:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Vaccination Confirmation APIs 
+   */
+  getVaccinationConfirmationById: async (id) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/${id}`);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Lỗi khi lấy xác nhận tiêm chủng ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  getAllVaccinationConfirmations: async () => {
+    try {
+      const response = await axiosInstance.get('/v1/vaccination-confirmations');
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách xác nhận tiêm chủng:', error);
+      throw error;
+    }
+  },
+
+  getVaccinationConfirmationsByStudent: async (studentId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/student/${studentId}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy xác nhận tiêm chủng theo học sinh ID ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  getVaccinationConfirmationsByParent: async (parentId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/parent/${parentId}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy xác nhận tiêm chủng theo phụ huynh ID ${parentId}:`, error);
+      throw error;
+    }
+  },
+
+  getVaccinationConfirmationsByNotice: async (vaccineNoticeId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/notice/${vaccineNoticeId}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy xác nhận tiêm chủng theo thông báo ID ${vaccineNoticeId}:`, error);
+      throw error;
+    }
+  },
+
+  getVaccinationConfirmationsByStatus: async (status) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/status/${status}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy xác nhận tiêm chủng theo trạng thái ${status}:`, error);
+      throw error;
+    }
+  },
+
+  updateVaccinationConfirmation: async (id, confirmationData) => {
+    try {
+      const response = await axiosInstance.put(`/v1/vaccination-confirmations/${id}`, confirmationData);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi cập nhật xác nhận tiêm chủng ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  deleteVaccinationConfirmation: async (id) => {
+    try {
+      const response = await axiosInstance.delete(`/v1/vaccination-confirmations/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi xóa xác nhận tiêm chủng ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  getConfirmedStudentsByNotice: async (vaccineNoticeId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/notice/${vaccineNoticeId}/students/confirmed`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy danh sách học sinh đã xác nhận tiêm theo noticeId ${vaccineNoticeId}:`, error);
+      throw error;
+    }
+  },
+
+  getVaccinationConfirmationsByStatusAndParent: async (status, parentId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/status`, { params: { status, parentId } });
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy xác nhận tiêm chủng theo trạng thái ${status} và parentId ${parentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Xác nhận tất cả xác nhận tiêm chủng (PUT /api/v1/vaccination-confirmations/confirm-all)
+   * @param {Array} confirmationIds - Mảng các ID xác nhận cần xác nhận
+   * @returns {Promise}
+   */
+  confirmAllVaccinationConfirmations: async (confirmationIds) => {
+    try {
+      const response = await axiosInstance.put('/v1/vaccination-confirmations/confirm-all', confirmationIds);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi xác nhận tất cả xác nhận tiêm chủng:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Vaccine APIs
+   */
+  getAllVaccines: async () => {
+    try {
+      const response = await axiosInstance.get('/all-vaccines');
+      return response.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách vaccine:', error);
+      throw error;
+    }
+  },
+
+  createVaccine: async (vaccineData) => {
+    try {
+      const response = await axiosInstance.post('/create-vaccine', vaccineData);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi tạo vaccine:', error);
+      throw error;
+    }
+  },
+
+  createVaccineBatch: async (vaccineId, batchData) => {
+    try {
+      const response = await axiosInstance.post(`/${vaccineId}/create-vaccine-batch`, batchData);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi tạo lô vaccine cho vaccineId ${vaccineId}:`, error);
+      throw error;
+    }
+  },
+
+  getVaccineBatchesByVaccineId: async (vaccineId) => {
+    try {
+      const response = await axiosInstance.get(`/vaccines/${vaccineId}/batches`);
+      return response.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy danh sách lô vaccine cho vaccineId ${vaccineId}:`, error);
+      throw error;
+    }
+  },
+
+  reduceVaccineBatchQuantity: async (batchId, quantityToReduce) => {
+    try {
+      const response = await axiosInstance.patch(`/vaccine-batches/${batchId}/reduce`, { quantityToReduce });
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi giảm số lượng lô vaccine batchId ${batchId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Vaccination Record APIs
+   */
+  createVaccinationRecord: async (recordData, nurseId) => {
+    try {
+      const response = await axiosInstance.post(`/v1/vaccination-records`, recordData, { params: { nurseId } });
+      return response.data.data;
+    } catch (error) {
+      console.error('Lỗi khi tạo vaccination record:', error);
+      throw error;
+    }
+  },
+
+  getVaccinationRecordById: async (id) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-records/${id}`);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Lỗi khi lấy vaccination record ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  getAllVaccinationRecords: async () => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-records`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách vaccination records:', error);
+      throw error;
+    }
+  },
+
+  getVaccinationRecordsByStudent: async (studentId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-records/student/${studentId}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy vaccination records cho student ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  getVaccinationRecordsByNurse: async (nurseId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-records/nurse/${nurseId}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy vaccination records cho nurse ${nurseId}:`, error);
+      throw error;
+    }
+  },
+
+  getVaccinationRecordsByNotice: async (vaccineNoticeId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-records/notice/${vaccineNoticeId}`);
+      return response.data.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy vaccination records cho notice ${vaccineNoticeId}:`, error);
+      throw error;
+    }
+  },
+
+  updateVaccinationRecord: async (id, recordData) => {
+    try {
+      const response = await axiosInstance.put(`/v1/vaccination-records/${id}`, recordData);
+      return response.data.data;
+    } catch (error) {
+      console.error(`Lỗi khi cập nhật vaccination record ID ${id}:`, error);
+      throw error;
+    }
+  },
+
+  deleteVaccinationRecord: async (id) => {
+    try {
+      const response = await axiosInstance.delete(`/v1/vaccination-records/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi xóa vaccination record ID ${id}:`, error);
+      throw error;
+    }
+  },
+
   createMedicalProfile: async (childId, medicalData, recordId) => {
     try {
       if (!childId) {
@@ -474,6 +832,7 @@ const nurseApi = {
       throw error;
     }
   }
+
 };
 
 export default nurseApi;
