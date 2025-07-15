@@ -61,11 +61,17 @@
 }
 
 .stat-card {
-  padding: 12px;
-  border-radius: 6px;
+  padding: 16px;
+  border-radius: 8px;
   flex: 1;
   text-align: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .stat-card.confirmed {
@@ -84,7 +90,7 @@
 }
 
 .stat-number {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: bold;
   margin: 4px 0;
 }
@@ -115,4 +121,164 @@
   border-radius: 4px;
   min-height: 120px;
   margin-top: 8px;
+}
+
+.required-field {
+  color: #ff4d4f;
+  margin-right: 4px;
+}
+
+/* Styles for student health records tab */
+.student-health-records {
+  margin-top: 16px;
+}
+
+.search-container {
+  margin-bottom: 20px;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.search-container:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-container .ant-input-search .ant-input {
+  border-radius: 4px;
+}
+
+.search-container .ant-input-search .ant-input:focus,
+.search-container .ant-input-search .ant-input-focused {
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.selected-student-info {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background-color: #e6f7ff;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border-left: 3px solid #1890ff;
+}
+
+@media (max-width: 768px) {
+  .selected-student-info {
+    margin-top: 8px;
+  }
+}
+
+.records-container {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+/* Styles for health record details modal */
+.health-record-details {
+  padding: 8px;
+}
+
+.detail-card {
+  margin-bottom: 16px;
+}
+
+.detail-card .ant-card-head {
+  padding: 0 16px;
+  min-height: 40px;
+}
+
+.detail-card .ant-card-head-title {
+  padding: 8px 0;
+  font-size: 16px;
+}
+
+.detail-card .ant-card-body {
+  padding: 16px;
+}
+
+.detail-card p {
+  margin-bottom: 8px;
+}
+
+.detail-card p:last-child {
+  margin-bottom: 0;
+}
+
+.medical-profiles-section {
+  margin-bottom: 24px;
+}
+
+.medical-profiles-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.medical-profile-card {
+  height: 100%;
+  transition: all 0.3s;
+}
+
+.medical-profile-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.medical-profile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.profile-date-badge {
+  margin-left: auto;
+}
+
+.health-check-records-section {
+  margin-top: 24px;
+}
+
+/* Form card styles */
+.form-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.form-card .ant-card-head {
+  background-color: #f5f5f5;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.form-card .ant-card-head-title {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.form-card .ant-form-item-label {
+  font-weight: 500;
+}
+
+.form-card .required-field {
+  color: #ff4d4f;
+  margin-right: 4px;
+}
+
+@media (max-width: 768px) {
+  .medical-profiles-list {
+    grid-template-columns: 1fr;
+  }
 } 
