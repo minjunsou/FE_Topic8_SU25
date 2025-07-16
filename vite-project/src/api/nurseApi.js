@@ -42,7 +42,7 @@ const nurseApi = {
       
       const today = new Date();
       // Format today as YYYY-MM-DD for comparison
-      const todayStr = today.toISOString().split('T')[0];
+      // const todayStr = today.toISOString().split('T')[0];
       
       // Filter medications where expiryDate is earlier than today
       const expiredMedications = allMedications.filter(med => {
@@ -314,12 +314,39 @@ const nurseApi = {
         throw new Error('medicationId là bắt buộc để xóa thuốc');
       }
       
-      console.log(`Gọi API DELETE /v1/medications/${medicationId}`);
+      // Sử dụng endpoint http://localhost:8080/api/v1/medications/{medicationId}
+      const endpoint = `/v1/medications/${medicationId}`;
+      console.log(`Gọi API DELETE ${endpoint}`);
       
-      const response = await axiosInstance.delete(`/v1/medications/${medicationId}`);
-      return response.data;
+      // Thêm timeout để tránh lỗi mạng
+      const response = await axiosInstance.delete(endpoint, {
+        timeout: 10000 // 10 seconds timeout
+      });
+      
+      // Log response để debug
+      console.log(`API response for deleting medication ${medicationId}:`, response);
+      
+      // Kiểm tra response
+      if (response && response.status >= 200 && response.status < 300) {
+        return response.data || { success: true };
+      }
+      
+      // Nếu không có response hoặc status code không phải 2xx
+      throw new Error(`Unsuccessful response: ${response?.status || 'No response'}`);
     } catch (error) {
       console.error(`Lỗi khi xóa thuốc ID ${medicationId}:`, error);
+      
+      // Log chi tiết lỗi
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      
       throw error;
     }
   },
