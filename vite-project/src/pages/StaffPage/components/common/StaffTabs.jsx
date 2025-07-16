@@ -17,7 +17,6 @@ const StaffTabs = ({
   activeTab, 
   handleTabChange, 
   medicineRequests, 
-  healthDeclarations,
   medicalIncidents
 }) => {
   return (
@@ -71,19 +70,7 @@ const StaffTabs = ({
           } 
           key="medicine-supplies" 
         />
-        <TabPane 
-          tab={
-            <span>
-              <FileTextOutlined />
-              Khai báo y tế
-              <Badge 
-                count={healthDeclarations.filter(d => d.status === 'new').length} 
-                style={{ marginLeft: 8 }}
-              />
-            </span>
-          } 
-          key="health-declarations" 
-        />
+        
         <TabPane 
           tab={
             <span>

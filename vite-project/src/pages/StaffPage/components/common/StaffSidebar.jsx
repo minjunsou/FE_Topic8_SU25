@@ -21,11 +21,9 @@ const StaffSidebar = ({
   setCollapsed, 
   getSelectedKey, 
   onMenuClick, 
-  onNavigate,
   onLogout,
   unreadIncidents,
-  pendingRequests,
-  unreadDeclarations
+  pendingRequests
 }) => {
   const menuItems = [
       {
@@ -68,20 +66,20 @@ const StaffSidebar = ({
         label: 'Thuốc & Vật tư',
         onClick: () => onMenuClick('medicine-supplies')
       },
-      {
-        key: 'health-declarations',
-        icon: <FileTextOutlined />,
-        label: (
-          <span>
-            Khai báo y tế
-            <Badge 
-              count={unreadDeclarations} 
-              style={{ marginLeft: 8 }}
-            />
-          </span>
-        ),
-        onClick: () => onMenuClick('health-declarations')
-      },
+      // {
+      //   key: 'health-declarations',
+      //   icon: <FileTextOutlined />,
+      //   label: (
+      //     <span>
+      //       Khai báo y tế
+      //       <Badge 
+      //         count={unreadDeclarations} 
+      //         style={{ marginLeft: 8 }}
+      //       />
+      //     </span>
+      //   ),
+      //   onClick: () => onMenuClick('health-declarations')
+      // },
       {
         key: 'health-checks',
         icon: <ExperimentOutlined />,
