@@ -31,6 +31,107 @@ const nurseApi = {
   },
 
   /**
+   * Lấy danh sách thuốc đã hết hạn
+   * @returns {Promise} - Promise chứa danh sách thuốc đã hết hạn
+   */
+  getExpiredMedications: async () => {
+    try {
+      // Lấy tất cả thuốc và lọc ra những thuốc đã hết hạn
+      const response = await axiosInstance.get('/v1/medications');
+      const allMedications = response.data.data || [];
+      
+      const today = new Date();
+      // Format today as YYYY-MM-DD for comparison
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Filter medications where expiryDate is earlier than today
+      const expiredMedications = allMedications.filter(med => {
+        if (!med.expiryDate) return false;
+        
+        // Handle different date formats
+        let expiryDate;
+        if (Array.isArray(med.expiryDate)) {
+          // Handle [year, month, day] format
+          expiryDate = new Date(med.expiryDate[0], med.expiryDate[1] - 1, med.expiryDate[2]);
+        } else {
+          // Handle string format
+          expiryDate = new Date(med.expiryDate);
+        }
+        
+        return expiryDate < today;
+      });
+      
+      console.log(`Found ${expiredMedications.length} expired medications`);
+      return expiredMedications;
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách thuốc hết hạn:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy số liệu tổng quan về thuốc
+   * @returns {Promise} - Promise chứa số liệu tổng quan
+   */
+  getMedicationStats: async () => {
+    try {
+      const allMeds = await nurseApi.getAllMedications();
+      const lowStockMeds = await nurseApi.getLowStockMedications(5);
+      
+      // Get expired medications
+      const today = new Date();
+      const expiredMeds = allMeds.filter(med => {
+        if (!med.expiryDate) return false;
+        
+        // Handle different date formats
+        let expiryDate;
+        if (Array.isArray(med.expiryDate)) {
+          // Handle [year, month, day] format
+          expiryDate = new Date(med.expiryDate[0], med.expiryDate[1] - 1, med.expiryDate[2]);
+        } else {
+          // Handle string format
+          expiryDate = new Date(med.expiryDate);
+        }
+        
+        return expiryDate < today;
+      });
+      
+      // Calculate medications expiring soon (within 30 days)
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+      
+      const expiringSoonMeds = allMeds.filter(med => {
+        if (!med.expiryDate) return false;
+        
+        // Handle different date formats
+        let expiryDate;
+        if (Array.isArray(med.expiryDate)) {
+          // Handle [year, month, day] format
+          expiryDate = new Date(med.expiryDate[0], med.expiryDate[1] - 1, med.expiryDate[2]);
+        } else {
+          // Handle string format
+          expiryDate = new Date(med.expiryDate);
+        }
+        
+        return expiryDate >= today && expiryDate <= thirtyDaysFromNow;
+      });
+      
+      return {
+        total: allMeds.length,
+        lowStock: lowStockMeds.length,
+        expired: expiredMeds.length,
+        expiringSoon: expiringSoonMeds.length,
+        expiredMedications: expiredMeds,
+        lowStockMedications: lowStockMeds,
+        expiringSoonMedications: expiringSoonMeds
+      };
+    } catch (error) {
+      console.error('Lỗi khi lấy số liệu tổng quan về thuốc:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Lấy danh sách tất cả phụ huynh
    * @returns {Promise} - Promise chứa danh sách phụ huynh
    */
@@ -366,15 +467,35 @@ const nurseApi = {
     try {
       // Log detailed request information for debugging
       const endpoint = `/v1/health-check-records/create?studentId=${studentId}&nurseId=${nurseId}`;
+      
+      // Create payload with exact field order as per Swagger docs
+      const payload = JSON.stringify({
+        healthCheckNoticeId: healthCheckResult.healthCheckNoticeId,
+        result: healthCheckResult.result,
+        date: healthCheckResult.date
+      });
+      
       console.log('Calling API endpoint:', endpoint);
-      console.log('Request payload:', JSON.stringify(healthCheckResult, null, 2));
+      console.log('Request payload:', payload);
       console.log('Student ID:', studentId);
       console.log('Nurse ID:', nurseId);
       
-      // Make the API call
-      const response = await axiosInstance.post(endpoint, healthCheckResult);
+      // Make the API call with specific content-type header
+      const response = await axiosInstance.post(endpoint, payload, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       console.log('Health check result API response:', response);
-      return response.data;
+
+      // Check if response is successful, even if it doesn't have data
+      if (response && response.status >= 200 && response.status < 300) {
+        // Success - return whatever data is available
+        return response.data || { success: true };
+      }
+      
+      // If we get here, the response is not successful
+      throw new Error(`Unsuccessful response: ${response.status}`);
     } catch (error) {
       console.error('Lỗi khi gửi kết quả kiểm tra sức khỏe:', error);
       
@@ -785,7 +906,7 @@ const nurseApi = {
       if (recordId) {
         endpoint = `/medicalProfiles/create/${childId}/${recordId}`;
       } else {
-        endpoint = `/medicalProfiles/create/${childId}/${recordId}`;
+        endpoint = `/medicalProfiles/create/${childId}/1`; // Default to recordId 1 if not provided
       }
       
       console.log('Medical profile API endpoint:', endpoint);
@@ -796,7 +917,14 @@ const nurseApi = {
       // Log response để debug
       console.log('Medical profile API response:', response);
       
-      return response.data;
+      // Check if response is successful, even if it doesn't have data
+      if (response && response.status >= 200 && response.status < 300) {
+        // Success - return whatever data is available
+        return response.data || { success: true };
+      }
+      
+      // If we get here, the response is not successful
+      throw new Error(`Unsuccessful response: ${response.status}`);
     } catch (error) {
       console.error(`Lỗi khi tạo hồ sơ y tế cho học sinh ID ${childId}:`, error);
       

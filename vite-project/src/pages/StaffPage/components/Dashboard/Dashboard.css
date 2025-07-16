@@ -79,6 +79,16 @@
   color: #ff4d4f;
 }
 
+.icon.expired {
+  background-color: #fff2e8;
+  color: #fa8c16;
+}
+
+.icon.low-stock {
+  background-color: #fffbe6;
+  color: #faad14;
+}
+
 .stat-info {
   flex: 1;
   display: flex;

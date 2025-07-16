@@ -78,67 +78,35 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
         return;
       }
       
-      // Lấy danh sách tất cả thông báo kiểm tra sức khỏe
-      const allHealthCheckNotices = await parentApi.getAllHealthCheckNotices();
-      console.log('All health check notices:', allHealthCheckNotices);
+      // Sử dụng API mới để lấy thông báo kiểm tra sức khỏe cho tất cả con
+      const healthCheckNotifications = await parentApi.getHealthCheckNotificationsForAllChildren(parentId);
+      console.log('Health check notifications for all children:', healthCheckNotifications);
       
-      // Lấy danh sách xác nhận kiểm tra sức khỏe của phụ huynh
-      const healthCheckConfirmations = await parentApi.getHealthCheckConfirmationsByParent(parentId);
-      console.log('Health check confirmations:', healthCheckConfirmations);
-      
-      // Tạo map các xác nhận theo checkNoticeId để dễ dàng kiểm tra trạng thái
-      const confirmationsMap = {};
-      healthCheckConfirmations.forEach(confirmation => {
-        confirmationsMap[confirmation.checkNoticeId] = confirmation;
-      });
-      
-      // Chuyển đổi tất cả thông báo kiểm tra sức khỏe thành thông báo
-      const healthCheckNotifications = allHealthCheckNotices.map(notice => {
-        // Format ngày thông báo
-        const formatDate = (dateArray) => {
-          if (Array.isArray(dateArray) && dateArray.length >= 3) {
-            return `${dateArray[2]}/${dateArray[1]}/${dateArray[0]}`;
-          }
-          return 'Chưa xác định';
-        };
-        
-        const noticeDate = formatDate(notice.date);
-        
-        // Kiểm tra xem phụ huynh đã xác nhận thông báo này chưa
-        const confirmation = confirmationsMap[notice.checkNoticeId];
+      // Chuyển đổi các thông báo thành định dạng hiển thị
+      const formattedNotifications = healthCheckNotifications.map(notification => {
         let content = '';
-        let status = 'pending';
         
-        if (confirmation) {
-          if (confirmation.status === 'CONFIRMED') {
-            content = `Bạn đã xác nhận tham gia kiểm tra sức khỏe "${notice.title}" vào ngày ${noticeDate}`;
-            status = 'confirmed';
-          } else if (confirmation.status === 'DECLINED') {
-            content = `Bạn đã từ chối tham gia kiểm tra sức khỏe "${notice.title}" vào ngày ${noticeDate}`;
-            status = 'declined';
-          }
+        // Tạo nội dung thông báo dựa trên trạng thái
+        if (notification.status === 'confirmed') {
+          content = `${notification.studentName}: Bạn đã xác nhận tham gia kiểm tra sức khỏe "${notification.title}" vào ngày ${notification.formattedDate}`;
+        } else if (notification.status === 'declined' || notification.status === 'cancelled') {
+          // Không hiển thị thông báo đã từ chối/hủy
+          return null;
         } else {
-          content = `Nhà trường tổ chức kiểm tra sức khỏe "${notice.title}" vào ngày ${noticeDate}. Vui lòng xác nhận tham gia.`;
+          content = `${notification.studentName}: Nhà trường tổ chức kiểm tra sức khỏe "${notification.title}" vào ngày ${notification.formattedDate}. Vui lòng xác nhận tham gia.`;
         }
         
         return {
-          id: `health-check-${notice.checkNoticeId}`,
-          title: notice.title,
-          content: content || notice.description,
-          type: 'HEALTH_CHECK',
-          createdAt: notice.createdAt && notice.createdAt.length >= 3 
-            ? new Date(notice.createdAt[0], notice.createdAt[1] - 1, notice.createdAt[2]).toISOString()
-            : new Date().toISOString(),
-          isRead: confirmation ? true : false,
-          sourceId: notice.checkNoticeId,
-          status: status,
-          description: notice.description,
-          date: notice.date
+          ...notification,
+          content: content
         };
       });
       
-      // Sắp xếp thông báo theo thời gian tạo, mới nhất lên đầu
-      const sortedNotifications = healthCheckNotifications.sort((a, b) => 
+      // Lọc bỏ các thông báo null (từ chối/hủy)
+      const filteredNotifications = formattedNotifications.filter(notification => notification !== null);
+
+      // Sắp xếp thông báo theo thời gian, mới nhất lên đầu
+      const sortedNotifications = filteredNotifications.sort((a, b) => 
         new Date(b.createdAt) - new Date(a.createdAt)
       );
       
@@ -292,13 +260,16 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
       if (notification.type === 'HEALTH_CHECK') {
         message.success('Đang chuyển đến trang kiểm tra sức khỏe');
         
-        // Lưu thông tin thông báo đã chọn vào localStorage để trang health-check có thể sử dụng
+        // Lưu thông tin thông báo đã chọn và thông tin học sinh vào localStorage để trang health-check có thể sử dụng
         localStorage.setItem('selectedHealthCheckNotice', JSON.stringify({
-          checkNoticeId: notification.sourceId,
+          checkNoticeId: notification.checkNoticeId,
           title: notification.title,
           description: notification.description,
           date: notification.date,
-          status: notification.status
+          status: notification.status,
+          studentId: notification.studentId,
+          studentName: notification.studentName,
+          className: notification.className
         }));
         
         navigate('/health-check');

@@ -304,13 +304,13 @@ const parentApi = {
  * @param {number} noticeId - ID của thông báo kiểm tra sức khỏe
  * @param {string} studentId - ID của học sinh
  * @param {string} parentId - ID của phụ huynh
- * @param {string} status - Trạng thái xác nhận (CONFIRMED/DECLINED)
+ * @param {string} status - Trạng thái xác nhận (CONFIRMED/CANCELLED)
  * @returns {Promise} - Promise chứa kết quả xác nhận
  */
 confirmHealthCheck: async (noticeId, studentId, parentId, status) => {
   try {
     const requestBody = {
-      checkNoticeId: noticeId,
+      healthCheckNoticeId: noticeId,
       studentId: studentId,
       parentId: parentId,
       status: status
@@ -790,6 +790,294 @@ confirmAllVaccinationConfirmations: async (confirmationIds) => {
   } catch (error) {
     console.error('Lỗi khi xác nhận tất cả xác nhận tiêm chủng:', error);
     throw error;
+  }
+},
+
+/**
+ * Lấy tất cả thông báo kiểm tra sức khỏe cho tất cả con của một phụ huynh
+ * @param {string} parentId - ID của phụ huynh
+ * @returns {Promise} - Promise chứa danh sách thông báo kiểm tra sức khỏe với thông tin chi tiết
+ */
+getHealthCheckNotificationsForAllChildren: async (parentId) => {
+  try {
+    if (!parentId) {
+      throw new Error('parentId là bắt buộc để lấy thông báo kiểm tra sức khỏe');
+    }
+    
+    console.log(`Đang gọi API để lấy thông báo kiểm tra sức khỏe cho tất cả con của phụ huynh ID: ${parentId}`);
+    
+    // Bước 1: Lấy danh sách tất cả con của phụ huynh
+    const children = await parentApi.getParentChildren(parentId);
+    console.log('Danh sách con của phụ huynh:', children);
+    
+    if (!children || children.length === 0) {
+      return [];
+    }
+    
+    // Bước 2: Tạo danh sách ID của tất cả con
+    const childrenIds = children.map(child => child.childId || child.accountId || child.studentId);
+    console.log('ID của tất cả con:', childrenIds);
+    
+    // Bước 3: Lấy các xác nhận kiểm tra sức khỏe cho từng con
+    const allConfirmations = [];
+    
+    await Promise.all(childrenIds.map(async (studentId) => {
+      try {
+        const studentConfirmations = await parentApi.getHealthCheckConfirmationsByStudent(studentId);
+        console.log(`Xác nhận kiểm tra sức khỏe cho học sinh ID ${studentId}:`, studentConfirmations);
+        
+        // Thêm thông tin học sinh vào mỗi xác nhận
+        const studentInfo = children.find(child => {
+          const childId = child.childId || child.accountId || child.studentId;
+          return childId === studentId;
+        });
+        
+        const enrichedConfirmations = studentConfirmations.map(confirmation => ({
+          ...confirmation,
+          studentName: studentInfo ? studentInfo.fullName : 'Học sinh',
+          className: studentInfo ? (studentInfo.classId || 'N/A') : 'N/A'
+        }));
+        
+        allConfirmations.push(...enrichedConfirmations);
+      } catch (error) {
+        console.error(`Lỗi khi lấy xác nhận kiểm tra sức khỏe cho học sinh ID ${studentId}:`, error);
+      }
+    }));
+    
+    console.log('Tất cả xác nhận kiểm tra sức khỏe:', allConfirmations);
+    
+    if (allConfirmations.length === 0) {
+      return [];
+    }
+    
+    // Bước 4: Lấy thông tin chi tiết của thông báo cho mỗi xác nhận
+    const formatDate = (dateArray) => {
+      if (Array.isArray(dateArray) && dateArray.length >= 3) {
+        return `${dateArray[2]}/${dateArray[1]}/${dateArray[0]}`;
+      }
+      return 'Chưa xác định';
+    };
+    
+    const notificationsWithDetails = await Promise.all(
+      allConfirmations.map(async (confirmation) => {
+        try {
+          // Bỏ qua các xác nhận có trạng thái CANCELLED
+          if (confirmation.status === 'CANCELLED') {
+            return null;
+          }
+          
+          // Lấy thông tin chi tiết của thông báo kiểm tra sức khỏe
+          const noticeDetail = await parentApi.getHealthCheckNoticeById(confirmation.checkNoticeId);
+          console.log(`Chi tiết thông báo ID ${confirmation.checkNoticeId}:`, noticeDetail);
+          
+          // Kết hợp thông tin xác nhận và thông báo
+          return {
+            id: `health-check-${confirmation.confirmationId}`,
+            confirmationId: confirmation.confirmationId,
+            checkNoticeId: confirmation.checkNoticeId,
+            title: noticeDetail?.title || 'Thông báo kiểm tra sức khỏe',
+            content: `${confirmation.studentName}: ${noticeDetail?.description || 'Thông báo kiểm tra sức khỏe'}`,
+            type: 'HEALTH_CHECK',
+            createdAt: noticeDetail?.createdAt && Array.isArray(noticeDetail.createdAt) && noticeDetail.createdAt.length >= 3 
+              ? new Date(noticeDetail.createdAt[0], noticeDetail.createdAt[1] - 1, noticeDetail.createdAt[2]).toISOString()
+              : new Date().toISOString(),
+            isRead: confirmation.status !== 'PENDING',
+            sourceId: confirmation.checkNoticeId,
+            status: confirmation.status.toLowerCase(),
+            description: noticeDetail?.description || '',
+            date: noticeDetail?.date || [],
+            studentId: confirmation.studentId,
+            studentName: confirmation.studentName || '',
+            className: confirmation.className || '',
+            formattedDate: noticeDetail?.date ? formatDate(noticeDetail.date) : 'Chưa xác định',
+            noticeDetail: noticeDetail || {}
+          };
+        } catch (error) {
+          console.error(`Lỗi khi lấy chi tiết thông báo ID ${confirmation.checkNoticeId}:`, error);
+          
+          // Trả về thông tin cơ bản nếu không lấy được chi tiết
+          return {
+            id: `health-check-${confirmation.confirmationId}`,
+            confirmationId: confirmation.confirmationId,
+            checkNoticeId: confirmation.checkNoticeId,
+            title: 'Thông báo kiểm tra sức khỏe',
+            content: `${confirmation.studentName}: Thông báo kiểm tra sức khỏe`,
+            type: 'HEALTH_CHECK',
+            createdAt: new Date().toISOString(),
+            isRead: confirmation.status !== 'PENDING',
+            sourceId: confirmation.checkNoticeId,
+            status: confirmation.status.toLowerCase(),
+            studentId: confirmation.studentId,
+            studentName: confirmation.studentName || '',
+            className: confirmation.className || '',
+            formattedDate: Array.isArray(confirmation.confirmedAt) && confirmation.confirmedAt.length >= 3 
+              ? formatDate(confirmation.confirmedAt) 
+              : 'Chưa xác định'
+          };
+        }
+      })
+    );
+    
+    // Bước 5: Lọc bỏ các thông báo null và sắp xếp theo thời gian, mới nhất lên đầu
+    const filteredNotifications = notificationsWithDetails.filter(notification => notification !== null);
+    
+    return filteredNotifications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+  } catch (error) {
+    console.error(`Lỗi khi lấy thông báo kiểm tra sức khỏe cho tất cả con của phụ huynh ID ${parentId}:`, error);
+    return [];
+  }
+},
+
+/**
+ * Cập nhật trạng thái xác nhận kiểm tra sức khỏe
+ * @param {number} confirmationId - ID của xác nhận kiểm tra sức khỏe
+ * @param {Object} confirmationData - Dữ liệu cập nhật xác nhận kiểm tra sức khỏe
+ * @param {number} confirmationData.healthCheckNoticeId - ID của thông báo kiểm tra sức khỏe
+ * @param {string} confirmationData.studentId - ID của học sinh
+ * @param {string} confirmationData.parentId - ID của phụ huynh
+ * @param {string} confirmationData.status - Trạng thái xác nhận (CONFIRMED/CANCELLED)
+ * @returns {Promise} - Promise chứa kết quả cập nhật
+ */
+updateHealthCheckConfirmation: async (confirmationId, confirmationData) => {
+  try {
+    if (!confirmationId) {
+      throw new Error('confirmationId là bắt buộc để cập nhật trạng thái xác nhận');
+    }
+    
+    console.log(`Đang gọi API cập nhật trạng thái xác nhận kiểm tra sức khỏe ID: ${confirmationId}`);
+    console.log('Dữ liệu cập nhật:', confirmationData);
+    
+    const endpoint = `v1/health-check-confirmations/update/${confirmationId}`;
+    console.log(`Endpoint đầy đủ: ${endpoint}`);
+    
+    const response = await axiosInstance.put(endpoint, confirmationData);
+    
+    console.log('API response update health check confirmation:', response);
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Lỗi khi cập nhật trạng thái xác nhận kiểm tra sức khỏe ID ${confirmationId}:`, error);
+    
+    // Thêm chi tiết lỗi
+    if (error.response) {
+      console.error('Chi tiết lỗi response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      console.error('Không nhận được response từ server:', error.request);
+      console.error('Có thể là lỗi CORS hoặc server không phản hồi');
+    } else {
+      console.error('Lỗi cấu hình request:', error.message);
+    }
+    
+    throw error;
+  }
+},
+
+/**
+ * Lấy lịch sử kiểm tra sức khỏe của một học sinh
+ * @param {string} studentId - ID của học sinh
+ * @returns {Promise} - Promise chứa lịch sử kiểm tra sức khỏe
+ */
+getHealthCheckRecordsByStudent: async (studentId) => {
+  try {
+    if (!studentId) {
+      throw new Error('studentId là bắt buộc để lấy lịch sử kiểm tra sức khỏe');
+    }
+    
+    console.log(`Đang gọi API để lấy lịch sử kiểm tra sức khỏe của học sinh ID: ${studentId}`);
+    
+    const endpoint = `v1/health-check-records/getByStudent/${studentId}`;
+    console.log(`Endpoint đầy đủ: ${endpoint}`);
+    
+    const response = await axiosInstance.get(endpoint);
+    
+    console.log('API response health check records:', response);
+    
+    // Format dữ liệu từ response
+    const records = (response.data && response.data.data) || [];
+    console.log('Dữ liệu lịch sử kiểm tra sức khỏe nhận được:', records);
+    
+    return records;
+  } catch (error) {
+    console.error(`Lỗi khi lấy lịch sử kiểm tra sức khỏe của học sinh ID ${studentId}:`, error);
+    
+    // Thêm chi tiết lỗi
+    if (error.response) {
+      console.error('Chi tiết lỗi response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      console.error('Không nhận được response từ server:', error.request);
+      console.error('Có thể là lỗi CORS hoặc server không phản hồi');
+    } else {
+      console.error('Lỗi cấu hình request:', error.message);
+    }
+    
+    // Trả về mảng rỗng để tránh crash ứng dụng
+    return [];
+  }
+},
+
+/**
+ * Lấy danh sách tất cả y tá
+ * @param {number} page - Số trang (mặc định là 0)
+ * @param {number} size - Kích thước trang (mặc định là 10)
+ * @param {string} sortBy - Trường sắp xếp (mặc định là fullName)
+ * @param {string} direction - Hướng sắp xếp (asc hoặc desc, mặc định là asc)
+ * @returns {Promise} - Promise chứa danh sách y tá
+ */
+getAllNurses: async (page = 0, size = 10, sortBy = 'fullName', direction = 'asc') => {
+  try {
+    console.log('Đang gọi API để lấy danh sách y tá');
+    
+    const endpoint = `v1/accounts`;
+    const params = {
+      page,
+      size,
+      roleId: 3, // ID vai trò của y tá
+      sortBy,
+      direction
+    };
+    
+    console.log(`Endpoint đầy đủ: ${endpoint}`, params);
+    
+    const response = await axiosInstance.get(endpoint, { params });
+    
+    console.log('API response all nurses:', response);
+    
+    // Format dữ liệu từ response
+    const nurses = (response.data && response.data.content) || [];
+    console.log('Dữ liệu y tá nhận được:', nurses);
+    
+    return nurses;
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách y tá:', error);
+    
+    // Thêm chi tiết lỗi
+    if (error.response) {
+      console.error('Chi tiết lỗi response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      console.error('Không nhận được response từ server:', error.request);
+      console.error('Có thể là lỗi CORS hoặc server không phản hồi');
+    } else {
+      console.error('Lỗi cấu hình request:', error.message);
+    }
+    
+    // Trả về mảng rỗng để tránh crash ứng dụng
+    return [];
   }
 },
 };

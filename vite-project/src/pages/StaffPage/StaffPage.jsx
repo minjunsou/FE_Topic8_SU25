@@ -354,6 +354,15 @@ const StaffPage = () => {
   const [healthDeclarations, setHealthDeclarations] = useState([]);
   const [medicalIncidents, setMedicalIncidents] = useState([]);
   const [studentsMap, setStudentsMap] = useState({});
+  const [medicationStats, setMedicationStats] = useState({
+    total: 0,
+    lowStock: 0,
+    expired: 0,
+    expiringSoon: 0,
+    expiredMedications: [],
+    lowStockMedications: [],
+    expiringSoonMedications: []
+  });
 
   // Tải dữ liệu từ API
   useEffect(() => {
@@ -393,6 +402,15 @@ const StaffPage = () => {
           : [];
         
         setMedicineRequests(enrichedRequests);
+        
+        // Lấy thông tin thống kê về thuốc
+        try {
+          const medicationStatsData = await nurseApi.getMedicationStats();
+          console.log('Thống kê thuốc:', medicationStatsData);
+          setMedicationStats(medicationStatsData);
+        } catch (medicationError) {
+          console.error('Lỗi khi lấy thông tin thống kê thuốc:', medicationError);
+        }
         
         // Giữ nguyên dữ liệu mẫu cho các loại dữ liệu khác
         setHealthDeclarations(mockHealthDeclarations);
@@ -459,6 +477,11 @@ const StaffPage = () => {
     setActiveTab(key);
   };
 
+  // Xử lý chuyển đến trang quản lý thuốc
+  const handleViewAllMedicationSupplies = () => {
+    setActiveTab('medicine-supplies');
+  };
+
   // Hiển thị nội dung dựa trên tab đang chọn
   const renderTabContent = () => {
     switch (activeTab) {
@@ -493,6 +516,7 @@ const StaffPage = () => {
         return (
           <MedicineSupplies 
             loading={loading} 
+            medicationStats={medicationStats}
           />
         );
       case 'profiles':
@@ -510,6 +534,7 @@ const StaffPage = () => {
             medicineRequests={medicineRequests}
             healthDeclarations={healthDeclarations}
             medicalIncidents={medicalIncidents}
+            medicationStats={medicationStats}
             loading={loading}
             handleViewDetail={handleViewDetail}
             handleViewHealthDetail={handleViewHealthDetail}
@@ -517,6 +542,7 @@ const StaffPage = () => {
             onViewAllMedicineRequests={() => setActiveTab('medicine-requests')}
             onViewAllHealthDeclarations={() => setActiveTab('health-declarations')}
             onViewAllMedicalIncidents={() => setActiveTab('medical-incidents')}
+            onViewAllMedicationSupplies={handleViewAllMedicationSupplies}
           />
         );
     }

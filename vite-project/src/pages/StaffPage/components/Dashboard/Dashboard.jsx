@@ -1,10 +1,12 @@
 import React from 'react';
-import { Row, Col, Card, Table, Button, Typography, Space, Badge } from 'antd';
+import { Row, Col, Card, Table, Button, Typography, Space, Badge, Tooltip } from 'antd';
 import {
   MedicineBoxOutlined,
   FileTextOutlined,
   AlertOutlined,
-  RightOutlined
+  RightOutlined,
+  WarningOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import './Dashboard.css';
 
@@ -43,6 +45,7 @@ const Dashboard = ({
   medicineRequests,
   healthDeclarations,
   medicalIncidents,
+  medicationStats,
   loading,
   handleViewDetail,
   handleViewHealthDetail,
@@ -50,6 +53,7 @@ const Dashboard = ({
   onViewAllMedicineRequests,
   onViewAllHealthDeclarations,
   onViewAllMedicalIncidents,
+  onViewAllMedicationSupplies,
 }) => {
   // Cấu hình cột cho bảng yêu cầu thuốc
   const medicineRequestColumns = [
@@ -83,6 +87,62 @@ const Dashboard = ({
         </Button>
       ),
     }
+  ];
+
+  // Cấu hình cột cho bảng thuốc hết hạn
+  const expiredMedicationColumns = [
+    {
+      title: 'Tên thuốc',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Số lượng',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      render: (quantity, record) => `${quantity} ${record.quantityType || 'đơn vị'}`,
+    },
+    {
+      title: 'Ngày hết hạn',
+      dataIndex: 'expiryDate',
+      key: 'expiryDate',
+      render: (expiryDate) => {
+        if (!expiryDate) return 'Không có';
+        
+        // Handle different date formats
+        let dateObj;
+        if (Array.isArray(expiryDate)) {
+          // Handle [year, month, day] format
+          dateObj = new Date(expiryDate[0], expiryDate[1] - 1, expiryDate[2]);
+        } else {
+          // Handle string format
+          dateObj = new Date(expiryDate);
+        }
+        
+        return dateObj.toLocaleDateString('vi-VN');
+      },
+    },
+  ];
+
+  // Cấu hình cột cho bảng thuốc sắp hết
+  const lowStockMedicationColumns = [
+    {
+      title: 'Tên thuốc',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Số lượng',
+      dataIndex: 'quantity',
+      key: 'quantity',
+      render: (quantity, record) => (
+        <Tooltip title={quantity < 5 ? 'Số lượng thấp' : ''}>
+          <span style={{ color: quantity < 5 ? '#ff4d4f' : 'inherit' }}>
+            {quantity} {record.quantityType || 'đơn vị'}
+          </span>
+        </Tooltip>
+      ),
+    },
   ];
 
   // Cấu hình cột cho bảng khai báo sức khoẻ
@@ -177,6 +237,10 @@ const Dashboard = ({
   const recentMedicineRequests = medicineRequests.slice(0, 3);
   const recentHealthDeclarations = healthDeclarations.slice(0, 3);
   const recentMedicalIncidents = medicalIncidents?.slice(0, 3) || [];
+  
+  // Lấy dữ liệu thuốc hết hạn và sắp hết
+  const expiredMeds = medicationStats?.expiredMedications?.slice(0, 3) || [];
+  const lowStockMeds = medicationStats?.lowStockMedications?.slice(0, 3) || [];
 
   return (
     <div className="dashboard-container">
@@ -199,12 +263,12 @@ const Dashboard = ({
           <Card className="stat-card" bordered={false}>
             <div className="stat-card-content">
               <div className="stat-icon-container">
-                <FileTextOutlined className="icon declaration" />
+                <WarningOutlined className="icon expired" />
               </div>
               <div className="stat-info">
-                <Text className="stat-title">Khai báo sức khỏe</Text>
-                <Title level={2} className="stat-number">{healthDeclarations.length}</Title>
-                <Text className="stat-highlight">{healthDeclarations.filter(item => item.status === 'new').length} mới</Text>
+                <Text className="stat-title">Thuốc hết hạn</Text>
+                <Title level={2} className="stat-number">{medicationStats?.expired || 0}</Title>
+                <Text className="stat-highlight">{medicationStats?.lowStock || 0} sắp hết</Text>
               </div>
             </div>
           </Card>
@@ -226,33 +290,7 @@ const Dashboard = ({
       </Row>
 
       <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-        <Col span={24}>
-          <Card 
-            title={
-              <Space>
-                <AlertOutlined style={{ color: '#ff4d4f' }} />
-                <span>Sự kiện y tế gần đây</span>
-              </Space>
-            }
-            extra={
-              <Button type="link" onClick={onViewAllMedicalIncidents}>
-                Xem tất cả <RightOutlined />
-              </Button>
-            }
-          >
-            <Table 
-              dataSource={recentMedicalIncidents} 
-              columns={medicalIncidentColumns}
-              rowKey="id"
-              pagination={false}
-              loading={loading}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
-        <Col xs={24} md={12}>
+        <Col xs={24} sm={24} md={12}>
           <Card 
             title={
               <Space>
@@ -275,23 +313,72 @@ const Dashboard = ({
             />
           </Card>
         </Col>
-        <Col xs={24} md={12}>
+        <Col xs={24} sm={24} md={12}>
           <Card 
             title={
               <Space>
-                <FileTextOutlined style={{ color: '#52c41a' }} />
-                <span>Khai báo sức khỏe gần đây</span>
+                <WarningOutlined style={{ color: '#ff4d4f' }} />
+                <span>Thuốc đã hết hạn</span>
               </Space>
             }
             extra={
-              <Button type="link" onClick={onViewAllHealthDeclarations}>
+              <Button type="link" onClick={onViewAllMedicationSupplies}>
                 Xem tất cả <RightOutlined />
               </Button>
             }
           >
             <Table 
-              dataSource={recentHealthDeclarations} 
-              columns={healthDeclarationColumns}
+              dataSource={expiredMeds} 
+              columns={expiredMedicationColumns}
+              rowKey="id"
+              pagination={false}
+              loading={loading}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[24, 24]} style={{ marginTop: 24 }}>
+        <Col xs={24} sm={24} md={12}>
+          <Card 
+            title={
+              <Space>
+                <ClockCircleOutlined style={{ color: '#faad14' }} />
+                <span>Thuốc sắp hết</span>
+              </Space>
+            }
+            extra={
+              <Button type="link" onClick={onViewAllMedicationSupplies}>
+                Xem tất cả <RightOutlined />
+              </Button>
+            }
+          >
+            <Table 
+              dataSource={lowStockMeds} 
+              columns={lowStockMedicationColumns}
+              rowKey="id"
+              pagination={false}
+              loading={loading}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={24} md={12}>
+          <Card 
+            title={
+              <Space>
+                <AlertOutlined style={{ color: '#ff4d4f' }} />
+                <span>Sự kiện y tế gần đây</span>
+              </Space>
+            }
+            extra={
+              <Button type="link" onClick={onViewAllMedicalIncidents}>
+                Xem tất cả <RightOutlined />
+              </Button>
+            }
+          >
+            <Table 
+              dataSource={recentMedicalIncidents} 
+              columns={medicalIncidentColumns}
               rowKey="id"
               pagination={false}
               loading={loading}
