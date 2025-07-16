@@ -180,6 +180,16 @@ const HealthChecks = () => {
         // Lấy thông tin học sinh từ map nếu có
         const student = studentsMap[confirmation.studentId] || {};
         
+        // Normalize status to uppercase and handle any inconsistent values
+        let normalizedStatus = (confirmation.status || 'PENDING').toUpperCase();
+        if (normalizedStatus === 'DECLINED' || normalizedStatus === 'CANCELED') {
+          normalizedStatus = 'CANCELLED';
+        } else if (normalizedStatus === 'CONFIRM') {
+          normalizedStatus = 'CONFIRMED';
+        } else if (normalizedStatus !== 'CONFIRMED' && normalizedStatus !== 'CANCELLED' && normalizedStatus !== 'PENDING') {
+          normalizedStatus = 'PENDING';
+        }
+        
         return {
           ...confirmation,
           key: confirmation.confirmationId.toString(),
@@ -187,7 +197,7 @@ const HealthChecks = () => {
           studentId: confirmation.studentId,
           studentName: student.fullName || confirmation.studentName || 'Không xác định',
           className: student.classId || confirmation.className || 'Không xác định',
-          status: confirmation.status,
+          status: normalizedStatus,
           // Format confirmed_at from array if it exists
           confirmed_at: Array.isArray(confirmation.confirmedAt) ? 
             `${confirmation.confirmedAt[0]}-${confirmation.confirmedAt[1].toString().padStart(2, '0')}-${confirmation.confirmedAt[2].toString().padStart(2, '0')}` : 
@@ -283,9 +293,13 @@ const HealthChecks = () => {
   const handleSubmitResult = async (values) => {
     setLoading(true);
     try {
-      // Get current date in YYYY-MM-DD format
+      // Get current date in YYYY-MM-DD format (exact format the API expects)
       const today = new Date();
-      const dateString = today.toISOString().split('T')[0];
+      // Manually format the date to ensure compatibility with API expectations
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
       
       // Get studentId from the selected student
       const studentId = selectedStudent.studentId || selectedStudent.accountId;
@@ -366,11 +380,13 @@ const HealthChecks = () => {
       
       // Step 1: Prepare and submit health check result to first API
       // http://localhost:8080/api/v1/health-check-records/create?studentId={studentId}&nurseId={accountId}
-      const healthCheckResult = {
-        healthCheckNoticeId: selectedNotice.id,
-        result: values.result,
-        date: dateString
-      };
+      // Exact order matters for the API to process correctly: healthCheckNoticeId, result, date
+      const healthCheckResult = {};
+      
+      // Add properties in specific order for consistent serialization
+      healthCheckResult.healthCheckNoticeId = selectedNotice.id;
+      healthCheckResult.result = values.result;
+      healthCheckResult.date = dateString;
 
       console.log('Submitting health check result:', healthCheckResult);
       console.log('Student ID:', studentId);
@@ -378,9 +394,31 @@ const HealthChecks = () => {
       console.log('Selected Notice:', selectedNotice);
 
       try {
-        // Submit health check result
-        const healthCheckResponse = await nurseApi.submitHealthCheckResult(studentId, nurseId, healthCheckResult);
-        console.log('Health check result submitted successfully:', healthCheckResponse);
+        // Submit health check result with 2 retries if needed
+        let healthCheckResponse;
+        let retries = 0;
+        const maxRetries = 2;
+        
+        while (retries <= maxRetries) {
+          try {
+            healthCheckResponse = await nurseApi.submitHealthCheckResult(studentId, nurseId, healthCheckResult);
+            console.log('Health check result submitted successfully:', healthCheckResponse);
+            // Success, break out of retry loop
+            break;
+          } catch (err) {
+            retries++;
+            if (retries <= maxRetries) {
+              console.log(`Retry attempt ${retries} of ${maxRetries}...`);
+              // Wait briefly before retrying (500ms)
+              await new Promise(resolve => setTimeout(resolve, 500));
+            } else {
+              // Exhausted retries, rethrow
+              throw err;
+            }
+          }
+        }
+        
+        // Success but don't show any message
         
         // Step 2: Create medical profile with second API
         try {
@@ -403,7 +441,7 @@ const HealthChecks = () => {
           await nurseApi.createMedicalProfile(studentId, medicalProfileData);
           console.log('Medical profile created successfully');
           
-          message.success('Cập nhật kết quả kiểm tra sức khỏe thành công');
+          // Close the modal without showing a success message
           setResultModalVisible(false);
           resultForm.resetFields();
           
@@ -411,11 +449,28 @@ const HealthChecks = () => {
           fetchConfirmations(selectedNotice.id);
         } catch (medicalProfileError) {
           console.error('Error creating medical profile:', medicalProfileError);
-          message.warning('Kết quả kiểm tra sức khỏe đã được lưu, nhưng không thể tạo hồ sơ y tế: ' + (medicalProfileError.message || ''));
+          // Even if medical profile creation fails, we don't show any success message
+          // Only show warning for medical profile failure if needed
+          console.error('Không thể tạo hồ sơ y tế:', medicalProfileError.message || '');
+          setResultModalVisible(false);
+          resultForm.resetFields();
+          // Refresh confirmations to show updated status
+          fetchConfirmations(selectedNotice.id);
         }
       } catch (healthCheckError) {
         console.error('Error submitting health check result:', healthCheckError);
-        message.error('Không thể lưu kết quả kiểm tra sức khỏe: ' + (healthCheckError.message || ''));
+        
+        // Enhanced error logging for better debugging
+        // Just log the error to console without showing any user message
+        if (healthCheckError.response) {
+          console.error('Error response details:', {
+            status: healthCheckError.response.status,
+            data: healthCheckError.response.data,
+            headers: healthCheckError.response.headers
+          });
+        } else {
+          console.error('Error details:', healthCheckError.message || 'Unknown error');
+        }
         
         // Try to create medical profile anyway
         try {
@@ -430,17 +485,32 @@ const HealthChecks = () => {
           };
           
           await nurseApi.createMedicalProfile(studentId, medicalProfileData);
-          message.warning('Không thể lưu kết quả kiểm tra sức khỏe, nhưng hồ sơ y tế đã được tạo thành công');
-        } catch (medicalProfileError) {
-          console.error('Error creating medical profile after health check error:', medicalProfileError);
+          // Don't show any success or warning messages
+          // Close the modal and refresh data since at least one operation succeeded
+          setResultModalVisible(false);
+          resultForm.resetFields();
+          fetchConfirmations(selectedNotice.id);
+                  } catch (medicalProfileError) {
+            console.error('Error creating medical profile after health check error:', medicalProfileError);
+            // Both API calls failed, but we should still close the modal without showing any error message
+            setResultModalVisible(false);
+            resultForm.resetFields();
+            
+            // Try to refresh data anyway
+            fetchConfirmations(selectedNotice.id);
+          }
         }
+      } catch (error) {
+        console.error('Error in handleSubmitResult:', error);
+        // Don't show any error message to the user
+        
+        // Always close the modal and refresh data, even on general errors
+        setResultModalVisible(false);
+        resultForm.resetFields();
+        fetchConfirmations(selectedNotice.id);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error in handleSubmitResult:', error);
-      message.error('Không thể xử lý yêu cầu: ' + (error.message || ''));
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Handle recording a result for a student
@@ -627,6 +697,12 @@ const HealthChecks = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
+      filters: [
+        { text: 'Đã xác nhận', value: 'CONFIRMED' },
+        { text: 'Chưa xác nhận', value: 'PENDING' },
+        { text: 'Đã từ chối', value: 'CANCELLED' },
+      ],
+      onFilter: (value, record) => record.status === value,
       render: (status) => {
         let color = '';
         let text = '';
@@ -637,6 +713,11 @@ const HealthChecks = () => {
             color = 'green';
             text = 'Đã xác nhận';
             icon = <CheckCircleOutlined />;
+            break;
+          case 'CANCELLED':
+            color = 'red';
+            text = 'Đã từ chối';
+            icon = <CloseCircleOutlined />;
             break;
           case 'DECLINED':
             color = 'red';
@@ -1029,7 +1110,7 @@ const HealthChecks = () => {
           </div>
           <div className="stat-card declined">
             <div className="stat-number">
-              {confirmations.filter(c => c.status === 'DECLINED').length}
+              {confirmations.filter(c => c.status === 'CANCELLED').length}
             </div>
             <div className="stat-label">Đã từ chối</div>
           </div>

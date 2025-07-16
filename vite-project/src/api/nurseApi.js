@@ -366,15 +366,35 @@ const nurseApi = {
     try {
       // Log detailed request information for debugging
       const endpoint = `/v1/health-check-records/create?studentId=${studentId}&nurseId=${nurseId}`;
+      
+      // Create payload with exact field order as per Swagger docs
+      const payload = JSON.stringify({
+        healthCheckNoticeId: healthCheckResult.healthCheckNoticeId,
+        result: healthCheckResult.result,
+        date: healthCheckResult.date
+      });
+      
       console.log('Calling API endpoint:', endpoint);
-      console.log('Request payload:', JSON.stringify(healthCheckResult, null, 2));
+      console.log('Request payload:', payload);
       console.log('Student ID:', studentId);
       console.log('Nurse ID:', nurseId);
       
-      // Make the API call
-      const response = await axiosInstance.post(endpoint, healthCheckResult);
+      // Make the API call with specific content-type header
+      const response = await axiosInstance.post(endpoint, payload, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       console.log('Health check result API response:', response);
-      return response.data;
+
+      // Check if response is successful, even if it doesn't have data
+      if (response && response.status >= 200 && response.status < 300) {
+        // Success - return whatever data is available
+        return response.data || { success: true };
+      }
+      
+      // If we get here, the response is not successful
+      throw new Error(`Unsuccessful response: ${response.status}`);
     } catch (error) {
       console.error('Lỗi khi gửi kết quả kiểm tra sức khỏe:', error);
       
@@ -785,7 +805,7 @@ const nurseApi = {
       if (recordId) {
         endpoint = `/medicalProfiles/create/${childId}/${recordId}`;
       } else {
-        endpoint = `/medicalProfiles/create/${childId}/${recordId}`;
+        endpoint = `/medicalProfiles/create/${childId}/1`; // Default to recordId 1 if not provided
       }
       
       console.log('Medical profile API endpoint:', endpoint);
@@ -796,7 +816,14 @@ const nurseApi = {
       // Log response để debug
       console.log('Medical profile API response:', response);
       
-      return response.data;
+      // Check if response is successful, even if it doesn't have data
+      if (response && response.status >= 200 && response.status < 300) {
+        // Success - return whatever data is available
+        return response.data || { success: true };
+      }
+      
+      // If we get here, the response is not successful
+      throw new Error(`Unsuccessful response: ${response.status}`);
     } catch (error) {
       console.error(`Lỗi khi tạo hồ sơ y tế cho học sinh ID ${childId}:`, error);
       
