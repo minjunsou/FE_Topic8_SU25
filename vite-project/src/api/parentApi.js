@@ -254,15 +254,50 @@ const parentApi = {
  * @param {string} parentId - ID của phụ huynh
  * @returns {Promise} - Promise chứa danh sách thông báo
  */
-getHealthCheckNotices: async (parentId) => {
-  try {
-    const response = await axiosInstance.get(`/v1/parents/${parentId}/health-check-notices`);
-    return response.data.data || [];
-  } catch (error) {
-    console.error('Lỗi khi lấy danh sách thông báo kiểm tra sức khỏe:', error);
-    throw error;
-  }
-},
+// getHealthCheckNotices: async (parentId) => {
+//   try {
+//     if (!parentId) {
+//       throw new Error('parentId là bắt buộc để lấy danh sách thông báo kiểm tra sức khỏe');
+//     }
+    
+//     console.log(`Đang gọi API để lấy thông báo kiểm tra sức khỏe của phụ huynh ID: ${parentId}`);
+    
+//     // Đảm bảo endpoint đúng định dạng và không có dấu / ở đầu (vì đã được xử lý trong axiosConfig)
+//     const endpoint = `v1/parents/${parentId}/health-check-notices`;
+//     console.log(`Endpoint đầy đủ: ${endpoint}`);
+    
+//     const response = await axiosInstance.get(endpoint);
+    
+//     console.log('API response health check notices:', response);
+    
+//     // Format dữ liệu từ response
+//     const notices = response.data.data || [];
+//     console.log('Dữ liệu thông báo nhận được:', notices);
+    
+//     return notices;
+//   } catch (error) {
+//     console.error(`Lỗi khi lấy danh sách thông báo kiểm tra sức khỏe của phụ huynh ID ${parentId}:`, error);
+    
+//     // Thêm chi tiết lỗi
+//     if (error.response) {
+//       console.error('Chi tiết lỗi response:', {
+//         status: error.response.status,
+//         statusText: error.response.statusText,
+//         data: error.response.data,
+//         headers: error.response.headers
+//       });
+//     } else if (error.request) {
+//       console.error('Không nhận được response từ server:', error.request);
+//       console.error('Có thể là lỗi CORS hoặc server không phản hồi');
+//       console.error('URL gọi API:', `v1/parents/${parentId}/health-check-notices`);
+//     } else {
+//       console.error('Lỗi cấu hình request:', error.message);
+//     }
+    
+//     // Trả về mảng rỗng để tránh crash ứng dụng
+//     return [];
+//   }
+// },
 
 /**
  * Xác nhận tham gia kiểm tra sức khỏe
@@ -295,13 +330,353 @@ confirmHealthCheck: async (noticeId, studentId, parentId, status) => {
  * @param {string} studentId - ID của học sinh
  * @returns {Promise} - Promise chứa lịch sử kiểm tra sức khỏe
  */
-getChildHealthCheckHistory: async (parentId, studentId) => {
+// getChildHealthCheckHistory: async (parentId, studentId) => {
+//   try {
+//     const response = await axiosInstance.get(`/v1/parents/${parentId}/students/${studentId}/health-check-records`);
+//     return response.data.data || [];
+//   } catch (error) {
+//     console.error(`Lỗi khi lấy lịch sử kiểm tra sức khỏe cho học sinh ID ${studentId}:`, error);
+//     throw error;
+//   }
+// },
+
+/**
+ * Lấy danh sách thông báo của phụ huynh
+ * @param {string} parentId - ID của phụ huynh
+ * @returns {Promise} - Promise chứa danh sách thông báo
+ */
+// getNotifications: async (parentId) => {
+//   try {
+//     if (!parentId) {
+//       throw new Error('parentId là bắt buộc để lấy danh sách thông báo');
+//     }
+    
+//     console.log(`Đang gọi API để lấy thông báo của phụ huynh ID: ${parentId}`);
+//     const response = await axiosInstance.get(`/v1/notifications/parent/${parentId}`);
+    
+//     // Format dữ liệu thông báo nếu cần
+//     const notifications = response.data.data || [];
+    
+//     return notifications.map(notification => ({
+//       id: notification.id,
+//       title: notification.title,
+//       content: notification.content,
+//       type: notification.type || 'HEALTH_CHECK',
+//       createdAt: notification.createdAt,
+//       isRead: notification.isRead || false,
+//       sourceId: notification.sourceId
+//     }));
+//   } catch (error) {
+//     console.error(`Lỗi khi lấy danh sách thông báo của phụ huynh ID ${parentId}:`, error);
+//     // Trả về mảng rỗng nếu có lỗi để tránh crash ứng dụng
+//     return [];
+//   }
+// },
+
+/**
+ * Đánh dấu thông báo đã đọc
+ * @param {string} notificationId - ID của thông báo
+ * @returns {Promise} - Promise chứa kết quả cập nhật
+ */
+// markNotificationAsRead: async (notificationId) => {
+//   try {
+//     if (!notificationId) {
+//       throw new Error('notificationId là bắt buộc để đánh dấu thông báo đã đọc');
+//     }
+    
+//     console.log(`Đang gọi API để đánh dấu thông báo ID: ${notificationId} là đã đọc`);
+//     const response = await axiosInstance.put(`/v1/notifications/${notificationId}/read`);
+    
+//     return response.data;
+//   } catch (error) {
+//     console.error(`Lỗi khi đánh dấu thông báo ID ${notificationId} đã đọc:`, error);
+//     throw error;
+//   }
+// },
+
+/**
+ * Lấy danh sách xác nhận kiểm tra sức khỏe của phụ huynh
+ * @param {string} parentId - ID của phụ huynh
+ * @returns {Promise} - Promise chứa danh sách xác nhận kiểm tra sức khỏe
+ */
+getHealthCheckConfirmationsByParent: async (parentId) => {
   try {
-    const response = await axiosInstance.get(`/v1/parents/${parentId}/students/${studentId}/health-check-records`);
-    return response.data.data || [];
+    if (!parentId) {
+      throw new Error('parentId là bắt buộc để lấy danh sách xác nhận kiểm tra sức khỏe');
+    }
+    
+    console.log(`Đang gọi API để lấy xác nhận kiểm tra sức khỏe của phụ huynh ID: ${parentId}`);
+    
+    // Đảm bảo endpoint đúng định dạng
+    const endpoint = `v1/health-check-confirmations/getByParent/${parentId}`;
+    console.log(`Endpoint đầy đủ: ${endpoint}`);
+    
+    const response = await axiosInstance.get(endpoint);
+    
+    console.log('API response health check confirmations:', response);
+    
+    // Format dữ liệu từ response
+    const confirmations = response.data.data || [];
+    console.log('Dữ liệu xác nhận nhận được:', confirmations);
+    
+    return confirmations.map(confirmation => ({
+      confirmationId: confirmation.confirmationId,
+      checkNoticeId: confirmation.checkNoticeId,
+      studentId: confirmation.studentId,
+      parentId: confirmation.parentId,
+      status: confirmation.status,
+      confirmedAt: confirmation.confirmedAt || [],
+      // Thêm các trường khác nếu cần
+      studentName: confirmation.studentName || '',
+      className: confirmation.className || '',
+      checkDate: confirmation.checkDate || null
+    }));
   } catch (error) {
-    console.error(`Lỗi khi lấy lịch sử kiểm tra sức khỏe cho học sinh ID ${studentId}:`, error);
-    throw error;
+    console.error(`Lỗi khi lấy danh sách xác nhận kiểm tra sức khỏe của phụ huynh ID ${parentId}:`, error);
+    
+    // Thêm chi tiết lỗi
+    if (error.response) {
+      console.error('Chi tiết lỗi response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      console.error('Không nhận được response từ server:', error.request);
+      console.error('Có thể là lỗi CORS hoặc server không phản hồi');
+      console.error('URL gọi API:', `${axiosInstance.defaults.baseURL}/v1/health-check-confirmations/getByParent/${parentId}`);
+    } else {
+      console.error('Lỗi cấu hình request:', error.message);
+    }
+    
+    // Trả về mảng rỗng để tránh crash ứng dụng
+    return [];
+  }
+},
+
+/**
+ * Lấy thông tin chi tiết của thông báo kiểm tra sức khỏe theo ID
+ * @param {string|number} checkNoticeId - ID của thông báo kiểm tra sức khỏe
+ * @returns {Promise} - Promise chứa thông tin chi tiết của thông báo
+ */
+getHealthCheckNoticeById: async (checkNoticeId) => {
+  try {
+    if (!checkNoticeId) {
+      throw new Error('checkNoticeId là bắt buộc để lấy thông tin chi tiết thông báo');
+    }
+    
+    console.log(`Đang gọi API để lấy thông tin chi tiết thông báo ID: ${checkNoticeId}`);
+    
+    // Đảm bảo endpoint đúng định dạng
+    const endpoint = `v1/health-check-notices/getByID/${checkNoticeId}`;
+    console.log(`Endpoint đầy đủ: ${endpoint}`);
+    
+    const response = await axiosInstance.get(endpoint);
+    
+    console.log('API response health check notice detail:', response);
+    
+    // Format dữ liệu từ response
+    if (response.data && response.data.data) {
+      return {
+        checkNoticeId: response.data.data.checkNoticeId,
+        title: response.data.data.title,
+        description: response.data.data.description,
+        date: response.data.data.date,
+        createdAt: response.data.data.createdAt
+      };
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Lỗi khi lấy thông tin chi tiết thông báo ID ${checkNoticeId}:`, error);
+    
+    // Thêm chi tiết lỗi
+    if (error.response) {
+      console.error('Chi tiết lỗi response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      console.error('Không nhận được response từ server:', error.request);
+      console.error('Có thể là lỗi CORS hoặc server không phản hồi');
+      console.error('URL gọi API:', `${axiosInstance.defaults.baseURL}/v1/health-check-notices/getByID/${checkNoticeId}`);
+    } else {
+      console.error('Lỗi cấu hình request:', error.message);
+    }
+    
+    return null;
+  }
+},
+
+/**
+ * Lấy danh sách xác nhận kiểm tra sức khỏe của phụ huynh kèm thông tin chi tiết
+ * @param {string} parentId - ID của phụ huynh
+ * @returns {Promise} - Promise chứa danh sách xác nhận kiểm tra sức khỏe kèm thông tin chi tiết
+ */
+getHealthCheckConfirmationsWithDetails: async (parentId) => {
+  try {
+    if (!parentId) {
+      throw new Error('parentId là bắt buộc để lấy danh sách xác nhận kiểm tra sức khỏe');
+    }
+    
+    console.log(`Đang gọi API để lấy xác nhận kiểm tra sức khỏe của phụ huynh ID: ${parentId}`);
+    
+    // Lấy danh sách xác nhận trực tiếp không qua parentApi để tránh đệ quy
+    const confirmationsEndpoint = `v1/health-check-confirmations/getByParent/${parentId}`;
+    const confirmationsResponse = await axiosInstance.get(confirmationsEndpoint);
+    const confirmations = (confirmationsResponse.data && confirmationsResponse.data.data) || [];
+    
+    // Nếu không có xác nhận nào, trả về mảng rỗng
+    if (!confirmations || confirmations.length === 0) {
+      return [];
+    }
+    
+    // Lấy thông tin chi tiết cho mỗi xác nhận
+    const confirmationsWithDetails = await Promise.all(
+      confirmations.map(async (confirmation) => {
+        // Format dữ liệu xác nhận
+        const formattedConfirmation = {
+          confirmationId: confirmation.confirmationId,
+          checkNoticeId: confirmation.checkNoticeId,
+          studentId: confirmation.studentId,
+          parentId: confirmation.parentId,
+          status: confirmation.status,
+          confirmedAt: confirmation.confirmedAt || [],
+          studentName: confirmation.studentName || '',
+          className: confirmation.className || '',
+          checkDate: confirmation.checkDate || null
+        };
+        
+        // Lấy thông tin chi tiết của thông báo
+        const noticeDetail = await parentApi.getHealthCheckNoticeById(formattedConfirmation.checkNoticeId);
+        
+        // Kết hợp thông tin
+        return {
+          ...formattedConfirmation,
+          noticeDetail: noticeDetail || {}
+        };
+      })
+    );
+    
+    return confirmationsWithDetails;
+  } catch (error) {
+    console.error(`Lỗi khi lấy danh sách xác nhận kiểm tra sức khỏe kèm chi tiết của phụ huynh ID ${parentId}:`, error);
+    return [];
+  }
+},
+
+/**
+ * Lấy tất cả thông báo kiểm tra sức khỏe
+ * @returns {Promise} - Promise chứa danh sách tất cả thông báo kiểm tra sức khỏe
+ */
+getAllHealthCheckNotices: async () => {
+  try {
+    console.log('Đang gọi API để lấy tất cả thông báo kiểm tra sức khỏe');
+    
+    // Đảm bảo endpoint đúng định dạng
+    const endpoint = 'v1/health-check-notices/getAll';
+    console.log(`Endpoint đầy đủ: ${endpoint}`);
+    
+    const response = await axiosInstance.get(endpoint);
+    
+    console.log('API response all health check notices:', response);
+    
+    // Format dữ liệu từ response
+    const notices = response.data.data || [];
+    console.log('Dữ liệu thông báo nhận được:', notices);
+    
+    return notices.map(notice => ({
+      checkNoticeId: notice.checkNoticeId,
+      title: notice.title,
+      description: notice.description,
+      date: notice.date || [],
+      createdAt: notice.createdAt || []
+    }));
+  } catch (error) {
+    console.error('Lỗi khi lấy tất cả thông báo kiểm tra sức khỏe:', error);
+    
+    // Thêm chi tiết lỗi
+    if (error.response) {
+      console.error('Chi tiết lỗi response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      console.error('Không nhận được response từ server:', error.request);
+      console.error('Có thể là lỗi CORS hoặc server không phản hồi');
+      console.error('URL gọi API:', `${axiosInstance.defaults.baseURL}/v1/health-check-notices/getAll`);
+    } else {
+      console.error('Lỗi cấu hình request:', error.message);
+    }
+    
+    // Trả về mảng rỗng để tránh crash ứng dụng
+    return [];
+  }
+},
+
+/**
+ * Lấy danh sách xác nhận kiểm tra sức khỏe của một học sinh
+ * @param {string} studentId - ID của học sinh
+ * @returns {Promise} - Promise chứa danh sách xác nhận kiểm tra sức khỏe
+ */
+getHealthCheckConfirmationsByStudent: async (studentId) => {
+  try {
+    if (!studentId) {
+      throw new Error('studentId là bắt buộc để lấy danh sách xác nhận kiểm tra sức khỏe');
+    }
+    
+    console.log(`Đang gọi API để lấy xác nhận kiểm tra sức khỏe của học sinh ID: ${studentId}`);
+    
+    // Đảm bảo endpoint đúng định dạng
+    const endpoint = `v1/health-check-confirmations/getByStudent/${studentId}`;
+    console.log(`Endpoint đầy đủ: ${endpoint}`);
+    
+    const response = await axiosInstance.get(endpoint);
+    
+    console.log('API response health check confirmations by student:', response);
+    
+    // Format dữ liệu từ response
+    const confirmations = response.data.data || [];
+    console.log('Dữ liệu xác nhận nhận được:', confirmations);
+    
+    return confirmations.map(confirmation => ({
+      confirmationId: confirmation.confirmationId,
+      checkNoticeId: confirmation.checkNoticeId,
+      studentId: confirmation.studentId,
+      parentId: confirmation.parentId,
+      status: confirmation.status,
+      confirmedAt: confirmation.confirmedAt || [],
+      // Thêm các trường khác nếu cần
+      studentName: confirmation.studentName || '',
+      className: confirmation.className || '',
+      checkDate: confirmation.checkDate || null
+    }));
+  } catch (error) {
+    console.error(`Lỗi khi lấy danh sách xác nhận kiểm tra sức khỏe của học sinh ID ${studentId}:`, error);
+    
+    // Thêm chi tiết lỗi
+    if (error.response) {
+      console.error('Chi tiết lỗi response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+    } else if (error.request) {
+      console.error('Không nhận được response từ server:', error.request);
+      console.error('Có thể là lỗi CORS hoặc server không phản hồi');
+      console.error('URL gọi API:', `${axiosInstance.defaults.baseURL}/v1/health-check-confirmations/getByStudent/${studentId}`);
+    } else {
+      console.error('Lỗi cấu hình request:', error.message);
+    }
+    
+    // Trả về mảng rỗng để tránh crash ứng dụng
+    return [];
   }
 },
 };

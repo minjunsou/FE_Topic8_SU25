@@ -78,8 +78,11 @@ const HealthChecks = () => {
           'N/A'
       }));
       
-      setNotices(formattedNotices);
-      console.log('Fetched health check notices:', formattedNotices);
+      // Sort notices by ID (largest to smallest)
+      const sortedNotices = formattedNotices.sort((a, b) => b.id - a.id);
+      
+      setNotices(sortedNotices);
+      console.log('Fetched and sorted health check notices by ID (desc):', sortedNotices);
     } catch (error) {
       console.error('Error fetching health check notices:', error);
       message.error('Không thể lấy danh sách thông báo kiểm tra sức khỏe');
@@ -159,17 +162,31 @@ const HealthChecks = () => {
       // The response format is { time_stamp, data: [...confirmations] }
       const confirmationsData = response.data || [];
       
+      // Lấy danh sách studentId từ các xác nhận
+      const studentIds = confirmationsData.map(confirmation => confirmation.studentId).filter(id => id);
+      console.log('Student IDs from confirmations:', studentIds);
+      
+      // Lấy thông tin chi tiết của học sinh từ API mới
+      const studentsData = await nurseApi.getStudentsByIds(studentIds);
+      console.log('Students data:', studentsData);
+      
+      // Tạo map học sinh theo ID để dễ dàng truy cập
+      const studentsMap = {};
+      studentsData.forEach(student => {
+        studentsMap[student.accountId] = student;
+      });
+      
       const formattedConfirmations = confirmationsData.map(confirmation => {
-        // Find the student information from the students array
-        const student = students.find(s => s.accountId === confirmation.studentId) || {};
+        // Lấy thông tin học sinh từ map nếu có
+        const student = studentsMap[confirmation.studentId] || {};
         
         return {
           ...confirmation,
           key: confirmation.confirmationId.toString(),
           id: confirmation.confirmationId,
           studentId: confirmation.studentId,
-          studentName: student.fullName || 'Không xác định',
-          className: student.classId || 'Không xác định',
+          studentName: student.fullName || confirmation.studentName || 'Không xác định',
+          className: student.classId || confirmation.className || 'Không xác định',
           status: confirmation.status,
           // Format confirmed_at from array if it exists
           confirmed_at: Array.isArray(confirmation.confirmedAt) ? 
@@ -233,10 +250,16 @@ const HealthChecks = () => {
 
       console.log('Creating health check notice with data:', healthCheckData);
 
-      // Use nurseApi instead of direct API call
-      await nurseApi.createHealthCheckNotice(healthCheckData);
+      // Use the new function that automatically creates confirmations for all students
+      const response = await nurseApi.createHealthCheckNoticeWithConfirmations(healthCheckData);
+      console.log('Health check notice created with confirmations:', response);
       
-      message.success('Tạo thông báo kiểm tra sức khỏe thành công');
+      // Show success message with confirmation statistics
+      const confirmationsCount = response.confirmations || { total: 0, success: 0, failed: 0 };
+      message.success(
+        `Tạo thông báo kiểm tra sức khỏe thành công! Đã tạo ${confirmationsCount.success}/${confirmationsCount.total} xác nhận.`
+      );
+      
       setCreateModalVisible(false);
       form.resetFields();
       fetchNotices();
@@ -545,6 +568,15 @@ const HealthChecks = () => {
   // Columns for notices table
   const noticesColumns = [
     {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id',
+      sorter: (a, b) => b.id - a.id,
+      sortDirections: ['descend', 'ascend'],
+      defaultSortOrder: 'descend',
+      width: 80,
+    },
+    {
       title: 'Tiêu đề',
       dataIndex: 'title',
       key: 'title',
@@ -795,6 +827,8 @@ const HealthChecks = () => {
             dataSource={notices} 
             loading={loading}
             pagination={{ pageSize: 5 }}
+            defaultSortField="id"
+            defaultSortOrder="descend"
           />
         </TabPane>
         
