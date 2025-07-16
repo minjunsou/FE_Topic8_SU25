@@ -64,6 +64,7 @@ const MedicineSupplies = () => {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
+  const [currentDeletingId, setCurrentDeletingId] = useState(null); // Track the ID of the item being deleted
 
   // Lấy dữ liệu thuốc từ API khi component được mount
   useEffect(() => {
@@ -269,6 +270,7 @@ const MedicineSupplies = () => {
 
   // Xử lý khi xóa thuốc/vật tư
   const handleDeleteItem = async (id) => {
+    setCurrentDeletingId(id); // Set the ID of the item being deleted
     try {
       setLoading(true);
       
@@ -278,18 +280,43 @@ const MedicineSupplies = () => {
       
       console.log(`Đang xóa thuốc với ID: ${id}`);
       
-      // Gọi API để xóa thuốc
-      await nurseApi.deleteMedication(id);
+      // Gọi API để xóa thuốc - sử dụng endpoint http://localhost:8080/api/v1/medications/{medicationId}
+      const response = await nurseApi.deleteMedication(id);
       
-      message.success('Xóa thuốc thành công!');
-      
-      // Tải lại danh sách thuốc
-      fetchMedications();
-      fetchLowStockMedications();
+      if (response) {
+        message.success('Xóa thuốc thành công!');
+        
+        // Tải lại danh sách thuốc
+        fetchMedications();
+        fetchLowStockMedications();
+      } else {
+        throw new Error('Không nhận được phản hồi từ API');
+      }
     } catch (error) {
       console.error(`Lỗi khi xóa thuốc ID ${id}:`, error);
-      message.error('Không thể xóa thuốc. Vui lòng thử lại sau.');
+      
+      // Hiển thị thông báo lỗi chi tiết hơn cho người dùng
+      let errorMessage = 'Không thể xóa thuốc.';
+      
+      if (error.response) {
+        // Lỗi từ API
+        if (error.response.status === 404) {
+          errorMessage = 'Không tìm thấy thuốc cần xóa.';
+        } else if (error.response.status === 403) {
+          errorMessage = 'Bạn không có quyền xóa thuốc này.';
+        } else if (error.response.status === 500) {
+          errorMessage = 'Lỗi máy chủ khi xóa thuốc. Vui lòng thử lại sau.';
+        } else if (error.response.data && error.response.data.message) {
+          errorMessage = `Lỗi: ${error.response.data.message}`;
+        }
+      } else if (error.message) {
+        errorMessage = `Lỗi: ${error.message}`;
+      }
+      
+      message.error(errorMessage);
+    } finally {
       setLoading(false);
+      setCurrentDeletingId(null); // Reset the deleting ID after deletion attempt
     }
   };
 
@@ -415,28 +442,43 @@ const MedicineSupplies = () => {
       title: 'Hành động',
       key: 'action',
       width: 150,
-      render: (_, record) => (
-        <Space size="small">
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
-            size="small"
-            onClick={() => handleEditItem(record)}
-          />
-          <Popconfirm
-            title="Bạn có chắc muốn xóa mục này?"
-            onConfirm={() => handleDeleteItem(record.id)}
-            okText="Có"
-            cancelText="Không"
-          >
+      render: (_, record) => {
+        // Track delete loading state for each medication
+        const isDeleting = loading && currentDeletingId === record.id;
+        
+        return (
+          <Space size="small">
             <Button 
-              danger 
-              icon={<DeleteOutlined />} 
+              type="primary" 
+              icon={<EditOutlined />} 
               size="small"
+              onClick={() => handleEditItem(record)}
+              disabled={isDeleting}
             />
-          </Popconfirm>
-        </Space>
-      ),
+            <Popconfirm
+              title="Xóa thuốc"
+              description={
+                <div>
+                  <p>Bạn có chắc muốn xóa thuốc <strong>{record.name}</strong>?</p>
+                  <p>Hành động này không thể hoàn tác.</p>
+                </div>
+              }
+              onConfirm={() => handleDeleteItem(record.id)}
+              okText="Xóa"
+              cancelText="Hủy"
+              okButtonProps={{ danger: true, loading: isDeleting }}
+              icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
+            >
+              <Button 
+                danger 
+                icon={<DeleteOutlined />} 
+                size="small"
+                loading={isDeleting}
+              />
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
   ];
 
