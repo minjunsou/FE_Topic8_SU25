@@ -283,7 +283,9 @@ const nurseApi = {
    */
   createHealthCheckNotice: async (healthCheckData) => {
     try {
+      console.log('Creating health check notice with data:', healthCheckData);
       const response = await axiosInstance.post('/v1/health-check-notices/create', healthCheckData);
+      console.log('Health check notice API response:', response);
       return response.data;
     } catch (error) {
       console.error('Lỗi khi tạo thông báo kiểm tra sức khỏe:', error);
@@ -830,6 +832,246 @@ const nurseApi = {
     } catch (error) {
       console.error(`Lỗi khi lấy hồ sơ sức khỏe cho học sinh ID ${studentId}:`, error);
       throw error;
+    }
+  },
+
+  /**
+   * Tạo thông báo cho phụ huynh
+   * @param {Object} notificationData - Dữ liệu thông báo
+   * @returns {Promise} - Promise chứa kết quả tạo thông báo
+   */
+  createParentNotification: async (notificationData) => {
+    try {
+      console.log('Đang tạo thông báo cho phụ huynh:', notificationData);
+      const response = await axiosInstance.post('/v1/notifications/create', notificationData);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi tạo thông báo cho phụ huynh:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Tạo thông báo kiểm tra sức khỏe và tự động tạo các xác nhận cho tất cả học sinh
+   * @param {Object} healthCheckData - Dữ liệu kiểm tra sức khỏe
+   * @returns {Promise} - Promise chứa kết quả tạo thông báo và xác nhận
+   */
+  createHealthCheckNoticeWithConfirmations: async (healthCheckData) => {
+    try {
+      console.log('Creating health check notice with data:', healthCheckData);
+      
+      // Bước 1: Tạo thông báo kiểm tra sức khỏe
+      const healthCheckResponse = await nurseApi.createHealthCheckNotice(healthCheckData);
+      console.log('Health check notice created:', healthCheckResponse);
+      
+      // Xác định ID của thông báo vừa tạo - kiểm tra nhiều vị trí có thể chứa ID
+      let noticeId = null;
+      
+      // Kiểm tra cấu trúc response để tìm checkNoticeId
+      if (healthCheckResponse && typeof healthCheckResponse === 'object') {
+        if (healthCheckResponse.checkNoticeId) {
+          noticeId = healthCheckResponse.checkNoticeId;
+        } else if (healthCheckResponse.data && healthCheckResponse.data.checkNoticeId) {
+          noticeId = healthCheckResponse.data.checkNoticeId;
+        } else if (healthCheckResponse.id) {
+          noticeId = healthCheckResponse.id;
+        } else if (healthCheckResponse.data && healthCheckResponse.data.id) {
+          noticeId = healthCheckResponse.data.id;
+        }
+      }
+      
+      // Log cấu trúc response để debug
+      console.log('Health check response structure:', JSON.stringify(healthCheckResponse, null, 2));
+      
+      if (!noticeId) {
+        console.error('Could not determine notice ID from response:', healthCheckResponse);
+        throw new Error('Không thể xác định ID của thông báo vừa tạo');
+      }
+      
+      console.log('Successfully created health check notice with ID:', noticeId);
+      
+      // Bước 2: Lấy danh sách tất cả phụ huynh
+      console.log('Fetching all parents...');
+      const parentsResponse = await axiosInstance.get('/v1/accounts', {
+        params: {
+          page: 0,
+          size: 100, // Đủ lớn để lấy tất cả phụ huynh
+          roleId: 2, // Phụ huynh
+          sortBy: 'fullName',
+          direction: 'asc'
+        }
+      });
+      
+      if (!parentsResponse.data || !parentsResponse.data.accounts || !Array.isArray(parentsResponse.data.accounts)) {
+        console.error('Invalid parents response:', parentsResponse.data);
+        throw new Error('Không thể lấy danh sách phụ huynh');
+      }
+      
+      const parents = parentsResponse.data.accounts;
+      console.log(`Found ${parents.length} parents`);
+      
+      // Bước 3: Với mỗi phụ huynh, lấy danh sách con
+      const confirmationPromises = [];
+      
+      for (const parent of parents) {
+        const parentId = parent.accountId;
+        if (!parentId) {
+          console.warn(`Skipping parent with missing accountId:`, parent);
+          continue;
+        }
+        
+        console.log(`Fetching children for parent ID: ${parentId}`);
+        
+        try {
+          const childrenResponse = await axiosInstance.get(`/v1/accounts/${parentId}/children`);
+          
+          if (childrenResponse.data && childrenResponse.data.children && Array.isArray(childrenResponse.data.children)) {
+            const children = childrenResponse.data.children;
+            console.log(`Found ${children.length} children for parent ID: ${parentId}`);
+            
+            // Bước 4: Với mỗi cặp parent-child, tạo confirmation
+            for (const child of children) {
+              // Kiểm tra và lấy childId từ các trường có thể chứa ID
+              let childId = null;
+              if (child.childId) {
+                childId = child.childId;
+              } else if (child.accountId) {
+                childId = child.accountId;
+              } else if (child.studentId) {
+                childId = child.studentId;
+              }
+              
+              if (!childId) {
+                console.warn(`Skipping child with missing ID:`, child);
+                continue;
+              }
+              
+              console.log(`Creating confirmation for notice ID: ${noticeId}, parent ID: ${parentId}, child ID: ${childId}`);
+              
+              // Đảm bảo thứ tự trường khớp với yêu cầu API
+              const confirmationData = {
+                "healthCheckNoticeId": parseInt(noticeId),
+                "studentId": childId,
+                "parentId": parentId,
+                "status": "PENDING"
+              };
+              
+              console.log('Confirmation request body:', JSON.stringify(confirmationData));
+              
+              // Thêm promise vào mảng để thực hiện song song
+              confirmationPromises.push(
+                axiosInstance.post('/v1/health-check-confirmations', confirmationData)
+                  .then(res => {
+                    console.log(`Confirmation created successfully for child ID: ${childId}`);
+                    return res.data;
+                  })
+                  .catch(err => {
+                    console.error(`Error creating confirmation for child ID: ${childId}`, err);
+                    if (err.response) {
+                      console.error('Error response data:', err.response.data);
+                      console.error('Error response status:', err.response.status);
+                    }
+                    return null;
+                  })
+              );
+            }
+          } else {
+            console.warn(`No children found or invalid response format for parent ID: ${parentId}`, childrenResponse.data);
+          }
+        } catch (error) {
+          console.error(`Error fetching children for parent ID: ${parentId}`, error);
+        }
+      }
+      
+      // Bước 5: Đợi tất cả các promise hoàn thành
+      console.log(`Waiting for ${confirmationPromises.length} confirmation requests to complete...`);
+      const confirmationResults = await Promise.allSettled(confirmationPromises);
+      
+      const successCount = confirmationResults.filter(result => result.status === 'fulfilled' && result.value).length;
+      const failCount = confirmationResults.length - successCount;
+      
+      console.log(`Created ${successCount} confirmations successfully, ${failCount} failed`);
+      
+      // Trả về kết quả tạo thông báo và số lượng xác nhận đã tạo
+      return {
+        ...healthCheckResponse,
+        confirmations: {
+          total: confirmationPromises.length,
+          success: successCount,
+          failed: failCount
+        }
+      };
+    } catch (error) {
+      console.error('Error in createHealthCheckNoticeWithConfirmations:', error);
+      
+      // Log chi tiết lỗi
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy danh sách học sinh dựa trên danh sách ID
+   * @param {Array<string>} studentIds - Danh sách ID của học sinh cần lấy thông tin
+   * @returns {Promise} - Promise chứa danh sách học sinh
+   */
+  getStudentsByIds: async (studentIds) => {
+    try {
+      if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+        console.log('Không có ID học sinh nào được cung cấp');
+        return [];
+      }
+      
+      console.log(`Lấy thông tin cho ${studentIds.length} học sinh với ID:`, studentIds);
+      
+      // Sử dụng API accounts với roleId=1 (học sinh)
+      const response = await axiosInstance.get('/v1/accounts', {
+        params: {
+          page: 0,
+          size: 100, // Đủ lớn để chứa tất cả học sinh cần lấy
+          roleId: 1,
+          sortBy: 'fullName',
+          direction: 'asc'
+        }
+      });
+      
+      // Kiểm tra response
+      if (!response.data || !response.data.accounts || !Array.isArray(response.data.accounts)) {
+        console.error('API trả về dữ liệu không hợp lệ:', response.data);
+        return [];
+      }
+      
+      // Lọc học sinh theo danh sách ID
+      const students = response.data.accounts.filter(student => 
+        studentIds.includes(student.accountId)
+      );
+      
+      console.log(`Tìm thấy ${students.length}/${studentIds.length} học sinh`);
+      
+      return students;
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách học sinh theo ID:', error);
+      
+      // Chi tiết lỗi
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      
+      return [];
     }
   }
 

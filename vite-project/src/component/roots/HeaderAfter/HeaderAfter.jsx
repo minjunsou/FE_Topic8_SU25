@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Space, Dropdown, message, Drawer } from 'antd';
+import { Layout, Menu, Button, Avatar, Space, Dropdown, message, Drawer, Badge, List, Popover } from 'antd';
 import { 
   UserOutlined, 
   HeartFilled, 
@@ -16,9 +16,10 @@ import {
   SettingOutlined,
   FileTextOutlined,
   SolutionOutlined,
-  ExperimentOutlined
+  ExperimentOutlined,
+  BellOutlined
 } from '@ant-design/icons';
-import { authApi } from '../../../api';
+import { authApi, parentApi } from '../../../api';
 import './HeaderAfter.css';
 import { Link } from 'react-router-dom';
 
@@ -29,6 +30,10 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
   const location = useLocation();
   const [mobileMenuVisible, setMobileMenuVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [notificationVisible, setNotificationVisible] = useState(false);
   
   // Kiểm tra kích thước màn hình khi component được render
   useEffect(() => {
@@ -47,6 +52,133 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
       window.removeEventListener('resize', checkIsMobile);
     };
   }, []);
+
+  // Lấy thông báo khi component được render (chỉ cho phụ huynh)
+  useEffect(() => {
+    if (Number(userRole) === 2) {
+      fetchNotifications();
+    }
+  }, [userRole]);
+
+  // Hàm lấy danh sách thông báo
+  const fetchNotifications = async () => {
+    if (Number(userRole) !== 2) return;
+    
+    setNotificationLoading(true);
+    try {
+      // Lấy thông tin người dùng từ localStorage
+      const userInfoStr = localStorage.getItem('userInfo');
+      if (!userInfoStr) return;
+      
+      const userInfo = JSON.parse(userInfoStr);
+      const parentId = userInfo.accountId;
+      
+      if (!parentId) {
+        console.error('Không tìm thấy ID phụ huynh trong thông tin người dùng');
+        return;
+      }
+      
+      // Lấy danh sách tất cả thông báo kiểm tra sức khỏe
+      const allHealthCheckNotices = await parentApi.getAllHealthCheckNotices();
+      console.log('All health check notices:', allHealthCheckNotices);
+      
+      // Lấy danh sách xác nhận kiểm tra sức khỏe của phụ huynh
+      const healthCheckConfirmations = await parentApi.getHealthCheckConfirmationsByParent(parentId);
+      console.log('Health check confirmations:', healthCheckConfirmations);
+      
+      // Tạo map các xác nhận theo checkNoticeId để dễ dàng kiểm tra trạng thái
+      const confirmationsMap = {};
+      healthCheckConfirmations.forEach(confirmation => {
+        confirmationsMap[confirmation.checkNoticeId] = confirmation;
+      });
+      
+      // Chuyển đổi tất cả thông báo kiểm tra sức khỏe thành thông báo
+      const healthCheckNotifications = allHealthCheckNotices.map(notice => {
+        // Format ngày thông báo
+        const formatDate = (dateArray) => {
+          if (Array.isArray(dateArray) && dateArray.length >= 3) {
+            return `${dateArray[2]}/${dateArray[1]}/${dateArray[0]}`;
+          }
+          return 'Chưa xác định';
+        };
+        
+        const noticeDate = formatDate(notice.date);
+        
+        // Kiểm tra xem phụ huynh đã xác nhận thông báo này chưa
+        const confirmation = confirmationsMap[notice.checkNoticeId];
+        let content = '';
+        let status = 'pending';
+        
+        if (confirmation) {
+          if (confirmation.status === 'CONFIRMED') {
+            content = `Bạn đã xác nhận tham gia kiểm tra sức khỏe "${notice.title}" vào ngày ${noticeDate}`;
+            status = 'confirmed';
+          } else if (confirmation.status === 'DECLINED') {
+            content = `Bạn đã từ chối tham gia kiểm tra sức khỏe "${notice.title}" vào ngày ${noticeDate}`;
+            status = 'declined';
+          }
+        } else {
+          content = `Nhà trường tổ chức kiểm tra sức khỏe "${notice.title}" vào ngày ${noticeDate}. Vui lòng xác nhận tham gia.`;
+        }
+        
+        return {
+          id: `health-check-${notice.checkNoticeId}`,
+          title: notice.title,
+          content: content || notice.description,
+          type: 'HEALTH_CHECK',
+          createdAt: notice.createdAt && notice.createdAt.length >= 3 
+            ? new Date(notice.createdAt[0], notice.createdAt[1] - 1, notice.createdAt[2]).toISOString()
+            : new Date().toISOString(),
+          isRead: confirmation ? true : false,
+          sourceId: notice.checkNoticeId,
+          status: status,
+          description: notice.description,
+          date: notice.date
+        };
+      });
+      
+      // Sắp xếp thông báo theo thời gian tạo, mới nhất lên đầu
+      const sortedNotifications = healthCheckNotifications.sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      
+      setNotifications(sortedNotifications);
+      
+      // Đếm số thông báo chưa đọc
+      const unreadCount = sortedNotifications.filter(notification => !notification.isRead).length;
+      setNotificationCount(unreadCount);
+      
+    } catch (error) {
+      console.error('Lỗi khi lấy thông báo:', error);
+      
+      // Fallback to mock data if error
+      const mockNotifications = [
+        {
+          id: 1,
+          title: 'Kiểm tra sức khỏe định kỳ',
+          content: 'Nhà trường tổ chức kiểm tra sức khỏe định kỳ cho học sinh vào ngày 25/08/2025',
+          type: 'HEALTH_CHECK',
+          createdAt: new Date(2025, 7, 18, 9, 30).toISOString(),
+          isRead: false,
+          sourceId: 101
+        },
+        {
+          id: 2,
+          title: 'Kiểm tra thị lực',
+          content: 'Kết quả kiểm tra thị lực của học sinh đã được cập nhật',
+          type: 'HEALTH_CHECK_RESULT',
+          createdAt: new Date(2025, 7, 17, 14, 15).toISOString(),
+          isRead: false,
+          sourceId: 102
+        }
+      ];
+      
+      setNotifications(mockNotifications);
+      setNotificationCount(mockNotifications.filter(notification => !notification.isRead).length);
+    } finally {
+      setNotificationLoading(false);
+    }
+  };
   
   // Hàm xử lý sự kiện menu
   const handleMenuClick = ({ key }) => {
@@ -132,6 +264,59 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
       
       // Chuyển hướng đến trang đăng nhập ngay cả khi có lỗi
       navigate('/login');
+    }
+  };
+
+  // Hàm xử lý khi click vào icon thông báo
+  const handleNotificationClick = () => {
+    // Có thể thêm logic để điều hướng đến trang thông báo hoặc hiển thị popup thông báo
+  };
+
+  // Hàm xử lý khi click vào một thông báo
+  const handleNotificationItemClick = async (notification) => {
+    try {
+      // Mô phỏng đánh dấu thông báo đã đọc cho testing
+      const updatedNotifications = notifications.map(item => 
+        item.id === notification.id ? { ...item, isRead: true } : item
+      );
+      setNotifications(updatedNotifications);
+      
+      // Cập nhật số thông báo chưa đọc
+      const unreadCount = updatedNotifications.filter(item => !item.isRead).length;
+      setNotificationCount(unreadCount);
+      
+      // Đóng popover
+      setNotificationVisible(false);
+      
+      // Điều hướng dựa vào loại thông báo
+      if (notification.type === 'HEALTH_CHECK') {
+        message.success('Đang chuyển đến trang kiểm tra sức khỏe');
+        
+        // Lưu thông tin thông báo đã chọn vào localStorage để trang health-check có thể sử dụng
+        localStorage.setItem('selectedHealthCheckNotice', JSON.stringify({
+          checkNoticeId: notification.sourceId,
+          title: notification.title,
+          description: notification.description,
+          date: notification.date,
+          status: notification.status
+        }));
+        
+        navigate('/health-check');
+      } else if (notification.type === 'HEALTH_CHECK_RESULT') {
+        message.success('Đang chuyển đến trang kết quả kiểm tra sức khỏe');
+        navigate('/health-check');
+      } else if (notification.type === 'VACCINATION') {
+        message.success('Đang chuyển đến trang tiêm chủng');
+        navigate('/vaccination');
+      } else if (notification.type === 'MEDICINE_REQUEST') {
+        message.success('Đang chuyển đến trang yêu cầu thuốc');
+        navigate('/medicine-request');
+      } else {
+        message.info('Đã đọc thông báo');
+      }
+    } catch (error) {
+      console.error('Lỗi khi xử lý thông báo:', error);
+      message.error('Không thể xử lý thông báo');
     }
   };
 
@@ -242,6 +427,74 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
   // Hiển thị tên người dùng phù hợp
   const displayName = userName || "Người dùng";
 
+  // Nội dung của popover thông báo
+  const notificationContent = (
+    <div className="notification-popover">
+      <div className="notification-header">
+        <h3>Thông báo</h3>
+        {notifications.length > 0 && (
+          <Button 
+            type="link" 
+            size="small"
+            onClick={() => {
+              // Đánh dấu tất cả thông báo là đã đọc
+              const updatedNotifications = notifications.map(item => ({ ...item, isRead: true }));
+              setNotifications(updatedNotifications);
+              setNotificationCount(0);
+              message.success('Đã đánh dấu tất cả thông báo là đã đọc');
+            }}
+          >
+            Đánh dấu tất cả đã đọc
+          </Button>
+        )}
+      </div>
+      
+      <List
+        className="notification-list"
+        loading={notificationLoading}
+        itemLayout="horizontal"
+        dataSource={notifications}
+        locale={{ emptyText: 'Không có thông báo' }}
+        renderItem={(item) => (
+          <List.Item 
+            className={`notification-item ${!item.isRead ? 'unread' : ''}`}
+            onClick={() => handleNotificationItemClick(item)}
+          >
+            <List.Item.Meta
+              avatar={
+                <Avatar icon={<BellOutlined />} style={{ backgroundColor: item.isRead ? '#d9d9d9' : '#1890ff' }} />
+              }
+              title={<span style={{ fontWeight: item.isRead ? 'normal' : 'bold' }}>{item.title}</span>}
+              description={
+                <div>
+                  <div>{item.content}</div>
+                  <div className="notification-time">
+                    {item.createdAt ? new Date(item.createdAt).toLocaleString('vi-VN') : 'Vừa xong'}
+                  </div>
+                </div>
+              }
+            />
+          </List.Item>
+        )}
+      />
+      
+      {notifications.length > 0 && (
+        <div className="notification-footer">
+          <Button 
+            type="link" 
+            block 
+            onClick={() => {
+              message.info('Chức năng xem tất cả thông báo đang được phát triển');
+              setNotificationVisible(false);
+            }}
+          >
+            Xem tất cả
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <Header className="headerAfter-container">
       <div className="headerAfter-logo" onClick={() => navigate('/')}>
@@ -270,6 +523,34 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
           onClick={showDrawer}
           className="headerAfter-mobile-menu-button"
         />
+      )}
+      
+      {/* Notification icon for parent users */}
+      {Number(userRole) === 2 && (
+        <div className="headerAfter-notification">
+          <Popover
+            content={notificationContent}
+            title={null}
+            trigger="click"
+            open={notificationVisible}
+            onOpenChange={setNotificationVisible}
+            placement="bottomRight"
+            overlayClassName="notification-popover-container"
+          >
+            <Badge count={notificationCount} size="small">
+              <BellOutlined 
+                className="notification-icon" 
+                onClick={handleNotificationClick}
+                style={{ 
+                  fontSize: '20px', 
+                  color: '#fff',
+                  cursor: 'pointer',
+                  marginRight: '16px'
+                }} 
+              />
+            </Badge>
+          </Popover>
+        </div>
       )}
       
       {/* User dropdown menu */}

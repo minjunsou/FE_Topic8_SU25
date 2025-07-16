@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Tạo instance của axios với cấu hình mặc định
 const axiosInstance = axios.create({
-  
+
   baseURL: 'http://localhost:8080/api',
 
   timeout: 10000,
@@ -24,6 +24,12 @@ axiosInstance.interceptors.request.use(
     }
     if (config.data) {
       console.log('Request data:', config.data);
+    }
+    
+    // Đảm bảo URL bắt đầu bằng /
+    if (config.url && !config.url.startsWith('/')) {
+      config.url = `/${config.url}`;
+      console.log('Corrected URL path to:', config.url);
     }
     
     // Nếu có token, thêm vào header Authorization
@@ -56,11 +62,22 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     console.error('Response error:', error);
     
+    // Chi tiết hóa các lỗi CORS
+    if (error.message && error.message.includes('Network Error')) {
+      console.error('NETWORK ERROR: Có thể là lỗi CORS hoặc server không phản hồi');
+      console.error('Origin hiện tại:', window.location.origin);
+      console.error('URL gọi API:', error.config ? `${error.config.baseURL}${error.config.url}` : 'Unknown URL');
+      console.error('Vui lòng kiểm tra CORS policy trên server hoặc đảm bảo server đang chạy');
+    }
+    
     if (error.response) {
       console.error('Error response data:', error.response.data);
       console.error('Error response status:', error.response.status);
+      console.error('Error response headers:', error.response.headers);
     } else if (error.request) {
-      console.error('Error request:', error.request);
+      console.error('Error request (không nhận được response):', error.request);
+      console.error('Request URL:', error.config ? `${error.config.baseURL}${error.config.url}` : 'Unknown URL');
+      console.error('Request method:', error.config ? error.config.method : 'Unknown method');
     } else {
       console.error('Error message:', error.message);
     }

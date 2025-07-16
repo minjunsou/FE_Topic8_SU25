@@ -15,14 +15,128 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
+.health-check-header {
+  margin-bottom: 24px;
+}
+
 .health-check-title {
   margin-bottom: 8px !important;
+  display: flex;
+  align-items: center;
+}
+
+.health-check-title .anticon {
+  margin-right: 12px;
+  font-size: 24px;
   color: #1890ff;
 }
 
+.health-check-subtitle {
+  color: #8c8c8c;
+  font-size: 16px;
+}
+
 .health-check-description {
+  margin-top: 16px;
   margin-bottom: 24px;
-  color: #666;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.health-check-detail p {
+  margin-bottom: 12px;
+}
+
+.confirmation-stats {
+  display: flex;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+
+.stat-card {
+  flex: 1;
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  color: #8c8c8c;
+}
+
+.confirmed {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+}
+
+.pending {
+  background-color: #fffbe6;
+  border: 1px solid #ffe58f;
+}
+
+.declined {
+  background-color: #fff2f0;
+  border: 1px solid #ffccc7;
+}
+
+.required-field {
+  color: #ff4d4f;
+  margin-right: 4px;
+}
+
+/* Child selection dropdown styling */
+.child-selection-container {
+  display: flex;
+  align-items: center;
+  background-color: #f0f5ff;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid #d6e4ff;
+}
+
+.child-selection-container .ant-typography {
+  margin-right: 12px;
+  font-size: 16px;
+}
+
+.child-selection-container .ant-select {
+  min-width: 250px;
+}
+
+.child-selection-container .ant-select-selector {
+  border-radius: 4px !important;
+}
+
+@media (max-width: 576px) {
+  .child-selection-container {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .child-selection-container .ant-typography {
+    margin-bottom: 8px;
+  }
+  
+  .child-selection-container .ant-select {
+    width: 100% !important;
+  }
 }
 
 .health-check-tabs {
