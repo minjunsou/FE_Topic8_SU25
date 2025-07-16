@@ -16,7 +16,7 @@ import StaffSidebar from './components/common/StaffSidebar';
 import StaffTabs from './components/common/StaffTabs';
 import LoadingIndicator from './components/common/LoadingIndicator';
 import HealthChecks from './components/HealthChecks/HealthChecks';
-
+import Vaccine from './components/Vaccine/Vaccine';
 import './StaffPage.css';
 
 const { Content } = Layout;
@@ -501,6 +501,8 @@ const StaffPage = () => {
         );
       case 'change-password':
         return <StaffChangePassword />;
+      case 'vaccine':
+        return <Vaccine/>;
       case 'overview':
       default:
         return (
