@@ -194,6 +194,74 @@ const parentApi = {
   },
 
   /**
+   * Cập nhật trạng thái yêu cầu thuốc thành đã hủy
+   * @param {string} studentId - ID của học sinh
+   * @param {string} medicationSentId - ID của yêu cầu thuốc cần hủy
+   * @returns {Promise} - Promise chứa kết quả cập nhật trạng thái yêu cầu thuốc
+   */
+  cancelMedicationRequest: async (studentId, medicationSentId) => {
+    try {
+      if (!studentId || !medicationSentId) {
+        throw new Error('studentId và medicationSentId là bắt buộc để hủy yêu cầu thuốc');
+      }
+
+      console.log(`Đang gọi API hủy yêu cầu thuốc ID: ${medicationSentId} cho học sinh ID: ${studentId}`);
+      
+      // Vì API hiện tại chỉ có endpoint xóa, ta sẽ sử dụng localStorage để lưu trữ các yêu cầu đã hủy
+      // Đây là giải pháp tạm thời cho đến khi backend hỗ trợ cập nhật trạng thái
+      
+      // Lấy danh sách các yêu cầu đã hủy từ localStorage
+      let cancelledRequests = [];
+      try {
+        const cancelledRequestsStr = localStorage.getItem('cancelledMedicationRequests');
+        if (cancelledRequestsStr) {
+          cancelledRequests = JSON.parse(cancelledRequestsStr);
+        }
+      } catch (error) {
+        console.error('Lỗi khi đọc danh sách yêu cầu đã hủy từ localStorage:', error);
+      }
+      
+      // Thêm yêu cầu mới vào danh sách đã hủy
+      cancelledRequests.push({
+        studentId,
+        medicationSentId,
+        cancelledAt: new Date().toISOString()
+      });
+      
+      // Lưu lại danh sách vào localStorage
+      localStorage.setItem('cancelledMedicationRequests', JSON.stringify(cancelledRequests));
+      
+      return { success: true, message: 'Đã hủy yêu cầu thuốc thành công' };
+    } catch (error) {
+      console.error(`Lỗi khi hủy yêu cầu thuốc ID ${medicationSentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Kiểm tra xem một yêu cầu thuốc có bị hủy không
+   * @param {string} medicationSentId - ID của yêu cầu thuốc cần kiểm tra
+   * @returns {boolean} - true nếu yêu cầu đã bị hủy, false nếu không
+   */
+  isMedicationRequestCancelled: (medicationSentId) => {
+    try {
+      // Lấy danh sách các yêu cầu đã hủy từ localStorage
+      const cancelledRequestsStr = localStorage.getItem('cancelledMedicationRequests');
+      if (!cancelledRequestsStr) {
+        return false;
+      }
+      
+      const cancelledRequests = JSON.parse(cancelledRequestsStr);
+      
+      // Kiểm tra xem yêu cầu có trong danh sách đã hủy không
+      return cancelledRequests.some(request => request.medicationSentId === medicationSentId);
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra trạng thái hủy của yêu cầu thuốc:', error);
+      return false;
+    }
+  },
+
+  /**
    * Lấy thông tin sức khỏe mới nhất của học sinh
    * @param {string} childId - ID của học sinh
    * @returns {Promise} - Promise chứa thông tin sức khỏe của học sinh

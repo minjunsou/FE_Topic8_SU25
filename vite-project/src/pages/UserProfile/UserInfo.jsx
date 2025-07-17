@@ -91,7 +91,7 @@ const UserInfo = () => {
       name: userInfo.fullName || userInfo.name || userInfo.username || '',
       email: userInfo.email || '',
       phone: userInfo.phone || '',
-      role: getRoleName(userInfo.roleId),
+      // role: getRoleName(userInfo.roleId),
       avatar: null, // URL hình ảnh nếu có
       joinDate: new Date().toLocaleDateString('vi-VN'), // Giả sử không có thông tin ngày tham gia
       gender: userInfo.gender || '',
@@ -100,16 +100,16 @@ const UserInfo = () => {
   };
 
   // Hàm chuyển đổi roleId sang tên vai trò
-  const getRoleName = (roleId) => {
-    const roleIdNum = Number(roleId);
-    switch (roleIdNum) {
-      case 1: return 'Quản trị viên';
-      case 2: return 'Y tá trường';
-      case 3: return 'Phụ huynh';
-      case 4: return 'Học sinh';
-      default: return 'Người dùng';
-    }
-  };
+  // const getRoleName = (roleId) => {
+  //   const roleIdNum = Number(roleId);
+  //   switch (roleIdNum) {
+  //     case 1: return 'Quản trị viên';
+  //     case 2: return 'Y tá trường';
+  //     case 3: return 'Phụ huynh';
+  //     case 4: return 'Học sinh';
+  //     default: return 'Người dùng';
+  //   }
+  // };
 
   // Hàm chuyển đổi mã giới tính sang hiển thị
   const getGenderDisplay = (gender) => {
@@ -312,7 +312,6 @@ const UserInfo = () => {
           <Descriptions.Item label="Số điện thoại">{userData?.phone}</Descriptions.Item>
           <Descriptions.Item label="Giới tính">{getGenderDisplay(userData?.gender)}</Descriptions.Item>
           <Descriptions.Item label="Ngày sinh">{userData?.dob || 'Chưa cập nhật'}</Descriptions.Item>
-          <Descriptions.Item label="Vai trò">{userData?.role}</Descriptions.Item>
           <Descriptions.Item label="Ngày tham gia">{userData?.joinDate}</Descriptions.Item>
         </Descriptions>
       )}

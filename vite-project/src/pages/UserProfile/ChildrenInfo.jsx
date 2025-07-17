@@ -58,7 +58,6 @@ const ChildrenInfo = () => {
           age: calculateAge(child.dob),
           grade: child.classId || 'N/A',
           class: child.className || child.classId || 'N/A',
-          school: child.schoolName || 'Trường học',
           healthStatus: child.healthStatus || 'Chưa cập nhật',
           avatar: null,
           birthdate: formatDate(child.dob) || 'Chưa cập nhật',
@@ -238,7 +237,6 @@ const ChildrenInfo = () => {
                 <Descriptions.Item label="Tuổi">{selectedChild.age}</Descriptions.Item>
                 <Descriptions.Item label="Ngày sinh">{selectedChild.birthdate}</Descriptions.Item>
                 <Descriptions.Item label="Lớp">{`${selectedChild.grade} - ${selectedChild.class}`}</Descriptions.Item>
-                <Descriptions.Item label="Trường">{selectedChild.school}</Descriptions.Item>
               </Descriptions>
             </TabPane>
             

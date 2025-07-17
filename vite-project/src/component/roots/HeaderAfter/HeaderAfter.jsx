@@ -105,9 +105,9 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
       // Lọc bỏ các thông báo null (từ chối/hủy)
       const filteredNotifications = formattedNotifications.filter(notification => notification !== null);
 
-      // Sắp xếp thông báo theo thời gian, mới nhất lên đầu
+      // Sắp xếp thông báo theo ID, lớn nhất lên đầu
       const sortedNotifications = filteredNotifications.sort((a, b) => 
-        new Date(b.createdAt) - new Date(a.createdAt)
+        Number(b.id) - Number(a.id)
       );
       
       setNotifications(sortedNotifications);
@@ -122,15 +122,6 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
       // Fallback to mock data if error
       const mockNotifications = [
         {
-          id: 1,
-          title: 'Kiểm tra sức khỏe định kỳ',
-          content: 'Nhà trường tổ chức kiểm tra sức khỏe định kỳ cho học sinh vào ngày 25/08/2025',
-          type: 'HEALTH_CHECK',
-          createdAt: new Date(2025, 7, 18, 9, 30).toISOString(),
-          isRead: false,
-          sourceId: 101
-        },
-        {
           id: 2,
           title: 'Kiểm tra thị lực',
           content: 'Kết quả kiểm tra thị lực của học sinh đã được cập nhật',
@@ -138,6 +129,15 @@ const HeaderAfter = ({ userName = "Người dùng", userRole = "2" }) => {
           createdAt: new Date(2025, 7, 17, 14, 15).toISOString(),
           isRead: false,
           sourceId: 102
+        },
+        {
+          id: 1,
+          title: 'Kiểm tra sức khỏe định kỳ',
+          content: 'Nhà trường tổ chức kiểm tra sức khỏe định kỳ cho học sinh vào ngày 25/08/2025',
+          type: 'HEALTH_CHECK',
+          createdAt: new Date(2025, 7, 18, 9, 30).toISOString(),
+          isRead: false,
+          sourceId: 101
         }
       ];
       

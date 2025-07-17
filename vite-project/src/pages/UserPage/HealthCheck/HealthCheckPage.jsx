@@ -51,34 +51,11 @@ const HealthCheckPage = () => {
             selectedStudentId = selectedNotice.studentId;
           }
           
-          // Hiển thị thông báo đã chọn
-          if (selectedNotice.checkNoticeId) {
-            // Tìm thông báo trong danh sách và hiển thị chi tiết
-            setTimeout(() => {
-              const notice = {
-                key: `notice-${selectedNotice.checkNoticeId}`,
-                id: selectedNotice.checkNoticeId,
-                checkNoticeId: selectedNotice.checkNoticeId,
-                name: selectedNotice.title,
-                date: Array.isArray(selectedNotice.date) && selectedNotice.date.length >= 3 
-                  ? `${selectedNotice.date[2]}/${selectedNotice.date[1]}/${selectedNotice.date[0]}`
-                  : 'Chưa xác định',
-                location: 'Phòng y tế trường',
-                status: selectedNotice.status || 'pending',
-                description: selectedNotice.description,
-                deadline: 'Sớm nhất có thể',
-                studentId: selectedNotice.studentId,
-                studentName: selectedNotice.studentName,
-                className: selectedNotice.className
-              };
-              
-              setSelectedHealthCheck(notice);
-              setDetailModalVisible(true);
-            }, 500);
-            
-            // Xóa thông tin đã chọn để tránh hiển thị lại khi refresh
-            localStorage.removeItem('selectedHealthCheckNotice');
-          }
+          // Chuyển sang tab "Lịch kiểm tra sắp tới" khi có thông báo
+          setActiveTab('upcoming');
+          
+          // Xóa thông tin đã chọn để tránh hiển thị lại khi refresh
+          localStorage.removeItem('selectedHealthCheckNotice');
         } catch (error) {
           console.error('Error parsing selected notice:', error);
         }
@@ -201,47 +178,29 @@ const HealthCheckPage = () => {
               studentId: selectedChild.id,
               studentName: selectedChild.name,
               className: selectedChild.class,
-              // Thêm thông tin chi tiết của thông báo
-              noticeDetail: noticeDetail || {}
+              // Lưu dữ liệu gốc và thông tin chi tiết thông báo cho chi tiết
+              rawData: confirmation,
+              noticeDetail: noticeDetail
             };
           } catch (error) {
             console.error(`Error fetching notice detail for ID ${confirmation.checkNoticeId}:`, error);
-            // Trả về thông tin cơ bản nếu không lấy được chi tiết
-            // Chuẩn hóa trạng thái
-            let normalizedStatus = (confirmation.status || 'pending').toLowerCase();
-            
-            return {
-              key: confirmation.confirmationId.toString(),
-              id: confirmation.confirmationId,
-              confirmationId: confirmation.confirmationId,
-              checkNoticeId: confirmation.checkNoticeId,
-              name: 'Thông báo kiểm tra sức khỏe',
-              date: Array.isArray(confirmation.confirmedAt) && confirmation.confirmedAt.length >= 3 
-                ? `${confirmation.confirmedAt[2]}/${confirmation.confirmedAt[1]}/${confirmation.confirmedAt[0]}`
-                : 'Chưa xác định',
-              location: 'Phòng y tế trường',
-              status: normalizedStatus,
-              description: 'Không thể lấy thông tin chi tiết',
-              deadline: 'Chưa xác định',
-              studentId: selectedChild.id,
-              studentName: selectedChild.name,
-              className: selectedChild.class
-            };
+            return null;
           }
         })
       );
       
-      // Lọc bỏ các thông báo có trạng thái CANCELLED/cancelled
-      const filteredChecks = upcomingChecks.filter(
-        check => check.status.toLowerCase() !== 'cancelled' && 
-                 check.status.toLowerCase() !== 'declined' &&
-                 check.status.toLowerCase() !== 'đã từ chối'
-      );
+      // Lọc bỏ các thông báo null (lỗi khi lấy chi tiết)
+      const filteredChecks = upcomingChecks.filter(check => check !== null);
       
-      setUpcomingHealthChecks(filteredChecks);
+      // Sắp xếp thông báo kiểm tra sức khỏe theo ID từ lớn đến nhỏ
+      const sortedChecks = filteredChecks.sort((a, b) => b.id - a.id);
       
-      // Lấy lịch sử kiểm tra sức khỏe cho học sinh đã chọn
-      // fetchHealthCheckHistory(); // This is now handled by the useEffect hook
+      // Hiển thị tất cả thông báo, bao gồm cả đã từ chối/hủy
+      setUpcomingHealthChecks(sortedChecks);
+      
+      if (sortedChecks.length === 0) {
+        message.info(`Không tìm thấy thông báo kiểm tra sức khỏe nào cho học sinh ${selectedChild.name}`);
+      }
     } catch (error) {
       console.error('Error fetching health check notices:', error);
       message.error('Không thể lấy danh sách thông báo kiểm tra sức khỏe');
@@ -366,9 +325,12 @@ const HealthCheckPage = () => {
         };
       }));
       
-      setHealthCheckHistory(formattedHistory);
+      // Sắp xếp lịch sử kiểm tra theo ID từ lớn đến nhỏ
+      const sortedHistory = formattedHistory.sort((a, b) => b.id - a.id);
       
-      if (formattedHistory.length === 0) {
+      setHealthCheckHistory(sortedHistory);
+      
+      if (sortedHistory.length === 0) {
         message.info(`Không có dữ liệu kiểm tra sức khỏe cho học sinh ${selectedChild.name}`);
       }
     } catch (error) {
@@ -482,35 +444,45 @@ const HealthCheckPage = () => {
           icon = <ExclamationCircleOutlined />;
         }
         
-        return <Tag icon={icon} color={color}>{text}</Tag>;
+        return (
+          <Tag color={color} icon={icon}>
+            {text}
+          </Tag>
+        );
       },
     },
     {
       title: 'Hành động',
       key: 'action',
-      render: (_, record) => (
-        <div className="action-buttons">
-          <Button 
-            type="primary" 
-            onClick={() => showDetailModal(record)}
-            style={{ marginRight: 8 }}
-          >
-            Chi tiết
-          </Button>
-          {/* Hiển thị nút xác nhận nếu trạng thái là pending, chưa xác nhận, hoặc null/undefined */}
-          {(record.status === 'pending' || 
-            record.status === 'PENDING' || 
-            record.status === 'Chưa xác nhận' || 
-            record.status === null || 
-            record.status === undefined) && (
+      render: (_, record) => {
+        // Chỉ hiển thị nút xác nhận cho các thông báo chưa xác nhận
+        const normalizedStatus = (record.status || '').toLowerCase();
+        const isPending = normalizedStatus !== 'confirmed' && 
+                          normalizedStatus !== 'declined' && 
+                          normalizedStatus !== 'cancelled' &&
+                          normalizedStatus !== 'đã xác nhận' &&
+                          normalizedStatus !== 'đã từ chối';
+        
+        return (
+          <Space>
             <Button 
-              onClick={() => showConfirmModal(record)}
+              type="primary" 
+              onClick={() => showDetailModal(record)}
             >
-              Xác nhận
+              Chi tiết
             </Button>
-          )}
-        </div>
-      ),
+            
+            {isPending && (
+              <Button 
+                type="primary" 
+                onClick={() => showConfirmModal(record)}
+              >
+                Xác nhận
+              </Button>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
@@ -593,6 +565,36 @@ const HealthCheckPage = () => {
     const formValues = form.getFieldsValue();
     const status = formValues.confirmStatus; // CONFIRMED hoặc CANCELLED
     
+    // Kiểm tra xem có confirmationId không
+    if (!selectedHealthCheck?.confirmationId) {
+      console.error('Lỗi: Không tìm thấy confirmationId', selectedHealthCheck);
+      
+      // Gọi API tạo xác nhận mới thay vì cập nhật
+      parentApi.confirmHealthCheck(
+        selectedHealthCheck?.checkNoticeId,
+        selectedChild.id,
+        parentId,
+        status
+      )
+        .then(() => {
+          const statusText = status === 'CONFIRMED' ? 'xác nhận' : 'từ chối';
+          message.success(`Đã ${statusText} tham gia kiểm tra sức khỏe cho học sinh ${selectedChild.name}`);
+          setConfirmModalVisible(false);
+          
+          // Cập nhật lại danh sách sau khi xác nhận
+          fetchHealthCheckNotices();
+        })
+        .catch(error => {
+          console.error('Lỗi khi xác nhận kiểm tra sức khỏe:', error);
+          message.error('Không thể xác nhận tham gia kiểm tra sức khỏe');
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+      
+      return;
+    }
+    
     // Tạo dữ liệu gửi đến API theo đúng thứ tự của API
     const confirmationData = {
       "healthCheckNoticeId": selectedHealthCheck.checkNoticeId,
@@ -611,26 +613,18 @@ const HealthCheckPage = () => {
         message.success(`Đã ${statusText} tham gia kiểm tra sức khỏe cho học sinh ${selectedChild.name}`);
         setConfirmModalVisible(false);
         
-        // Nếu từ chối tham gia, loại bỏ thông báo này khỏi danh sách hiển thị
-        if (status === 'CANCELLED') {
-          const filteredHealthChecks = upcomingHealthChecks.filter(item => 
-            item.confirmationId !== selectedHealthCheck.confirmationId
-          );
-          setUpcomingHealthChecks(filteredHealthChecks);
-        } else {
-          // Cập nhật trạng thái trong danh sách
-          const updatedHealthChecks = upcomingHealthChecks.map(item => {
-            if (item.confirmationId === selectedHealthCheck.confirmationId) {
-              return {
-                ...item,
-                status: status.toLowerCase()
-              };
-            }
-            return item;
-          });
-          
-          setUpcomingHealthChecks(updatedHealthChecks);
-        }
+        // Cập nhật trạng thái trong danh sách thay vì xóa
+        const updatedHealthChecks = upcomingHealthChecks.map(item => {
+          if (item.confirmationId === selectedHealthCheck.confirmationId) {
+            return {
+              ...item,
+              status: status.toLowerCase()
+            };
+          }
+          return item;
+        });
+        
+        setUpcomingHealthChecks(updatedHealthChecks);
       })
       .catch(error => {
         console.error('Lỗi khi xác nhận kiểm tra sức khỏe:', error);
