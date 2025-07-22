@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, Typography, Divider, message, Row, Col, Radio, Space, Alert, Modal, Select, Spin } from 'antd';
+import { Form, Input, Button, Card, Typography, Divider, message, Row, Col, Radio, Space, Alert, Modal, Select, Spin, Tag, InputNumber } from 'antd';
 import { MedicineBoxOutlined, SendOutlined, EyeOutlined } from '@ant-design/icons';
 import './HealthDeclarationPage.css';
 import parentApi from '../api/parentApi';
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 const { Option } = Select;
 
 const HealthDeclarationPage = () => {
@@ -17,6 +16,15 @@ const HealthDeclarationPage = () => {
   const [loadingChildren, setLoadingChildren] = useState(false);
   const [selectedChildId, setSelectedChildId] = useState(null);
   const [selectedChildName, setSelectedChildName] = useState('');
+  const [allergens, setAllergens] = useState([]);
+  const [loadingAllergens, setLoadingAllergens] = useState(false);
+  const [selectedAllergens, setSelectedAllergens] = useState([]);
+  const [syndromes, setSyndromes] = useState([]);
+  const [loadingSyndromes, setLoadingSyndromes] = useState(false);
+  const [selectedSyndromes, setSelectedSyndromes] = useState([]);
+  const [diseases, setDiseases] = useState([]);
+  const [loadingDiseases, setLoadingDiseases] = useState(false);
+  const [selectedDiseases, setSelectedDiseases] = useState([]);
 
   useEffect(() => {
     const fetchChildren = async () => {
@@ -57,7 +65,73 @@ const HealthDeclarationPage = () => {
       }
     };
 
+    const fetchAllergens = async () => {
+      try {
+        setLoadingAllergens(true);
+        console.log('Đang lấy danh sách dị ứng từ API');
+        const allergensData = await parentApi.getAllergens();
+        console.log('Danh sách dị ứng:', allergensData);
+        
+        if (Array.isArray(allergensData)) {
+          setAllergens(allergensData);
+        } else {
+          console.error('Dữ liệu dị ứng không phải là mảng:', allergensData);
+          message.error('Không thể lấy danh sách dị ứng, định dạng dữ liệu không hợp lệ');
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách dị ứng:', error);
+        message.error('Không thể lấy danh sách dị ứng. Vui lòng thử lại sau!');
+      } finally {
+        setLoadingAllergens(false);
+      }
+    };
+
+    const fetchSyndromes = async () => {
+      try {
+        setLoadingSyndromes(true);
+        console.log('Đang lấy danh sách hội chứng từ API');
+        const syndromesData = await parentApi.getSyndromes();
+        console.log('Danh sách hội chứng:', syndromesData);
+        
+        if (Array.isArray(syndromesData)) {
+          setSyndromes(syndromesData);
+        } else {
+          console.error('Dữ liệu hội chứng không phải là mảng:', syndromesData);
+          message.error('Không thể lấy danh sách hội chứng, định dạng dữ liệu không hợp lệ');
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách hội chứng:', error);
+        message.error('Không thể lấy danh sách hội chứng. Vui lòng thử lại sau!');
+      } finally {
+        setLoadingSyndromes(false);
+      }
+    };
+
+    const fetchDiseases = async () => {
+      try {
+        setLoadingDiseases(true);
+        console.log('Đang lấy danh sách bệnh từ API');
+        const diseasesData = await parentApi.getDiseases();
+        console.log('Danh sách bệnh:', diseasesData);
+        
+        if (Array.isArray(diseasesData)) {
+          setDiseases(diseasesData);
+        } else {
+          console.error('Dữ liệu bệnh không phải là mảng:', diseasesData);
+          message.error('Không thể lấy danh sách bệnh, định dạng dữ liệu không hợp lệ');
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách bệnh:', error);
+        message.error('Không thể lấy danh sách bệnh. Vui lòng thử lại sau!');
+      } finally {
+        setLoadingDiseases(false);
+      }
+    };
+
     fetchChildren();
+    fetchAllergens();
+    fetchSyndromes();
+    fetchDiseases();
   }, []);
 
   const handleChildSelect = (value, option) => {
@@ -73,6 +147,21 @@ const HealthDeclarationPage = () => {
     });
   };
 
+  const handleAllergensChange = (values) => {
+    console.log('Dị ứng được chọn:', values);
+    setSelectedAllergens(values);
+  };
+
+  const handleSyndromesChange = (values) => {
+    console.log('Hội chứng được chọn:', values);
+    setSelectedSyndromes(values);
+  };
+
+  const handleDiseasesChange = (values) => {
+    console.log('Bệnh được chọn:', values);
+    setSelectedDiseases(values);
+  };
+
   const onFinish = async (values) => {
     setLoading(true);
     console.log('Form values:', values);
@@ -81,29 +170,46 @@ const HealthDeclarationPage = () => {
     try {
       // Chuẩn bị dữ liệu theo định dạng API
       const medicalData = {
-        allergies: values.allergies || "",
-        chronicDiseases: values.chronicDiseases || "",
-        hearingStatus: values.hearingStatus || "Normal",
-        immunizationStatus: values.immunizationStatus || "Complete",
-        pastTreatments: values.pastTreatments || "",
-        visionStatusLeft: values.leftEye || "20/20",
-        visionStatusRight: values.rightEye || "20/20"
+        allergenIds: selectedAllergens || [],
+        syndromeIds: selectedSyndromes || [],
+        diseaseIds: selectedDiseases || [],
+        visionStatusLeft: values.visionLeft || "10/10",
+        visionStatusRight: values.visionRight || "10/10",
+        hearingStatus: values.hearingStatus || "normal",
+        heightCm: values.heightCm || 150,
+        weightKg: values.weightKg || 50,
+        gender: values.gender || "male",
+        bloodType: values.bloodType || "A"
       };
       
-      // Tạo recordId ngẫu nhiên từ 1 đến 1000
-      const randomRecordId = Math.floor(Math.random() * 1000) + 1;
-      console.log('Sử dụng recordId ngẫu nhiên:', randomRecordId);
+      console.log('Dữ liệu y tế gửi đi:', medicalData);
       
-      // Gọi API để tạo hồ sơ y tế thông qua parentApi với recordId ngẫu nhiên
-      await parentApi.createMedicalProfile(selectedChildId, medicalData, randomRecordId);
+      // Gọi API mới để tạo hồ sơ y tế
+      const result = await parentApi.createMedicalProfileNew(selectedChildId, medicalData);
       
-      message.success('Gửi thông tin khai báo thành công!');
+      // Hiển thị thông báo từ API
+      message.success(result.message || 'Gửi thông tin khai báo thành công!');
+      
       form.resetFields();
       setSelectedChildId(null);
       setSelectedChildName('');
+      setSelectedAllergens([]);
+      setSelectedSyndromes([]);
+      setSelectedDiseases([]);
     } catch (error) {
       console.error('Lỗi khi gửi thông tin:', error);
-      message.error('Đã xảy ra lỗi khi gửi thông tin. Vui lòng thử lại sau!');
+      let errorMessage = 'Đã xảy ra lỗi khi gửi thông tin. Vui lòng thử lại sau!';
+      
+      if (error.response) {
+        console.error('Response error:', error.response.data);
+        console.error('Status code:', error.response.status);
+        
+        if (error.response.data && error.response.data.message) {
+          errorMessage = `Lỗi: ${error.response.data.message}`;
+        }
+      }
+      
+      message.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -121,20 +227,42 @@ const HealthDeclarationPage = () => {
   };
 
   const renderPreviewContent = () => {
+    // Lấy tên của các dị ứng đã chọn
+    const selectedAllergensNames = selectedAllergens.map(id => {
+      const allergen = allergens.find(a => a.allergenId === id);
+      return allergen ? allergen.name : '';
+    }).filter(name => name);
+
+    // Lấy tên của các hội chứng đã chọn
+    const selectedSyndromesNames = selectedSyndromes.map(id => {
+      const syndrome = syndromes.find(s => s.conditionId === id);
+      return syndrome ? syndrome.name : '';
+    }).filter(name => name);
+
+    // Lấy tên của các bệnh đã chọn
+    const selectedDiseasesNames = selectedDiseases.map(id => {
+      const disease = diseases.find(d => d.diseaseId === id);
+      return disease ? disease.name : '';
+    }).filter(name => name);
+
     return (
       <div className="preview-content">
         <div className="preview-section">
           <Title level={5}>Thông tin cơ bản</Title>
           <p><strong>Họ và tên học sinh:</strong> {selectedChildName || 'Chưa chọn'}</p>
+          <p><strong>Chiều cao (cm):</strong> {formData.heightCm || '0'}</p>
+          <p><strong>Cân nặng (kg):</strong> {formData.weightKg || '0'}</p>
+          <p><strong>Giới tính:</strong> {formData.gender === 'male' ? 'Nam' : 'Nữ'}</p>
+          <p><strong>Nhóm máu:</strong> {formData.bloodType || 'Chưa xác định'}</p>
         </div>
 
         <Divider />
 
         <div className="preview-section">
           <Title level={5}>Tiền sử bệnh</Title>
-          <p><strong>Dị ứng:</strong> {formData.allergies || 'Không có'}</p>
-          <p><strong>Bệnh mãn tính:</strong> {formData.chronicDiseases || 'Không có'}</p>
-          <p><strong>Điều trị trước đây:</strong> {formData.pastTreatments || 'Không có'}</p>
+          <p><strong>Dị ứng:</strong> {selectedAllergensNames.length > 0 ? selectedAllergensNames.join(', ') : 'Không có'}</p>
+          <p><strong>Hội chứng:</strong> {selectedSyndromesNames.length > 0 ? selectedSyndromesNames.join(', ') : 'Không có'}</p>
+          <p><strong>Bệnh:</strong> {selectedDiseasesNames.length > 0 ? selectedDiseasesNames.join(', ') : 'Không có'}</p>
         </div>
 
         <Divider />
@@ -143,14 +271,13 @@ const HealthDeclarationPage = () => {
           <Title level={5}>Tình trạng sức khỏe hiện tại</Title>
           <Row gutter={16}>
             <Col span={12}>
-              <p><strong>Thị lực (mắt trái):</strong> {formData.leftEye || '20/20'}</p>
+              <p><strong>Thị lực (mắt trái):</strong> {formData.visionLeft || '10/10'}</p>
             </Col>
             <Col span={12}>
-              <p><strong>Thị lực (mắt phải):</strong> {formData.rightEye || '20/20'}</p>
+              <p><strong>Thị lực (mắt phải):</strong> {formData.visionRight || '10/10'}</p>
             </Col>
           </Row>
-          <p><strong>Tình trạng thính giác:</strong> {formData.hearingStatus || 'Normal'}</p>
-          <p><strong>Tình trạng tiêm chủng:</strong> {formData.immunizationStatus || 'Complete'}</p>
+          <p><strong>Tình trạng thính giác:</strong> {formData.hearingStatus === 'normal' ? 'Bình thường' : 'Suy giảm'}</p>
         </div>
       </div>
     );
@@ -176,8 +303,13 @@ const HealthDeclarationPage = () => {
             onFinish={onFinish}
             requiredMark={false}
             initialValues={{
-              hearingStatus: "Normal",
-              immunizationStatus: "Complete"
+              hearingStatus: "normal",
+              gender: "male",
+              bloodType: "A",
+              visionLeft: "10/10",
+              visionRight: "10/10",
+              heightCm: 150,
+              weightKg: 50
             }}
           >
             <div className="form-section">
@@ -224,6 +356,61 @@ const HealthDeclarationPage = () => {
                   )}
                 </Col>
               </Row>
+              
+              <Row gutter={16}>
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item
+                    name="heightCm"
+                    label="Chiều cao (cm)"
+                    rules={[{ required: true, message: 'Vui lòng nhập chiều cao!' }]}
+                  >
+                    <InputNumber 
+                      min={0} 
+                      max={250} 
+                      style={{ width: '100%' }} 
+                      placeholder="VD: 150"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item
+                    name="weightKg"
+                    label="Cân nặng (kg)"
+                    rules={[{ required: true, message: 'Vui lòng nhập cân nặng!' }]}
+                  >
+                    <InputNumber 
+                      min={0} 
+                      max={150} 
+                      style={{ width: '100%' }} 
+                      placeholder="VD: 50"
+                    />
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item
+                    name="gender"
+                    label="Giới tính"
+                  >
+                    <Select placeholder="Chọn giới tính">
+                      <Option value="male">Nam</Option>
+                      <Option value="female">Nữ</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item
+                    name="bloodType"
+                    label="Nhóm máu"
+                  >
+                    <Select placeholder="Chọn nhóm máu">
+                      <Option value="A">A</Option>
+                      <Option value="B">B</Option>
+                      <Option value="AB">AB</Option>
+                      <Option value="O">O</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
             </div>
 
             <Divider />
@@ -233,26 +420,125 @@ const HealthDeclarationPage = () => {
               <Row gutter={16}>
                 <Col xs={24}>
                   <Form.Item
-                    name="allergies"
+                    name="allergenIds"
                     label="Dị ứng"
                   >
-                    <Input placeholder="Liệt kê các dị ứng (nếu có)" />
+                    <Select 
+                      mode="multiple"
+                      placeholder="Chọn các dị ứng (nếu có)"
+                      loading={loadingAllergens}
+                      onChange={handleAllergensChange}
+                      value={selectedAllergens}
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      }
+                      notFoundContent={loadingAllergens ? <Spin size="small" /> : 'Không tìm thấy dị ứng nào'}
+                      tagRender={(props) => {
+                        const { label, closable, onClose } = props;
+                        return (
+                          <Tag 
+                            color="blue" 
+                            closable={closable}
+                            onClose={onClose}
+                            style={{ marginRight: 3 }}
+                          >
+                            {label}
+                          </Tag>
+                        );
+                      }}
+                    >
+                      {allergens.map((allergen) => (
+                        <Option 
+                          key={allergen.allergenId} 
+                          value={allergen.allergenId}
+                        >
+                          {allergen.name}
+                        </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </Col>
                 <Col xs={24}>
                   <Form.Item
-                    name="chronicDiseases"
-                    label="Bệnh mãn tính"
+                    name="syndromeIds"
+                    label="Hội chứng"
                   >
-                    <TextArea rows={4} placeholder="Liệt kê các bệnh mãn tính (nếu có)" />
+                    <Select 
+                      mode="multiple"
+                      placeholder="Chọn các hội chứng (nếu có)"
+                      loading={loadingSyndromes}
+                      onChange={handleSyndromesChange}
+                      value={selectedSyndromes}
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      }
+                      notFoundContent={loadingSyndromes ? <Spin size="small" /> : 'Không tìm thấy hội chứng nào'}
+                      tagRender={(props) => {
+                        const { label, closable, onClose } = props;
+                        return (
+                          <Tag 
+                            color="purple" 
+                            closable={closable}
+                            onClose={onClose}
+                            style={{ marginRight: 3 }}
+                          >
+                            {label}
+                          </Tag>
+                        );
+                      }}
+                    >
+                      {syndromes.map((syndrome) => (
+                        <Option 
+                          key={syndrome.conditionId} 
+                          value={syndrome.conditionId}
+                        >
+                          {syndrome.name}
+                        </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </Col>
                 <Col xs={24}>
                   <Form.Item
-                    name="pastTreatments"
-                    label="Điều trị trước đây"
+                    name="diseaseIds"
+                    label="Bệnh"
                   >
-                    <TextArea rows={4} placeholder="Liệt kê các điều trị đã thực hiện trước đây (nếu có)" />
+                    <Select 
+                      mode="multiple"
+                      placeholder="Chọn các bệnh (nếu có)"
+                      loading={loadingDiseases}
+                      onChange={handleDiseasesChange}
+                      value={selectedDiseases}
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      }
+                      notFoundContent={loadingDiseases ? <Spin size="small" /> : 'Không tìm thấy bệnh nào'}
+                      tagRender={(props) => {
+                        const { label, closable, onClose } = props;
+                        return (
+                          <Tag 
+                            color="red" 
+                            closable={closable}
+                            onClose={onClose}
+                            style={{ marginRight: 3 }}
+                          >
+                            {label}
+                          </Tag>
+                        );
+                      }}
+                    >
+                      {diseases.map((disease) => (
+                        <Option 
+                          key={disease.diseaseId} 
+                          value={disease.diseaseId}
+                        >
+                          {disease.name}
+                        </Option>
+                      ))}
+                    </Select>
                   </Form.Item>
                 </Col>
               </Row>
@@ -265,7 +551,7 @@ const HealthDeclarationPage = () => {
               <Row gutter={16}>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    name="leftEye"
+                    name="visionLeft"
                     label="Thị lực (mắt trái)"
                   >
                     <Input placeholder="VD: 20/20" />
@@ -273,7 +559,7 @@ const HealthDeclarationPage = () => {
                 </Col>
                 <Col xs={24} sm={12}>
                   <Form.Item
-                    name="rightEye"
+                    name="visionRight"
                     label="Thị lực (mắt phải)"
                   >
                     <Input placeholder="VD: 20/20" />
@@ -287,21 +573,8 @@ const HealthDeclarationPage = () => {
               >
                 <Radio.Group>
                   <Space direction="vertical">
-                    <Radio value="Normal">Bình thường</Radio>
-                    <Radio value="Impaired">Suy giảm</Radio>
-                  </Space>
-                </Radio.Group>
-              </Form.Item>
-
-              <Form.Item
-                name="immunizationStatus"
-                label="Tình trạng tiêm chủng"
-              >
-                <Radio.Group>
-                  <Space direction="vertical">
-                    <Radio value="Complete">Đầy đủ</Radio>
-                    <Radio value="Incomplete">Chưa đầy đủ</Radio>
-                    <Radio value="None">Chưa tiêm chủng</Radio>
+                    <Radio value="normal">Bình thường</Radio>
+                    <Radio value="impaired">Suy giảm</Radio>
                   </Space>
                 </Radio.Group>
               </Form.Item>

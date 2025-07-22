@@ -43,6 +43,35 @@
   margin-top: 32px;
 }
 
+/* Allergens selector styles */
+.allergen-tag {
+  margin: 2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.ant-select-selection-item {
+  border-radius: 4px;
+}
+
+/* Syndrome selector styles */
+.syndrome-tag {
+  margin: 2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #722ed1;
+  color: white;
+}
+
+/* Disease selector styles */
+.disease-tag {
+  margin: 2px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #f5222d;
+  color: white;
+}
+
 /* Preview styles */
 .preview-content {
   padding: 10px;
