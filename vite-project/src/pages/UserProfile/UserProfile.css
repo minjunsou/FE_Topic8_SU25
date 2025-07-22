@@ -228,11 +228,22 @@
   margin-bottom: 0;
 }
 
-.health-issues-section h5 {
+.health-issues-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding-bottom: 8px;
   margin-bottom: 16px;
   border-bottom: 1px solid #f0f0f0;
+}
+
+.health-issues-header h5 {
+  margin-bottom: 0;
   color: #1890ff;
+}
+
+.health-issues-header .ant-btn {
+  margin-left: 10px;
 }
 
 /* Styling for empty state in health issues */
@@ -252,4 +263,16 @@
 /* Styling for tags in health issues */
 .health-issues-section .ant-tag {
   margin-top: 4px;
+}
+
+/* Styling for modal form */
+.form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0;
+  margin-top: 24px;
+}
+
+.ant-modal-body .ant-form-item:last-child {
+  margin-bottom: 0;
 } 
