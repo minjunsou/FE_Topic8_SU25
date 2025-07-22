@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Descriptions, Button, message, Skeleton, Select, Empty, Tabs, Avatar, Spin } from 'antd';
-import { UserOutlined, TeamOutlined, MedicineBoxOutlined } from '@ant-design/icons';
+import { Card, Typography, Descriptions, Button, message, Skeleton, Select, Empty, Tabs, Avatar, Spin, Tag, List } from 'antd';
+import { UserOutlined, TeamOutlined, MedicineBoxOutlined, AlertOutlined, BugOutlined, MedicineBoxTwoTone } from '@ant-design/icons';
 import { parentApi } from '../../api';
 import './UserProfile.css';
 
@@ -14,6 +14,40 @@ const ChildrenInfo = () => {
   const [selectedChild, setSelectedChild] = useState(null);
   const [medicalProfile, setMedicalProfile] = useState(null);
   const [loadingMedical, setLoadingMedical] = useState(false);
+  const [allergens, setAllergens] = useState([]);
+  const [syndromes, setSyndromes] = useState([]);
+  const [diseases, setDiseases] = useState([]);
+  const [loadingReference, setLoadingReference] = useState(false);
+
+  // Lấy dữ liệu tham chiếu (dị ứng, hội chứng, bệnh)
+  useEffect(() => {
+    const fetchReferenceData = async () => {
+      try {
+        setLoadingReference(true);
+        
+        // Lấy danh sách dị ứng
+        const allergensData = await parentApi.getAllergens();
+        setAllergens(allergensData);
+        console.log('Danh sách dị ứng:', allergensData);
+        
+        // Lấy danh sách hội chứng
+        const syndromesData = await parentApi.getSyndromes();
+        setSyndromes(syndromesData);
+        console.log('Danh sách hội chứng:', syndromesData);
+        
+        // Lấy danh sách bệnh
+        const diseasesData = await parentApi.getDiseases();
+        setDiseases(diseasesData);
+        console.log('Danh sách bệnh:', diseasesData);
+      } catch (error) {
+        console.error('Lỗi khi lấy dữ liệu tham chiếu:', error);
+      } finally {
+        setLoadingReference(false);
+      }
+    };
+    
+    fetchReferenceData();
+  }, []);
 
   // Lấy danh sách con từ API
   useEffect(() => {
@@ -165,6 +199,130 @@ const ChildrenInfo = () => {
     }
   };
 
+  // Hàm lấy tên dị ứng từ ID
+  const getAllergenName = (allergenId) => {
+    const allergen = allergens.find(a => a.allergenId === allergenId);
+    return allergen ? allergen.name : 'Không xác định';
+  };
+
+  // Hàm lấy tên hội chứng từ ID
+  const getConditionName = (conditionId) => {
+    const syndrome = syndromes.find(s => s.conditionId === conditionId);
+    return syndrome ? syndrome.name : 'Không xác định';
+  };
+
+  // Hàm lấy tên bệnh từ ID
+  const getDiseaseName = (diseaseId) => {
+    const disease = diseases.find(d => d.diseaseId === diseaseId);
+    return disease ? disease.name : 'Không xác định';
+  };
+
+  // Hàm render danh sách dị ứng
+  const renderAllergies = () => {
+    if (!medicalProfile || !medicalProfile.allergies || medicalProfile.allergies.length === 0) {
+      return <Empty description="Không có dị ứng" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    }
+    
+    return (
+      <List
+        itemLayout="horizontal"
+        dataSource={medicalProfile.allergies}
+        renderItem={item => (
+          <List.Item>
+            <List.Item.Meta
+              avatar={<AlertOutlined style={{ color: '#f5222d', fontSize: '24px' }} />}
+              title={item.allergenName || getAllergenName(item.allergenId)}
+              description={
+                <div>
+                  <div>Mức độ: {item.severity === 1 ? 'Nhẹ' : item.severity === 2 ? 'Trung bình' : 'Nặng'}</div>
+                  {item.reaction && <div>Phản ứng: {item.reaction}</div>}
+                  {item.lifeThreatening && <Tag color="red">Nguy hiểm đến tính mạng</Tag>}
+                </div>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    );
+  };
+
+  // Hàm render danh sách hội chứng
+  const renderConditions = () => {
+    if (!medicalProfile || !medicalProfile.conditions || medicalProfile.conditions.length === 0) {
+      return <Empty description="Không có hội chứng" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    }
+    
+    return (
+      <List
+        itemLayout="horizontal"
+        dataSource={medicalProfile.conditions}
+        renderItem={item => (
+          <List.Item>
+            <List.Item.Meta
+              avatar={<BugOutlined style={{ color: '#722ed1', fontSize: '24px' }} />}
+              title={item.conditionName || getConditionName(item.conditionId)}
+              description={item.note && <div>Ghi chú: {item.note}</div>}
+            />
+          </List.Item>
+        )}
+      />
+    );
+  };
+
+  // Hàm render danh sách bệnh
+  const renderDiseases = () => {
+    if (!medicalProfile || !medicalProfile.diseases || medicalProfile.diseases.length === 0) {
+      return <Empty description="Không có bệnh" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    }
+    
+    return (
+      <List
+        itemLayout="horizontal"
+        dataSource={medicalProfile.diseases}
+        renderItem={item => (
+          <List.Item>
+            <List.Item.Meta
+              avatar={<MedicineBoxTwoTone twoToneColor="#eb2f96" style={{ fontSize: '24px' }} />}
+              title={item.diseaseName || getDiseaseName(item.diseaseId)}
+              description={
+                <div>
+                  <div>Từ ngày: {item.sinceDate}</div>
+                  <div>Mức độ: {item.severity === 1 ? 'Nhẹ' : item.severity === 2 ? 'Trung bình' : 'Nặng'}</div>
+                </div>
+              }
+            />
+          </List.Item>
+        )}
+      />
+    );
+  };
+
+  // Hàm render thông tin sức khỏe cơ bản
+  const renderBasicHealthData = () => {
+    if (!medicalProfile || !medicalProfile.basicHealthData) {
+      return <Empty description="Không có thông tin sức khỏe cơ bản" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
+    }
+    
+    const basicData = medicalProfile.basicHealthData;
+    
+    return (
+      <Descriptions bordered column={1}>
+        <Descriptions.Item label="Chiều cao">{basicData.heightCm} cm</Descriptions.Item>
+        <Descriptions.Item label="Cân nặng">{basicData.weightKg} kg</Descriptions.Item>
+        <Descriptions.Item label="Thị lực (mắt trái)">{basicData.visionLeft}</Descriptions.Item>
+        <Descriptions.Item label="Thị lực (mắt phải)">{basicData.visionRight}</Descriptions.Item>
+        <Descriptions.Item label="Tình trạng thính giác">
+          {basicData.hearingStatus === 'normal' ? 'Bình thường' : 'Suy giảm'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Giới tính">
+          {basicData.gender === 'male' ? 'Nam' : 'Nữ'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Nhóm máu">{basicData.bloodType}</Descriptions.Item>
+        <Descriptions.Item label="Cập nhật lần cuối">{basicData.lastMeasured}</Descriptions.Item>
+      </Descriptions>
+    );
+  };
+
   if (loading) {
     return (
       <Card className="user-profile-card">
@@ -246,17 +404,27 @@ const ChildrenInfo = () => {
                   <Spin size="large" tip="Đang tải thông tin sức khỏe..." />
                 </div>
               ) : medicalProfile ? (
-                <Descriptions bordered column={1}>
-                  {/* <Descriptions.Item label="Tình trạng sức khỏe">{medicalProfile.healthStatus || 'Chưa cập nhật'}</Descriptions.Item> */}
-                  <Descriptions.Item label="Dị ứng">{medicalProfile.allergies || 'Không'}</Descriptions.Item>
-                  <Descriptions.Item label="Bệnh mãn tính">{medicalProfile.chronicDiseases || 'Không'}</Descriptions.Item>
-                  <Descriptions.Item label="Tình trạng thính giác">{medicalProfile.hearingStatus || 'Chưa cập nhật'}</Descriptions.Item>
-                  <Descriptions.Item label="Thị lực (mắt trái)">{medicalProfile.visionStatusLeft || 'Chưa cập nhật'}</Descriptions.Item>
-                  <Descriptions.Item label="Thị lực (mắt phải)">{medicalProfile.visionStatusRight || 'Chưa cập nhật'}</Descriptions.Item>
-                  <Descriptions.Item label="Tình trạng tiêm chủng">{medicalProfile.immunizationStatus || 'Chưa cập nhật'}</Descriptions.Item>
-                  <Descriptions.Item label="Điều trị trước đây">{medicalProfile.pastTreatments || 'Không'}</Descriptions.Item>
-                  {/* <Descriptions.Item label="Cập nhật lần cuối">{medicalProfile.lastUpdated ? formatDate(medicalProfile.lastUpdated) : 'Chưa cập nhật'}</Descriptions.Item> */}
-                </Descriptions>
+                <Tabs defaultActiveKey="basic" type="card">
+                  <TabPane tab="Thông tin cơ bản" key="basic">
+                    {renderBasicHealthData()}
+                  </TabPane>
+                  <TabPane tab="Vấn đề sức khỏe" key="healthIssues">
+                    <div className="health-issues-container">
+                      <div className="health-issues-section">
+                        <Title level={5}>Dị ứng</Title>
+                        {renderAllergies()}
+                      </div>
+                      <div className="health-issues-section">
+                        <Title level={5}>Hội chứng</Title>
+                        {renderConditions()}
+                      </div>
+                      <div className="health-issues-section">
+                        <Title level={5}>Bệnh</Title>
+                        {renderDiseases()}
+                      </div>
+                    </div>
+                  </TabPane>
+                </Tabs>
               ) : (
                 <Empty description="Không có thông tin sức khỏe" image={Empty.PRESENTED_IMAGE_SIMPLE} />
               )}
@@ -267,7 +435,7 @@ const ChildrenInfo = () => {
                 <div style={{ textAlign: 'center', padding: '30px' }}>
                   <Spin size="large" tip="Đang tải thông tin tiêm chủng..." />
                 </div>
-              ) : medicalProfile && medicalProfile.immunizationStatus === "Complete" ? (
+              ) : medicalProfile && medicalProfile.active ? (
                 <div className="vaccination-info">
                   <div className="vaccination-status-complete">
                     <MedicineBoxOutlined style={{ fontSize: '24px', color: '#52c41a' }} />

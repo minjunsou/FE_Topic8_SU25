@@ -214,3 +214,42 @@
     margin-bottom: 16px;
   }
 } 
+
+/* Styling for health issues section */
+.health-issues-container {
+  padding: 10px 0;
+}
+
+.health-issues-section {
+  margin-bottom: 30px;
+}
+
+.health-issues-section:last-child {
+  margin-bottom: 0;
+}
+
+.health-issues-section h5 {
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #1890ff;
+}
+
+/* Styling for empty state in health issues */
+.health-issues-section .ant-empty {
+  margin: 10px 0 20px;
+}
+
+/* Styling for list items in health issues */
+.health-issues-section .ant-list-item {
+  padding: 12px 0;
+}
+
+.health-issues-section .ant-list-item-meta-title {
+  font-weight: 500;
+}
+
+/* Styling for tags in health issues */
+.health-issues-section .ant-tag {
+  margin-top: 4px;
+} 

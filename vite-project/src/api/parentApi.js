@@ -447,11 +447,11 @@ const parentApi = {
 
       console.log(`Đang gọi API để lấy thông tin sức khỏe của học sinh ID: ${childId}`);
       
-      // Gọi API lấy thông tin sức khỏe mới nhất
-      const response = await axiosInstance.get(`/medicalProfiles/latest/${childId}`);
+      // Gọi API lấy thông tin sức khỏe mới
+      const response = await axios.get(`http://localhost:8080/api/medicalProfiles/${childId}/get-medical-profile`);
       
       // Log response để debug
-      console.log('API response medical profile:', response);
+      console.log('API response medical profile:', response.data);
       
       return response.data;
     } catch (error) {
