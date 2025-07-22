@@ -55,6 +55,9 @@ const ChildrenInfo = () => {
   const [editingCondition, setEditingCondition] = useState(false);
   const [editConditionForm] = Form.useForm();
   const [currentConditionId, setCurrentConditionId] = useState(null);
+  
+  // State để quản lý tab đang được chọn
+  const [activeHealthTab, setActiveHealthTab] = useState('healthIssues');
 
   // Lấy dữ liệu tham chiếu (dị ứng, hội chứng, bệnh)
   useEffect(() => {
@@ -351,7 +354,10 @@ const ChildrenInfo = () => {
       setDiseaseModalVisible(false);
       
       // Cập nhật lại thông tin sức khỏe
-      fetchMedicalProfile(selectedChild.id);
+      await fetchMedicalProfile(selectedChild.id);
+      
+      // Đảm bảo tab "Vấn đề sức khỏe" được chọn
+      setActiveHealthTab('healthIssues');
     } catch (error) {
       console.error('Lỗi khi thêm bệnh lý:', error);
       
@@ -396,7 +402,10 @@ const ChildrenInfo = () => {
       setConditionModalVisible(false);
       
       // Cập nhật lại thông tin sức khỏe
-      fetchMedicalProfile(selectedChild.id);
+      await fetchMedicalProfile(selectedChild.id);
+      
+      // Đảm bảo tab "Vấn đề sức khỏe" được chọn
+      setActiveHealthTab('healthIssues');
     } catch (error) {
       console.error('Lỗi khi thêm hội chứng:', error);
       
@@ -443,7 +452,10 @@ const ChildrenInfo = () => {
       setAllergyModalVisible(false);
       
       // Cập nhật lại thông tin sức khỏe
-      fetchMedicalProfile(selectedChild.id);
+      await fetchMedicalProfile(selectedChild.id);
+      
+      // Đảm bảo tab "Vấn đề sức khỏe" được chọn
+      setActiveHealthTab('healthIssues');
     } catch (error) {
       console.error('Lỗi khi thêm dị ứng:', error);
       
@@ -476,7 +488,6 @@ const ChildrenInfo = () => {
       };
       
       console.log('Dữ liệu chỉnh sửa dị ứng:', requestData);
-      console.log('ID dị ứng gửi đi (studentAllergyId):', currentAllergyId);
       
       // Gọi API cập nhật dị ứng
       const response = await axios.put(
@@ -490,7 +501,10 @@ const ChildrenInfo = () => {
       setEditAllergyModalVisible(false);
       
       // Cập nhật lại thông tin sức khỏe
-      fetchMedicalProfile(selectedChild.id);
+      await fetchMedicalProfile(selectedChild.id);
+      
+      // Đảm bảo tab "Vấn đề sức khỏe" được chọn
+      setActiveHealthTab('healthIssues');
     } catch (error) {
       console.error('Lỗi khi cập nhật dị ứng:', error);
       
@@ -539,7 +553,10 @@ const ChildrenInfo = () => {
       setEditDiseaseModalVisible(false);
       
       // Cập nhật lại thông tin sức khỏe
-      fetchMedicalProfile(selectedChild.id);
+      await fetchMedicalProfile(selectedChild.id);
+      
+      // Đảm bảo tab "Vấn đề sức khỏe" được chọn
+      setActiveHealthTab('healthIssues');
     } catch (error) {
       console.error('Lỗi khi cập nhật bệnh lý:', error);
       
@@ -587,8 +604,9 @@ const ChildrenInfo = () => {
       message.success('Cập nhật hội chứng thành công');
       setEditConditionModalVisible(false);
 
-      // Cập nhật lại thông tin sức khỏe
-      fetchMedicalProfile(selectedChild.id);
+      // Cập nhật lại thông tin sức khỏe và đảm bảo tab "Vấn đề sức khỏe" được chọn
+      await fetchMedicalProfile(selectedChild.id);
+      setActiveHealthTab('healthIssues');
     } catch (error) {
       console.error('Lỗi khi cập nhật hội chứng:', error);
 
@@ -886,7 +904,7 @@ const ChildrenInfo = () => {
                   <Spin size="large" tip="Đang tải thông tin sức khỏe..." />
                 </div>
               ) : medicalProfile ? (
-                <Tabs defaultActiveKey="basic" type="card">
+                <Tabs defaultActiveKey={activeHealthTab} activeKey={activeHealthTab} onChange={setActiveHealthTab} type="card">
                   <TabPane tab="Thông tin cơ bản" key="basic">
                     {renderBasicHealthData()}
                   </TabPane>
