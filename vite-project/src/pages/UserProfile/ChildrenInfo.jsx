@@ -20,6 +20,10 @@ const ChildrenInfo = () => {
   const [diseases, setDiseases] = useState([]);
   const [loadingReference, setLoadingReference] = useState(false);
   
+  // State để lưu thông tin cơ bản của học sinh
+  const [studentSummary, setStudentSummary] = useState(null);
+  const [loadingStudentSummary, setLoadingStudentSummary] = useState(false);
+  
   // State cho form thêm bệnh lý
   const [diseaseModalVisible, setDiseaseModalVisible] = useState(false);
   const [addingDisease, setAddingDisease] = useState(false);
@@ -148,6 +152,9 @@ const ChildrenInfo = () => {
           
           // Lấy thông tin sức khỏe của học sinh đầu tiên
           fetchMedicalProfile(firstChild.id);
+          
+          // Lấy thông tin cơ bản của học sinh đầu tiên
+          fetchStudentSummary(firstChild.id);
         }
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu con:', error);
@@ -188,6 +195,37 @@ const ChildrenInfo = () => {
       setMedicalProfile(null);
     } finally {
       setLoadingMedical(false);
+    }
+  };
+
+  // Hàm lấy thông tin cơ bản của học sinh
+  const fetchStudentSummary = async (studentId) => {
+    if (!studentId) {
+      console.warn('Không có studentId để lấy thông tin học sinh');
+      return;
+    }
+    
+    try {
+      setLoadingStudentSummary(true);
+      console.log(`Đang gọi API để lấy thông tin cơ bản của học sinh ID: ${studentId}`);
+      
+      // Gọi API lấy thông tin cơ bản của học sinh
+      const summaryData = await parentApi.getStudentSummary(studentId);
+      console.log('Thông tin cơ bản của học sinh từ API:', summaryData);
+      
+      if (!summaryData) {
+        console.log('Không có dữ liệu cơ bản của học sinh');
+        setStudentSummary(null);
+        return;
+      }
+      
+      setStudentSummary(summaryData);
+    } catch (error) {
+      console.error('Lỗi khi lấy thông tin cơ bản của học sinh:', error);
+      message.error('Không thể tải thông tin cơ bản của học sinh');
+      setStudentSummary(null);
+    } finally {
+      setLoadingStudentSummary(false);
     }
   };
 
@@ -666,6 +704,7 @@ const ChildrenInfo = () => {
     if (selected) {
       setSelectedChild(selected);
       fetchMedicalProfile(childId);
+      fetchStudentSummary(childId);
     }
   };
 
@@ -890,12 +929,27 @@ const ChildrenInfo = () => {
 
           <Tabs defaultActiveKey="1" className="child-info-tabs">
             <TabPane tab="Thông tin cơ bản" key="1">
-              <Descriptions bordered column={1}>
-                <Descriptions.Item label="Họ và tên">{selectedChild.name}</Descriptions.Item>
-                <Descriptions.Item label="Tuổi">{selectedChild.age}</Descriptions.Item>
-                <Descriptions.Item label="Ngày sinh">{selectedChild.birthdate}</Descriptions.Item>
-                <Descriptions.Item label="Lớp">{`${selectedChild.grade} - ${selectedChild.class}`}</Descriptions.Item>
-              </Descriptions>
+              {loadingStudentSummary ? (
+                <div style={{ textAlign: 'center', padding: '30px' }}>
+                  <Spin size="large" tip="Đang tải thông tin học sinh..." />
+                </div>
+              ) : studentSummary ? (
+                <Descriptions bordered column={1}>
+                  <Descriptions.Item label="Mã lớp">{studentSummary.classId}</Descriptions.Item>
+                  <Descriptions.Item label="Tên lớp">{studentSummary.className}</Descriptions.Item>
+                  <Descriptions.Item label="Khối">{studentSummary.grade}</Descriptions.Item>
+                  <Descriptions.Item label="Họ và tên">{studentSummary.fullName}</Descriptions.Item>
+                  <Descriptions.Item label="Ngày sinh">{studentSummary.dob}</Descriptions.Item>
+                  <Descriptions.Item label="Giới tính">{studentSummary.gender === 'male' ? 'Nam' : 'Nữ'}</Descriptions.Item>
+                </Descriptions>
+              ) : (
+                <Descriptions bordered column={1}>
+                  <Descriptions.Item label="Họ và tên">{selectedChild.name}</Descriptions.Item>
+                  <Descriptions.Item label="Tuổi">{selectedChild.age}</Descriptions.Item>
+                  <Descriptions.Item label="Ngày sinh">{selectedChild.birthdate}</Descriptions.Item>
+                  <Descriptions.Item label="Lớp">{`${selectedChild.grade} - ${selectedChild.class}`}</Descriptions.Item>
+                </Descriptions>
+              )}
             </TabPane>
             
             <TabPane tab="Thông tin sức khỏe" key="2">

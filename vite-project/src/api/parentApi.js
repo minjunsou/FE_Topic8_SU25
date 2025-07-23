@@ -1321,6 +1321,30 @@ getAllNurses: async (page = 0, size = 10, sortBy = 'fullName', direction = 'asc'
     return [];
   }
 },
+
+  /**
+   * Lấy thông tin cơ bản của học sinh
+   * @param {string} studentId - ID của học sinh
+   * @returns {Promise} - Promise chứa thông tin cơ bản của học sinh
+   */
+  getStudentSummary: async (studentId) => {
+    try {
+      if (!studentId) {
+        throw new Error('studentId là bắt buộc để lấy thông tin học sinh');
+      }
+
+      console.log(`Đang gọi API để lấy thông tin cơ bản của học sinh ID: ${studentId}`);
+      
+      const response = await axios.get(`http://localhost:8080/api/v1/student/students/${studentId}/summary`);
+      
+      console.log('API response student summary:', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi lấy thông tin cơ bản của học sinh ID ${studentId}:`, error);
+      throw error;
+    }
+  },
 };
 
 export default parentApi;
