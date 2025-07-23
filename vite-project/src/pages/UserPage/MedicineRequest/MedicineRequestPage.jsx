@@ -308,6 +308,18 @@ const MedicineRequestPage = () => {
           }
         }
         
+        // Lấy trạng thái từ API hoặc sử dụng trạng thái mặc định
+        let status = item.status || 'PENDING';
+        
+        // Kiểm tra nếu yêu cầu đã được đánh dấu là đã hủy trong local state
+        const existingItem = medicationHistory.find(
+          hist => hist.id === item.id && hist.studentId === item.studentId && hist.status === 'CANCELLED'
+        );
+        
+        if (existingItem) {
+          status = 'CANCELLED';
+        }
+        
         return {
           key: index.toString(),
           id: item.id || `MR${index + 1}`,
@@ -318,7 +330,7 @@ const MedicineRequestPage = () => {
           timingNotes: timingInfo,
           requestDate: requestDate,
           sentDate: sentDate,
-          status: item.status || 'PENDING',
+          status: status,
           // Thêm dữ liệu gốc để sử dụng khi cần
           rawData: item
         };
@@ -433,38 +445,42 @@ const MedicineRequestPage = () => {
       key: 'sentDate',
       width: 120,
     },
-    // {
-    //   title: 'Trạng thái',
-    //   dataIndex: 'status',
-    //   key: 'status',
-    //   width: 120,
-    //   render: (status) => {
-    //     let color = '';
-    //     let text = '';
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      render: (status) => {
+        let color = '';
+        let text = '';
         
-    //     switch (status) {
-    //       case 'APPROVED':
-    //         color = 'green';
-    //         text = 'Đã duyệt';
-    //         break;
-    //       case 'REJECTED':
-    //         color = 'red';
-    //         text = 'Từ chối';
-    //         break;
-    //       case 'PENDING':
-    //       default:
-    //         color = 'orange';
-    //         text = 'Đang xử lý';
-    //         break;
-    //     }
+        switch (status) {
+          case 'APPROVED':
+            color = 'green';
+            text = 'Đã duyệt';
+            break;
+          case 'REJECTED':
+            color = 'red';
+            text = 'Từ chối';
+            break;
+          case 'CANCELLED':
+            color = 'purple';
+            text = 'Đã hủy';
+            break;
+          case 'PENDING':
+          default:
+            color = 'orange';
+            text = 'Đang xử lý';
+            break;
+        }
         
-    //     return (
-    //       <Tag color={color}>
-    //         {text}
-    //       </Tag>
-    //     );
-    //   },
-    // },
+        return (
+          <Tag color={color}>
+            {text}
+          </Tag>
+        );
+      },
+    },
     {
       title: 'Thao tác',
       key: 'action',
@@ -481,8 +497,8 @@ const MedicineRequestPage = () => {
           
           {record.status === 'PENDING' && (
             <Popconfirm
-              title="Xóa yêu cầu thuốc"
-              description="Bạn có chắc chắn muốn xóa yêu cầu thuốc này không?"
+              title="Hủy yêu cầu thuốc"
+              description="Bạn có chắc chắn muốn hủy yêu cầu thuốc này không?"
               onConfirm={() => handleDeleteRequest(record)}
               okText="Có"
               cancelText="Không"
@@ -493,7 +509,7 @@ const MedicineRequestPage = () => {
                 size="small" 
                 icon={<DeleteOutlined />}
               >
-                Xóa
+                Hủy
               </Button>
             </Popconfirm>
           )}
@@ -602,28 +618,39 @@ const MedicineRequestPage = () => {
   const handleDeleteRequest = async (record) => {
     try {
       if (!record || !record.id || !record.studentId) {
-        message.error('Thiếu thông tin cần thiết để xóa yêu cầu thuốc');
+        message.error('Thiếu thông tin cần thiết để hủy yêu cầu thuốc');
         return;
       }
 
-      console.log(`Đang xóa yêu cầu thuốc ID: ${record.id} của học sinh ID: ${record.studentId}`);
+      console.log(`Đang hủy yêu cầu thuốc ID: ${record.id} của học sinh ID: ${record.studentId}`);
       
-      // Gọi API xóa yêu cầu thuốc
+      // Thay đổi status trong local state thành CANCELLED
+      const updatedHistory = medicationHistory.map(item => {
+        if (item.id === record.id && item.studentId === record.studentId) {
+          return { ...item, status: 'CANCELLED' };
+        }
+        return item;
+      });
+      
+      setMedicationHistory(updatedHistory);
+      
+      // Gọi API xóa yêu cầu thuốc (có thể cần thay đổi API để hỗ trợ hủy thay vì xóa)
       await parentApi.deleteMedicationRequest(record.studentId, record.id);
       
-      message.success('Đã xóa yêu cầu thuốc thành công!');
+      message.success('Đã hủy yêu cầu thuốc thành công!');
       
-      // Tải lại danh sách yêu cầu
-      if (selectedChildId) {
-        fetchMedicationHistory(selectedChildId);
-      }
     } catch (error) {
-      console.error('Lỗi khi xóa yêu cầu thuốc:', error);
+      console.error('Lỗi khi hủy yêu cầu thuốc:', error);
       if (error.response) {
         console.error('Error response:', error.response.data);
-        message.error(`Không thể xóa yêu cầu thuốc: ${error.response.data.message || 'Đã xảy ra lỗi'}`);
+        message.error(`Không thể hủy yêu cầu thuốc: ${error.response.data.message || 'Đã xảy ra lỗi'}`);
       } else {
-        message.error('Không thể xóa yêu cầu thuốc. Vui lòng thử lại sau.');
+        message.error('Không thể hủy yêu cầu thuốc. Vui lòng thử lại sau.');
+      }
+      
+      // Nếu có lỗi, tải lại danh sách để đảm bảo dữ liệu chính xác
+      if (selectedChildId) {
+        fetchMedicationHistory(selectedChildId);
       }
     }
   };
@@ -878,6 +905,7 @@ const MedicineRequestPage = () => {
                 {selectedRequest.status === 'APPROVED' && <Tag color="green">Đã duyệt</Tag>}
                 {selectedRequest.status === 'REJECTED' && <Tag color="red">Từ chối</Tag>}
                 {selectedRequest.status === 'PENDING' && <Tag color="orange">Đang xử lý</Tag>}
+                {selectedRequest.status === 'CANCELLED' && <Tag color="purple">Đã hủy</Tag>}
               </p>
             </div>
 

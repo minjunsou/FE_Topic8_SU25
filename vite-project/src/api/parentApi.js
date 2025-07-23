@@ -1,6 +1,211 @@
 import axiosInstance from './axiosConfig';
+import axios from 'axios';
 
 const parentApi = {
+  /**
+   * Lấy danh sách dị ứng từ API
+   * @returns {Promise} - Promise chứa danh sách dị ứng
+   */
+  getAllergens: async () => {
+    try {
+      console.log('Đang gọi API để lấy danh sách dị ứng');
+      const response = await axios.get('http://localhost:8080/api/reference/allergens/search');
+      console.log('API response allergens:', response);
+      
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách dị ứng:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy danh sách hội chứng từ API
+   * @returns {Promise} - Promise chứa danh sách hội chứng
+   */
+  getSyndromes: async () => {
+    try {
+      console.log('Đang gọi API để lấy danh sách hội chứng');
+      const response = await axios.get('http://localhost:8080/api/reference/syndromes/search');
+      console.log('API response syndromes:', response);
+      
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách hội chứng:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy danh sách bệnh từ API
+   * @returns {Promise} - Promise chứa danh sách bệnh
+   */
+  getDiseases: async () => {
+    try {
+      console.log('Đang gọi API để lấy danh sách bệnh');
+      const response = await axios.get('http://localhost:8080/api/reference/diseases/search');
+      console.log('API response diseases:', response);
+      
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách bệnh:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Tạo hồ sơ y tế cho học sinh với định dạng mới
+   * @param {string} studentId - ID của học sinh
+   * @param {Object} medicalData - Dữ liệu hồ sơ y tế
+   * @returns {Promise} - Promise chứa kết quả tạo hồ sơ y tế
+   */
+  createMedicalProfileNew: async (studentId, medicalData) => {
+    try {
+      if (!studentId) {
+        throw new Error('studentId là bắt buộc để tạo hồ sơ y tế');
+      }
+
+      console.log(`Đang gọi API tạo hồ sơ y tế mới cho học sinh ID: ${studentId}`);
+      
+      // Dựa vào mẫu từ ảnh request body
+      const requestBody = {
+        studentId: studentId,
+        allergies: [],
+        diseases: [],
+        conditions: [],
+        basicHealthData: {
+          heightCm: parseFloat(medicalData.heightCm || 150),
+          weightKg: parseFloat(medicalData.weightKg || 50),
+          visionLeft: medicalData.visionStatusLeft || "10/10",
+          visionRight: medicalData.visionStatusRight || "10/10",
+          hearingStatus: medicalData.hearingStatus?.toLowerCase() || "normal",
+          gender: medicalData.gender || "male",
+          bloodType: medicalData.bloodType || "A",
+          lastMeasured: "2025"
+        }
+      };
+      
+      // Thêm allergies nếu có
+      if (Array.isArray(medicalData.allergenIds) && medicalData.allergenIds.length > 0) {
+        requestBody.allergies = medicalData.allergenIds.map(id => ({
+          allergenId: Number(id),
+          reaction: "",
+          severity: 1,
+          lifeThreatening: false
+        }));
+      }
+      
+      // Thêm diseases nếu có
+      if (Array.isArray(medicalData.diseaseIds) && medicalData.diseaseIds.length > 0) {
+        requestBody.diseases = medicalData.diseaseIds.map(id => ({
+          diseaseId: Number(id),
+          sinceDate: "2025-07-21",
+          severity: 1
+        }));
+      }
+      
+      // Thêm conditions nếu có
+      if (Array.isArray(medicalData.syndromeIds) && medicalData.syndromeIds.length > 0) {
+        requestBody.conditions = medicalData.syndromeIds.map(id => ({
+          conditionId: Number(id),
+          note: ""
+        }));
+      }
+      
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+      
+      // Sử dụng API endpoint đúng
+      const response = await axios({
+        method: 'post',
+        url: 'http://localhost:8080/api/medicalProfiles/create-medical-profile',
+        data: requestBody
+      });
+      
+      console.log('API response:', response);
+      
+      return {
+        success: true,
+        message: 'Gửi thông tin khai báo thành công!'
+      };
+    } catch (error) {
+      console.error(`Lỗi khi tạo hồ sơ y tế cho học sinh ID ${studentId}:`, error);
+      
+      // Kiểm tra lỗi vi phạm ràng buộc khóa duy nhất
+      if (error.response) {
+        console.error('Response error:', JSON.stringify(error.response.data, null, 2));
+        console.error('Status code:', error.response.status);
+        console.error('Response headers:', JSON.stringify(error.response.headers, null, 2));
+        
+        // Kiểm tra nội dung lỗi để xác định nếu là lỗi hồ sơ đã tồn tại
+        const errorData = error.response.data;
+        const errorMessage = typeof errorData === 'string' ? errorData : 
+                            (errorData?.message || JSON.stringify(errorData));
+        
+        if (errorMessage.includes('UNIQUE KEY constraint') || 
+            errorMessage.includes('duplicate key') || 
+            errorMessage.includes('already exists') ||
+            error.response.status === 409) {
+          // Trả về thông báo thân thiện thay vì lỗi
+          return {
+            success: true,
+            message: 'Hồ sơ y tế của học sinh này đã được khai báo từ trước!'
+          };
+        }
+      } else if (error.request) {
+        console.error('Request error:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      
+      // Nếu là lỗi khác, ném lỗi để xử lý ở component
+      throw error;
+    }
+  },
+  
+  /**
+   * Tạo hồ sơ y tế cho học sinh (API cũ)
+   * @param {string} childId - ID của học sinh
+   * @param {Object} medicalData - Dữ liệu hồ sơ y tế
+   * @param {string|number} [recordId=1] - ID của bản ghi (mặc định là 1)
+   * @returns {Promise} - Promise chứa kết quả tạo hồ sơ y tế
+   */
+  createMedicalProfile: async (childId, medicalData, recordId = 1) => {
+    try {
+      if (!childId) {
+        throw new Error('childId là bắt buộc để tạo hồ sơ y tế');
+      }
+
+      console.log(`Đang gọi API tạo hồ sơ y tế cho học sinh ID: ${childId}, recordId: ${recordId}`);
+      console.log('Dữ liệu hồ sơ y tế:', medicalData);
+      
+      // Luôn sử dụng recordId (mặc định là 1 nếu không được cung cấp)
+      const endpoint = `/medicalProfiles/create/${childId}/${recordId}`;
+      
+      // Gọi API tạo hồ sơ y tế
+      const response = await axiosInstance.post(endpoint, medicalData);
+      
+      // Log response để debug
+      console.log('API response:', response);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi tạo hồ sơ y tế cho học sinh ID ${childId}:`, error);
+      throw error;
+    }
+  },
+
   /**
    * Lấy danh sách con của một phụ huynh
    * @param {string} parentId - ID của phụ huynh
@@ -32,38 +237,6 @@ const parentApi = {
       return response.data || [];
     } catch (error) {
       console.error(`Lỗi khi lấy danh sách con của phụ huynh ID ${parentId}:`, error);
-      throw error;
-    }
-  },
-
-  /**
-   * Tạo hồ sơ y tế cho học sinh
-   * @param {string} childId - ID của học sinh
-   * @param {Object} medicalData - Dữ liệu hồ sơ y tế
-   * @param {string|number} [recordId=1] - ID của bản ghi (mặc định là 1)
-   * @returns {Promise} - Promise chứa kết quả tạo hồ sơ y tế
-   */
-  createMedicalProfile: async (childId, medicalData, recordId = 1) => {
-    try {
-      if (!childId) {
-        throw new Error('childId là bắt buộc để tạo hồ sơ y tế');
-      }
-
-      console.log(`Đang gọi API tạo hồ sơ y tế cho học sinh ID: ${childId}, recordId: ${recordId}`);
-      console.log('Dữ liệu hồ sơ y tế:', medicalData);
-      
-      // Luôn sử dụng recordId (mặc định là 1 nếu không được cung cấp)
-      const endpoint = `/medicalProfiles/create/${childId}/${recordId}`;
-      
-      // Gọi API tạo hồ sơ y tế
-      const response = await axiosInstance.post(endpoint, medicalData);
-      
-      // Log response để debug
-      console.log('API response:', response);
-      
-      return response.data;
-    } catch (error) {
-      console.error(`Lỗi khi tạo hồ sơ y tế cho học sinh ID ${childId}:`, error);
       throw error;
     }
   },
@@ -194,6 +367,74 @@ const parentApi = {
   },
 
   /**
+   * Cập nhật trạng thái yêu cầu thuốc thành đã hủy
+   * @param {string} studentId - ID của học sinh
+   * @param {string} medicationSentId - ID của yêu cầu thuốc cần hủy
+   * @returns {Promise} - Promise chứa kết quả cập nhật trạng thái yêu cầu thuốc
+   */
+  cancelMedicationRequest: async (studentId, medicationSentId) => {
+    try {
+      if (!studentId || !medicationSentId) {
+        throw new Error('studentId và medicationSentId là bắt buộc để hủy yêu cầu thuốc');
+      }
+
+      console.log(`Đang gọi API hủy yêu cầu thuốc ID: ${medicationSentId} cho học sinh ID: ${studentId}`);
+      
+      // Vì API hiện tại chỉ có endpoint xóa, ta sẽ sử dụng localStorage để lưu trữ các yêu cầu đã hủy
+      // Đây là giải pháp tạm thời cho đến khi backend hỗ trợ cập nhật trạng thái
+      
+      // Lấy danh sách các yêu cầu đã hủy từ localStorage
+      let cancelledRequests = [];
+      try {
+        const cancelledRequestsStr = localStorage.getItem('cancelledMedicationRequests');
+        if (cancelledRequestsStr) {
+          cancelledRequests = JSON.parse(cancelledRequestsStr);
+        }
+      } catch (error) {
+        console.error('Lỗi khi đọc danh sách yêu cầu đã hủy từ localStorage:', error);
+      }
+      
+      // Thêm yêu cầu mới vào danh sách đã hủy
+      cancelledRequests.push({
+        studentId,
+        medicationSentId,
+        cancelledAt: new Date().toISOString()
+      });
+      
+      // Lưu lại danh sách vào localStorage
+      localStorage.setItem('cancelledMedicationRequests', JSON.stringify(cancelledRequests));
+      
+      return { success: true, message: 'Đã hủy yêu cầu thuốc thành công' };
+    } catch (error) {
+      console.error(`Lỗi khi hủy yêu cầu thuốc ID ${medicationSentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Kiểm tra xem một yêu cầu thuốc có bị hủy không
+   * @param {string} medicationSentId - ID của yêu cầu thuốc cần kiểm tra
+   * @returns {boolean} - true nếu yêu cầu đã bị hủy, false nếu không
+   */
+  isMedicationRequestCancelled: (medicationSentId) => {
+    try {
+      // Lấy danh sách các yêu cầu đã hủy từ localStorage
+      const cancelledRequestsStr = localStorage.getItem('cancelledMedicationRequests');
+      if (!cancelledRequestsStr) {
+        return false;
+      }
+      
+      const cancelledRequests = JSON.parse(cancelledRequestsStr);
+      
+      // Kiểm tra xem yêu cầu có trong danh sách đã hủy không
+      return cancelledRequests.some(request => request.medicationSentId === medicationSentId);
+    } catch (error) {
+      console.error('Lỗi khi kiểm tra trạng thái hủy của yêu cầu thuốc:', error);
+      return false;
+    }
+  },
+
+  /**
    * Lấy thông tin sức khỏe mới nhất của học sinh
    * @param {string} childId - ID của học sinh
    * @returns {Promise} - Promise chứa thông tin sức khỏe của học sinh
@@ -206,11 +447,11 @@ const parentApi = {
 
       console.log(`Đang gọi API để lấy thông tin sức khỏe của học sinh ID: ${childId}`);
       
-      // Gọi API lấy thông tin sức khỏe mới nhất
-      const response = await axiosInstance.get(`/medicalProfiles/latest/${childId}`);
+      // Gọi API lấy thông tin sức khỏe mới
+      const response = await axios.get(`http://localhost:8080/api/medicalProfiles/${childId}/get-medical-profile`);
       
       // Log response để debug
-      console.log('API response medical profile:', response);
+      console.log('API response medical profile:', response.data);
       
       return response.data;
     } catch (error) {
@@ -1080,6 +1321,30 @@ getAllNurses: async (page = 0, size = 10, sortBy = 'fullName', direction = 'asc'
     return [];
   }
 },
+
+  /**
+   * Lấy thông tin cơ bản của học sinh
+   * @param {string} studentId - ID của học sinh
+   * @returns {Promise} - Promise chứa thông tin cơ bản của học sinh
+   */
+  getStudentSummary: async (studentId) => {
+    try {
+      if (!studentId) {
+        throw new Error('studentId là bắt buộc để lấy thông tin học sinh');
+      }
+
+      console.log(`Đang gọi API để lấy thông tin cơ bản của học sinh ID: ${studentId}`);
+      
+      const response = await axios.get(`http://localhost:8080/api/v1/student/students/${studentId}/summary`);
+      
+      console.log('API response student summary:', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi lấy thông tin cơ bản của học sinh ID ${studentId}:`, error);
+      throw error;
+    }
+  },
 };
 
 export default parentApi;
