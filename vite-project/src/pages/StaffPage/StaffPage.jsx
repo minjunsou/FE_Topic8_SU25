@@ -364,6 +364,75 @@ const StaffPage = () => {
     expiringSoonMedications: []
   });
 
+  // Xử lý cập nhật trạng thái yêu cầu thuốc (chấp nhận/từ chối)
+  const handleMedicationRequestStatusChange = async (requestId, isAccepted) => {
+    try {
+      // Gọi API để cập nhật trạng thái
+      await nurseApi.acceptOrRejectMedicationRequest(requestId, isAccepted);
+      
+      // Cập nhật danh sách yêu cầu thuốc với trạng thái mới
+      setMedicineRequests(prevRequests => 
+        prevRequests.map(request => 
+          request.medSentId === requestId 
+            ? { ...request, isAccepted } 
+            : request
+        )
+      );
+      
+      // Hiển thị thông báo
+      message.success(`Yêu cầu thuốc đã được ${isAccepted ? 'chấp nhận' : 'từ chối'} thành công`);
+      
+      return true; // Trả về true nếu thành công
+    } catch (error) {
+      console.error(`Lỗi khi ${isAccepted ? 'chấp nhận' : 'từ chối'} yêu cầu thuốc ID ${requestId}:`, error);
+      message.error(`Không thể ${isAccepted ? 'chấp nhận' : 'từ chối'} yêu cầu thuốc. Vui lòng thử lại sau.`);
+      
+      return false; // Trả về false nếu thất bại
+    }
+  };
+
+  // Hàm tải lại dữ liệu yêu cầu thuốc
+  const reloadMedicineRequestsData = async () => {
+    try {
+      setLoading(true);
+      
+      // Lấy danh sách yêu cầu thuốc mới
+      const medicationRequestsData = await nurseApi.getAllActiveMedicationRequests();
+      console.log('Đã tải lại yêu cầu thuốc:', medicationRequestsData);
+      
+      // Kết hợp dữ liệu yêu cầu thuốc với thông tin học sinh
+      const enrichedRequests = Array.isArray(medicationRequestsData) 
+        ? medicationRequestsData.map(request => {
+            const studentInfo = studentsMap[request.studentId] || {};
+            return {
+              ...request,
+              studentName: studentInfo.fullName || 'Không xác định',
+              studentClass: studentInfo.classId || 'Không xác định',
+              key: request.medSentId || Math.random().toString()
+            };
+          })
+        : [];
+      
+      setMedicineRequests(enrichedRequests);
+      
+    } catch (error) {
+      console.error('Lỗi khi tải lại dữ liệu yêu cầu thuốc:', error);
+      message.error('Không thể tải lại dữ liệu. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Đăng ký function toàn cục để component con có thể gọi
+  useEffect(() => {
+    window.reloadMedicineRequestsData = reloadMedicineRequestsData;
+    
+    return () => {
+      // Hủy đăng ký khi component unmount
+      window.reloadMedicineRequestsData = undefined;
+    };
+  }, [studentsMap]);
+
   // Tải dữ liệu từ API
   useEffect(() => {
     const fetchData = async () => {
@@ -492,6 +561,7 @@ const StaffPage = () => {
             handleViewDetail={handleViewDetail}
             loading={loading}
             studentsMap={studentsMap}
+            onRequestStatusChange={handleMedicationRequestStatusChange}
           />
         );
       case 'health-declarations':
@@ -543,6 +613,7 @@ const StaffPage = () => {
             onViewAllHealthDeclarations={() => setActiveTab('health-declarations')}
             onViewAllMedicalIncidents={() => setActiveTab('medical-incidents')}
             onViewAllMedicationSupplies={handleViewAllMedicationSupplies}
+            onRequestStatusChange={handleMedicationRequestStatusChange}
           />
         );
     }

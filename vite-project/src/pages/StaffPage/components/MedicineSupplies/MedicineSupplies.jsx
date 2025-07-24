@@ -51,6 +51,78 @@ const { TabPane } = Tabs;
 const { Option } = Select;
 const { Search } = Input;
 
+// Custom ExpiryDateInput component to avoid DatePicker issues
+const ExpiryDateInput = ({ value, onChange }) => {
+  // Generate month options
+  const monthOptions = [];
+  for (let i = 1; i <= 12; i++) {
+    const monthNum = i.toString().padStart(2, '0');
+    monthOptions.push(
+      <Option key={monthNum} value={monthNum}>{monthNum}</Option>
+    );
+  }
+
+  // Generate year options (current year to current year + 20)
+  const yearOptions = [];
+  const currentYear = moment().year();
+  for (let i = currentYear; i <= currentYear + 20; i++) {
+    yearOptions.push(
+      <Option key={i} value={i.toString()}>{i}</Option>
+    );
+  }
+
+  // Parse value if it exists
+  let month = '01';
+  let year = moment().add(1, 'year').format('YYYY');
+  
+  if (value) {
+    if (typeof value === 'string') {
+      // Try to parse from MM/YYYY format
+      const parts = value.split('/');
+      if (parts.length === 2) {
+        month = parts[0];
+        year = parts[1];
+      }
+    } else if (moment.isMoment(value)) {
+      month = value.format('MM');
+      year = value.format('YYYY');
+    }
+  }
+  
+  const handleMonthChange = (newMonth) => {
+    if (onChange) {
+      onChange(`${newMonth}/${year}`);
+    }
+  };
+
+  const handleYearChange = (newYear) => {
+    if (onChange) {
+      onChange(`${month}/${newYear}`);
+    }
+  };
+
+  return (
+    <Space style={{ width: '100%' }}>
+      <Select 
+        placeholder="Tháng"
+        value={month}
+        onChange={handleMonthChange}
+        style={{ width: 100 }}
+      >
+        {monthOptions}
+      </Select>
+      <Select 
+        placeholder="Năm"
+        value={year}
+        onChange={handleYearChange}
+        style={{ width: 100 }}
+      >
+        {yearOptions}
+      </Select>
+    </Space>
+  );
+};
+
 const MedicineSupplies = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchText, setSearchText] = useState('');
@@ -64,6 +136,10 @@ const MedicineSupplies = () => {
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
+  const [expiryMonth, setExpiryMonth] = useState('01');
+  const [expiryYear, setExpiryYear] = useState(moment().add(1, 'year').format('YYYY'));
+  const [addExpiryMonth, setAddExpiryMonth] = useState('01');
+  const [addExpiryYear, setAddExpiryYear] = useState(moment().add(1, 'year').format('YYYY'));
   const [currentDeletingId, setCurrentDeletingId] = useState(null); // Track the ID of the item being deleted
 
   // Lấy dữ liệu thuốc từ API khi component được mount
@@ -77,21 +153,32 @@ const MedicineSupplies = () => {
     try {
       setLoading(true);
       const data = await nurseApi.getAllMedications();
+      console.log('Fetched medications data:', data);
       
       // Chuyển đổi dữ liệu từ API sang định dạng hiển thị
-      const formattedData = data.map(item => ({
-        id: item.medicationId,
-        name: item.name,
-        type: item.medicationType === 'MEDICATION' ? 'Thuốc' : 'Vật tư', // Dựa theo medicationType
-        quantity: item.quantity,
-        unit: item.quantityType || 'viên', // Lấy từ quantityType
-        expiry: formatExpiryDate(item.expiryDate),
-        status: getStatus(item.expiryDate),
-        description: item.description,
-        rawExpiryDate: item.expiryDate, // Lưu trữ ngày gốc để xử lý sau này
-        medicationType: item.medicationType, // Lưu trữ giá trị medicationType gốc
-        quantityType: item.quantityType // Lưu trữ giá trị quantityType gốc
-      }));
+      const formattedData = data.map(item => {
+        // Xác định loại thuốc/vật tư dựa trên medicationType
+        let type = 'Thuốc'; // Mặc định là "Thuốc" nếu không có giá trị
+        if (item.medicationType === 'MEDICAL_SUPPLY') {
+          type = 'Vật tư';
+        } else if (item.medicationType === 'MEDICATION') {
+          type = 'Thuốc';
+        }
+        
+        return {
+          id: item.medicationId,
+          name: item.name || 'Không có tên',
+          type: type,
+          quantity: item.quantity || 0,
+          unit: item.quantityType || 'viên',
+          expiry: formatExpiryDate(item.expiryDate),
+          status: getStatus(item.expiryDate),
+          description: item.description || '',
+          rawExpiryDate: item.expiryDate, // Lưu trữ ngày gốc để xử lý sau này
+          medicationType: item.medicationType, // Lưu trữ giá trị medicationType gốc
+          quantityType: item.quantityType // Lưu trữ giá trị quantityType gốc
+        };
+      });
       
       setMedicines(formattedData);
       setLoading(false);
@@ -106,14 +193,23 @@ const MedicineSupplies = () => {
   const fetchLowStockMedications = async () => {
     try {
       const data = await nurseApi.getLowStockMedications(THRESHOLD);
-      setLowStockMedications(data);
+      console.log('Low stock medications data:', data);
       
-      // Hiển thị thông báo nếu có thuốc sắp hết hàng
-      if (data && data.length > 0) {
-        showLowStockNotification(data);
+      // Đảm bảo data có định dạng đúng
+      if (Array.isArray(data)) {
+        setLowStockMedications(data);
+        
+        // Hiển thị thông báo nếu có thuốc sắp hết hàng
+        if (data.length > 0) {
+          showLowStockNotification(data);
+        }
+      } else {
+        console.error('Invalid low stock medications data format:', data);
+        setLowStockMedications([]);
       }
     } catch (error) {
       console.error('Lỗi khi lấy danh sách thuốc sắp hết hàng:', error);
+      setLowStockMedications([]);
     }
   };
 
@@ -177,22 +273,61 @@ const MedicineSupplies = () => {
   // Chuyển đổi định dạng ngày hết hạn từ API sang định dạng hiển thị
   const formatExpiryDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return moment(dateString).format('MM/YYYY');
+    
+    try {
+      // Xử lý nhiều định dạng ngày khác nhau
+      
+      // Kiểm tra nếu là định dạng "07/2025"
+      if (dateString.match(/^\d{2}\/\d{4}$/)) {
+        return dateString; // Đã đúng định dạng
+      }
+      
+      // Kiểm tra nếu là định dạng "2025-12-31"
+      if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        return moment(dateString).format('MM/YYYY');
+      }
+      
+      // Trường hợp khác
+      return moment(dateString).isValid() ? moment(dateString).format('MM/YYYY') : 'N/A';
+    } catch (error) {
+      console.error('Lỗi khi định dạng ngày:', error);
+      return 'N/A';
+    }
   };
 
   // Xác định trạng thái của thuốc dựa vào ngày hết hạn
   const getStatus = (expiryDate) => {
     if (!expiryDate) return 'unknown';
     
-    const today = moment();
-    const expiry = moment(expiryDate);
-    
-    if (expiry.isBefore(today)) {
-      return 'expired';
-    } else if (expiry.diff(today, 'months') <= 3) {
-      return 'warning';
-    } else {
-      return 'active';
+    try {
+      const today = moment();
+      let expiry;
+      
+      // Xử lý nhiều định dạng ngày khác nhau
+      if (expiryDate.match(/^\d{2}\/\d{4}$/)) {
+        // Format "07/2025"
+        const [month, year] = expiryDate.split('/');
+        // Đặt ngày là ngày cuối cùng của tháng đó
+        expiry = moment(`${year}-${month}-01`).endOf('month');
+      } else {
+        // Các định dạng khác
+        expiry = moment(expiryDate);
+      }
+      
+      if (!expiry.isValid()) {
+        return 'unknown';
+      }
+      
+      if (expiry.isBefore(today)) {
+        return 'expired';
+      } else if (expiry.diff(today, 'months') <= 3) {
+        return 'warning';
+      } else {
+        return 'active';
+      }
+    } catch (error) {
+      console.error('Lỗi khi xác định trạng thái thuốc:', error);
+      return 'unknown';
     }
   };
 
@@ -246,7 +381,7 @@ const MedicineSupplies = () => {
         quantity: parseInt(values.quantity, 10),
         quantityType: values.unit || 'viên',
         medicationType: medicationType,
-        expiryDate: values.expiry.format('MM/YYYY')
+        expiryDate: `${addExpiryMonth}/${addExpiryYear}`
       };
       
       console.log('Dữ liệu thuốc mới gửi đến API:', medicationData);
@@ -257,6 +392,10 @@ const MedicineSupplies = () => {
       message.success('Thêm thuốc mới thành công!');
       setAddModalVisible(false);
       form.resetFields();
+      
+      // Reset các giá trị
+      setAddExpiryMonth('01');
+      setAddExpiryYear(moment().add(1, 'year').format('YYYY'));
       
       // Tải lại danh sách thuốc
       fetchMedications();
@@ -323,13 +462,49 @@ const MedicineSupplies = () => {
   // Xử lý khi sửa thuốc/vật tư
   const handleEditItem = (item) => {
     setCurrentItem(item);
+    console.log('Editing item:', item);
+    
+    // Parse expiry date if available
+    let month = '01';
+    let year = moment().add(1, 'year').format('YYYY');
+    
+    if (item.rawExpiryDate) {
+      console.log('Raw expiry date:', item.rawExpiryDate);
+      
+      if (typeof item.rawExpiryDate === 'string') {
+        // Handle format like "MM/YYYY"
+        if (item.rawExpiryDate.match(/^\d{2}\/\d{4}$/)) {
+          const parts = item.rawExpiryDate.split('/');
+          month = parts[0];
+          year = parts[1];
+        } 
+        // Handle format like "2025-12-31"
+        else if (item.rawExpiryDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const date = moment(item.rawExpiryDate);
+          if (date.isValid()) {
+            month = date.format('MM');
+            year = date.format('YYYY');
+          }
+        }
+      } else if (Array.isArray(item.rawExpiryDate) && item.rawExpiryDate.length >= 2) {
+        // Handle format like [YYYY, MM, DD]
+        year = item.rawExpiryDate[0].toString();
+        month = item.rawExpiryDate[1].toString().padStart(2, '0');
+      }
+    }
+    
+    console.log(`Parsed expiry: month=${month}, year=${year}`);
+    setExpiryMonth(month);
+    setExpiryYear(year);
+    
     editForm.setFieldsValue({
       name: item.name,
       type: item.type,
       quantity: item.quantity,
       unit: item.quantityType || item.unit,
       description: item.description || '',
-      expiry: item.rawExpiryDate ? moment(item.rawExpiryDate) : null
+      expiryMonth: month,
+      expiryYear: year
     });
     setEditModalVisible(true);
   };
@@ -356,7 +531,7 @@ const MedicineSupplies = () => {
         quantity: parseInt(values.quantity, 10),
         quantityType: values.unit || 'viên',
         medicationType: medicationType,
-        expiryDate: values.expiry.format('MM/YYYY')
+        expiryDate: `${expiryMonth}/${expiryYear}`
       };
       
       console.log(`Dữ liệu cập nhật thuốc ID ${medicationId}:`, medicationData);
@@ -419,7 +594,7 @@ const MedicineSupplies = () => {
       render: (text, record) => (
         <span>
           {text} {record.unit}
-          {lowStockMedications.some(med => med.medicationId === record.id) && (
+          {record.quantity <= THRESHOLD && (
             <Tag color="red" style={{ marginLeft: 8 }}>Sắp hết</Tag>
           )}
         </span>
@@ -631,9 +806,9 @@ const MedicineSupplies = () => {
             >
               Thêm mới
             </Button>
-            <Button icon={<ExportOutlined />}>
+            {/* <Button icon={<ExportOutlined />}>
               Xuất báo cáo
-            </Button>
+            </Button> */}
           </Space>
         }
       >
@@ -728,11 +903,13 @@ const MedicineSupplies = () => {
             label="Hạn sử dụng"
             rules={[{ required: true, message: 'Vui lòng chọn hạn sử dụng' }]}
           >
-            <DatePicker 
-              picker="month" 
-              style={{ width: '100%' }} 
-              format="MM/YYYY" 
-              placeholder="Chọn tháng/năm hết hạn"
+            <ExpiryDateInput 
+              value={`${addExpiryMonth}/${addExpiryYear}`}
+              onChange={(value) => {
+                const [month, year] = value.split('/');
+                setAddExpiryMonth(month);
+                setAddExpiryYear(year);
+              }}
             />
           </Form.Item>
 
@@ -826,11 +1003,13 @@ const MedicineSupplies = () => {
             label="Hạn sử dụng"
             rules={[{ required: true, message: 'Vui lòng chọn hạn sử dụng' }]}
           >
-            <DatePicker 
-              picker="month" 
-              style={{ width: '100%' }} 
-              format="MM/YYYY" 
-              placeholder="Chọn tháng/năm hết hạn"
+            <ExpiryDateInput 
+              value={`${expiryMonth}/${expiryYear}`}
+              onChange={(value) => {
+                const [month, year] = value.split('/');
+                setExpiryMonth(month);
+                setExpiryYear(year);
+              }}
             />
           </Form.Item>
 

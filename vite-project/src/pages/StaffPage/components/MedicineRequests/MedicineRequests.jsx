@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tooltip, Space, Tag, Typography, Spin, Empty, Modal, Row, Col, Divider, Card } from 'antd';
-import { CalendarOutlined, MedicineBoxOutlined, UserOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { Table, Button, Tooltip, Space, Tag, Typography, Spin, Empty, Modal, Row, Col, Divider, Card, message } from 'antd';
+import { CalendarOutlined, MedicineBoxOutlined, UserOutlined, ClockCircleOutlined, CheckOutlined, CloseOutlined, ExclamationCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import './MedicineRequests.css';
 import nurseApi from '../../../../api/nurseApi';
 
 const { Text, Title } = Typography;
+const { confirm } = Modal;
 
-const MedicineRequests = ({ medicineRequests, handleViewDetail, loading }) => {
+const MedicineRequests = ({ medicineRequests, handleViewDetail, loading, onRequestStatusChange }) => {
   const [students, setStudents] = useState([]);
   const [parents, setParents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingParents, setLoadingParents] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [processingRequestId, setProcessingRequestId] = useState(null);
+  const [reloading, setReloading] = useState(false);
 
   // Fetch student and parent data
   useEffect(() => {
@@ -45,6 +48,27 @@ const MedicineRequests = ({ medicineRequests, handleViewDetail, loading }) => {
     fetchStudents();
     fetchParents();
   }, []);
+
+  // Hàm xử lý reload dữ liệu
+  const handleReload = async () => {
+    setReloading(true);
+    try {
+      // Gọi function reload ở component cha
+      if (window.reloadMedicineRequestsData) {
+        await window.reloadMedicineRequestsData();
+        message.success('Đã tải lại danh sách yêu cầu thuốc');
+      } else {
+        // Fallback nếu function toàn cục không tồn tại
+        await nurseApi.getAllActiveMedicationRequests();
+        message.success('Đã tải lại danh sách yêu cầu thuốc');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải lại danh sách yêu cầu thuốc:', error);
+      message.error('Không thể tải lại dữ liệu. Vui lòng thử lại sau.');
+    } finally {
+      setReloading(false);
+    }
+  };
 
   // Helper function to find student name by ID
   const getStudentName = (studentId) => {
@@ -111,6 +135,63 @@ const MedicineRequests = ({ medicineRequests, handleViewDetail, loading }) => {
     }
   };
 
+  // Hàm xử lý chấp nhận yêu cầu thuốc
+  const handleAcceptRequest = async (medicationSentId) => {
+    confirm({
+      title: 'Xác nhận chấp nhận yêu cầu thuốc',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Bạn có chắc chắn muốn chấp nhận yêu cầu thuốc này không?',
+      okText: 'Đồng ý',
+      cancelText: 'Hủy',
+      onOk: async () => {
+        try {
+          setProcessingRequestId(medicationSentId);
+          await nurseApi.acceptOrRejectMedicationRequest(medicationSentId, true);
+          message.success('Đã chấp nhận yêu cầu thuốc thành công');
+          
+          // Cập nhật lại danh sách yêu cầu (nếu cần)
+          if (onRequestStatusChange) {
+            onRequestStatusChange(medicationSentId, true);
+          }
+        } catch (error) {
+          console.error('Lỗi khi chấp nhận yêu cầu thuốc:', error);
+          message.error('Không thể chấp nhận yêu cầu thuốc. Vui lòng thử lại sau.');
+        } finally {
+          setProcessingRequestId(null);
+        }
+      }
+    });
+  };
+
+  // Hàm xử lý từ chối yêu cầu thuốc
+  const handleRejectRequest = async (medicationSentId) => {
+    confirm({
+      title: 'Xác nhận từ chối yêu cầu thuốc',
+      icon: <ExclamationCircleOutlined />,
+      content: 'Bạn có chắc chắn muốn từ chối yêu cầu thuốc này không?',
+      okText: 'Đồng ý',
+      cancelText: 'Hủy',
+      okType: 'danger',
+      onOk: async () => {
+        try {
+          setProcessingRequestId(medicationSentId);
+          await nurseApi.acceptOrRejectMedicationRequest(medicationSentId, false);
+          message.success('Đã từ chối yêu cầu thuốc thành công');
+          
+          // Cập nhật lại danh sách yêu cầu (nếu cần)
+          if (onRequestStatusChange) {
+            onRequestStatusChange(medicationSentId, false);
+          }
+        } catch (error) {
+          console.error('Lỗi khi từ chối yêu cầu thuốc:', error);
+          message.error('Không thể từ chối yêu cầu thuốc. Vui lòng thử lại sau.');
+        } finally {
+          setProcessingRequestId(null);
+        }
+      }
+    });
+  };
+
   // Hàm mở modal chi tiết
   const showDetailModal = (record) => {
     const enrichedRecord = {
@@ -151,7 +232,7 @@ const MedicineRequests = ({ medicineRequests, handleViewDetail, loading }) => {
       title: 'Phụ huynh',
       dataIndex: 'parentId',
       key: 'parentId',
-      width: '20%',
+      width: '15%',
       render: (parentId) => (
         <Tooltip title={parentId}>
           <Tag icon={<UserOutlined />} color="blue">
@@ -163,7 +244,7 @@ const MedicineRequests = ({ medicineRequests, handleViewDetail, loading }) => {
     {
       title: 'Thuốc và liều lượng',
       key: 'medications',
-      width: '30%',
+      width: '25%',
       render: (_, record) => {
         // Kiểm tra nếu có dosages
         if (!record.dosages || record.dosages.length === 0) {
@@ -212,28 +293,100 @@ const MedicineRequests = ({ medicineRequests, handleViewDetail, loading }) => {
       ),
     },
     {
+      title: 'Trạng thái',
+      key: 'status',
+      width: '10%',
+      render: (_, record) => {
+        if (record.isAccepted === true) {
+          return <Tag color="success">Đã hoàn thành</Tag>;
+        } else if (record.isAccepted === false) {
+          return <Tag color="error">Đã từ chối</Tag>;
+        } else {
+          return <Tag color="processing">Chờ xử lý</Tag>;
+        }
+      }
+    },
+    {
       title: 'Hành động',
       key: 'action',
       width: '15%',
-      render: (_, record) => (
-        <Button 
-          type="primary" 
-          icon={<MedicineBoxOutlined />}
-          size="small" 
-          onClick={() => showDetailModal(record)}
-        >
-          Xem chi tiết
-        </Button>
-      ),
+      render: (_, record) => {
+        // Nếu đã có trạng thái xác nhận hoặc từ chối, chỉ hiển thị nút xem chi tiết
+        if (record.isAccepted === true || record.isAccepted === false) {
+          return (
+            <Button 
+              type="primary" 
+              icon={<MedicineBoxOutlined />}
+              size="small" 
+              onClick={() => showDetailModal(record)}
+            >
+              Xem chi tiết
+            </Button>
+          );
+        }
+        
+        const isProcessing = processingRequestId === record.medSentId;
+        
+        return (
+          <Space>
+            <Button 
+              type="primary" 
+              icon={<MedicineBoxOutlined />}
+              size="small" 
+              onClick={() => showDetailModal(record)}
+            >
+              Chi tiết
+            </Button>
+            <Button
+              type="primary"
+              icon={<CheckOutlined />}
+              size="small"
+              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              onClick={() => handleAcceptRequest(record.medSentId)}
+              loading={isProcessing}
+              disabled={isProcessing}
+            >
+              Hoàn thành
+            </Button>
+            <Button
+              danger
+              icon={<CloseOutlined />}
+              size="small"
+              onClick={() => handleRejectRequest(record.medSentId)}
+              loading={isProcessing}
+              disabled={isProcessing}
+            >
+              Từ chối
+            </Button>
+          </Space>
+        );
+      },
     },
   ];
 
   // Check if data is still loading
-  const isLoading = loading || loadingStudents || loadingParents;
+  const isLoading = loading || loadingStudents || loadingParents || reloading;
   const hasData = Array.isArray(medicineRequests) && medicineRequests.length > 0;
 
   return (
     <div className="medicine-requests">
+      <div className="medicine-requests-header">
+        <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+          <Col>
+            <Title level={4}>Yêu cầu thuốc</Title>
+          </Col>
+          <Col>
+            <Button 
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={handleReload}
+              loading={reloading}
+            >
+              Tải lại danh sách
+            </Button>
+          </Col>
+        </Row>
+      </div>
       <div className="staff-table-container">
         {isLoading ? (
           <div className="loading-container">
@@ -272,7 +425,32 @@ const MedicineRequests = ({ medicineRequests, handleViewDetail, loading }) => {
         open={detailModalVisible}
         onCancel={() => setDetailModalVisible(false)}
         footer={[
-          <Button key="close" type="primary" onClick={() => setDetailModalVisible(false)}>
+          selectedRequest && selectedRequest.isAccepted === undefined && (
+            <Space key="actionButtons">
+              <Button 
+                type="primary" 
+                icon={<CheckOutlined />}
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                onClick={() => {
+                  handleAcceptRequest(selectedRequest.medSentId);
+                  setDetailModalVisible(false);
+                }}
+              >
+                Chấp nhận yêu cầu
+              </Button>
+              <Button 
+                danger
+                icon={<CloseOutlined />}
+                onClick={() => {
+                  handleRejectRequest(selectedRequest.medSentId);
+                  setDetailModalVisible(false);
+                }}
+              >
+                Từ chối yêu cầu
+              </Button>
+            </Space>
+          ),
+          <Button key="close" onClick={() => setDetailModalVisible(false)}>
             Đóng
           </Button>
         ]}
@@ -308,6 +486,19 @@ const MedicineRequests = ({ medicineRequests, handleViewDetail, loading }) => {
                   <div className="detail-item">
                     <Text strong>Ngày gửi:</Text>
                     <Text>{selectedRequest.formattedSentDate}</Text>
+                  </div>
+
+                  <div className="detail-item">
+                    <Text strong>Trạng thái:</Text>
+                    {selectedRequest.isAccepted === true && (
+                      <Tag color="success">Đã hoàn thành</Tag>
+                    )}
+                    {selectedRequest.isAccepted === false && (
+                      <Tag color="error">Đã từ chối</Tag>
+                    )}
+                    {selectedRequest.isAccepted === undefined && (
+                      <Tag color="processing">Chờ xử lý</Tag>
+                    )}
                   </div>
                 </Col>
                 
