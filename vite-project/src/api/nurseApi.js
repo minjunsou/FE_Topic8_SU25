@@ -2,12 +2,39 @@ import axiosInstance from './axiosConfig';
 
 const nurseApi = {
   /**
+   * Xác nhận hoặc từ chối yêu cầu thuốc
+   * @param {number} medicationSentId - ID của yêu cầu thuốc
+   * @param {boolean} isAccepted - true để xác nhận, false để từ chối
+   * @returns {Promise} - Promise chứa kết quả xác nhận/từ chối
+   */
+  acceptOrRejectMedicationRequest: async (medicationSentId, isAccepted) => {
+    try {
+      if (!medicationSentId) {
+        throw new Error('medicationSentId là bắt buộc');
+      }
+
+      const requestBody = {
+        isAccepted: isAccepted
+      };
+      
+      console.log(`Gọi API PATCH /medication-sent/nurse/accept/${medicationSentId} với body:`, requestBody);
+      
+      const response = await axiosInstance.patch(`/medication-sent/nurse/accept/${medicationSentId}`, requestBody);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi ${isAccepted ? 'xác nhận' : 'từ chối'} yêu cầu thuốc ID ${medicationSentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
    * Lấy danh sách tất cả thuốc
    * @returns {Promise} - Promise chứa danh sách thuốc
    */
   getAllMedications: async () => {
     try {
       const response = await axiosInstance.get('/v1/medications');
+      console.log('API response for medications:', response.data);
       return response.data.data || [];
     } catch (error) {
       console.error('Lỗi khi lấy danh sách thuốc:', error);
@@ -23,6 +50,7 @@ const nurseApi = {
   getLowStockMedications: async (threshold = 5) => {
     try {
       const response = await axiosInstance.get(`/v1/medications/low-stock?threshold=${threshold}`);
+      console.log('Low stock medications response:', response.data);
       return response.data.data || [];
     } catch (error) {
       console.error(`Lỗi khi lấy danh sách thuốc sắp hết với ngưỡng ${threshold}:`, error);
