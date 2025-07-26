@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Tabs, Modal, Form, Input, DatePicker, Select, message, Typography, Row, Col, Tag, Tooltip, Card, Empty, Spin, AutoComplete, Collapse, Descriptions, Badge } from 'antd';
+import { Table, Button, Tabs, Modal, Form, Input, DatePicker, Select, message, Typography, Row, Col, Tag, Tooltip, Card, Empty, Spin, AutoComplete, Collapse, Descriptions, Badge, Statistic } from 'antd';
 import { PlusOutlined, CheckCircleOutlined, CloseCircleOutlined, QuestionCircleOutlined, SearchOutlined, UserOutlined, LoadingOutlined, FileTextOutlined, MedicineBoxOutlined } from '@ant-design/icons';
 import './HealthChecks.css';
 import nurseApi from '../../../../api/nurseApi';
@@ -28,14 +28,18 @@ const HealthChecks = () => {
   // New states for student health check records tab
   const [searchValue, setSearchValue] = useState('');
   const [searchOptions, setSearchOptions] = useState([]);
-  const [studentHealthRecords, setStudentHealthRecords] = useState([]);
   const [studentRecordsLoading, setStudentRecordsLoading] = useState(false);
 
-  // Add new state variables for medical profiles
-  const [medicalProfiles, setMedicalProfiles] = useState([]);
-  const [medicalProfilesLoading, setMedicalProfilesLoading] = useState(false);
+  // Add new state variables for record details
   const [recordDetailVisible, setRecordDetailVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  
+  // Add new state for health snapshots
+  const [healthSnapshots, setHealthSnapshots] = useState([]);
+  const [healthCheckRecords, setHealthCheckRecords] = useState([]);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalSnapshots, setTotalSnapshots] = useState(0);
 
   // Fetch data on component mount
   useEffect(() => {
@@ -205,7 +209,19 @@ const HealthChecks = () => {
         };
       });
       
-      setConfirmations(formattedConfirmations);
+      // Sort confirmations: CONFIRMED first, then PENDING, then CANCELLED
+      const sortedConfirmations = formattedConfirmations.sort((a, b) => {
+        // Priority order: CONFIRMED (1), PENDING (2), CANCELLED (3)
+        const priorityMap = {
+          'CONFIRMED': 1,
+          'PENDING': 2,
+          'CANCELLED': 3
+        };
+        
+        return priorityMap[a.status] - priorityMap[b.status];
+      });
+      
+      setConfirmations(sortedConfirmations);
     } catch (error) {
       console.error(`Error fetching confirmations for notice ${noticeId}:`, error);
       message.error('Không thể lấy danh sách xác nhận kiểm tra sức khỏe');
@@ -238,7 +254,17 @@ const HealthChecks = () => {
           status: 'DECLINED',
           confirmed_at: '2025-08-22'
         }
-      ]);
+      ].sort((a, b) => {
+        // Apply the same sorting logic to mock data
+        const priorityMap = {
+          'CONFIRMED': 1,
+          'PENDING': 2,
+          'CANCELLED': 3,
+          'DECLINED': 3 // DECLINED has same priority as CANCELLED
+        };
+        
+        return priorityMap[a.status] - priorityMap[b.status];
+      }));
     } finally {
       setLoading(false);
     }
@@ -255,21 +281,21 @@ const HealthChecks = () => {
       const healthCheckData = {
         title: values.title,
         description: values.description,
-        date: dateString
+        date: dateString,
+        priority: values.priority,
+        grade: values.grade
       };
 
       console.log('Creating health check notice with data:', healthCheckData);
 
-      // Use the new function that automatically creates confirmations for all students
-      const response = await nurseApi.createHealthCheckNoticeWithConfirmations(healthCheckData);
-      console.log('Health check notice created with confirmations:', response);
+      // Use direct API call with axiosInstance for the new endpoint
+      const response = await nurseApi.createHealthCheckNotice(healthCheckData);
+      console.log('Health check notice created:', response);
       
-      // Show success message with confirmation statistics
-      const confirmationsCount = response.confirmations || { total: 0, success: 0, failed: 0 };
-      message.success(
-        `Tạo thông báo kiểm tra sức khỏe thành công! Đã tạo ${confirmationsCount.success}/${confirmationsCount.total} xác nhận.`
-      );
+      // Show success message
+      message.success('Tạo thông báo kiểm tra sức khỏe thành công!');
       
+      // Close modal and refresh notices list
       setCreateModalVisible(false);
       form.resetFields();
       fetchNotices();
@@ -418,28 +444,25 @@ const HealthChecks = () => {
           }
         }
         
-        // Success but don't show any message
-        
-        // Step 2: Create medical profile with second API
+        // Step 2: Update basic health data with the new API
         try {
-          // http://localhost:8080/api/medicalProfiles/create/{studentId}/{recordId}
-          // Map form values to medical profile data structure
-          const medicalProfileData = {
-            allergies: values.allergies || "Không có",
-            chronicDiseases: values.chronicDiseases || "Không có",
-            hearingStatus: values.hearingStatus || "Bình thường",
-            immunizationStatus: values.immunizationStatus || "Đầy đủ",
-            pastTreatments: values.recommendations || "Không có",
-            visionStatusLeft: values.visionStatusLeft || values.leftEye || "Bình thường",
-            visionStatusRight: values.visionStatusRight || values.rightEye || "Bình thường"
+          // Prepare the request body according to the API requirements
+          const basicHealthData = {
+            studentId: studentId,
+            heightCm: values.heightCm || 150,
+            weightKg: values.weightKg || 50,
+            visionLeft: values.visionStatusLeft || "10/10",
+            visionRight: values.visionStatusRight || "10/10",
+            hearingStatus: values.hearingStatus?.toLowerCase() || "normal",
+            gender: values.gender || "male",
+            bloodType: values.bloodType || "A"
           };
           
-          console.log('Creating medical profile with data:', medicalProfileData);
-          console.log('Student ID for medical profile:', studentId);
+          console.log('Updating basic health data with:', basicHealthData);
           
-          // Create medical profile - don't pass recordId parameter
-          await nurseApi.createMedicalProfile(studentId, medicalProfileData);
-          console.log('Medical profile created successfully');
+          // Call the API to update basic health data
+          await nurseApi.updateBasicHealthData(basicHealthData);
+          console.log('Basic health data updated successfully');
           
           // Close the modal without showing a success message
           setResultModalVisible(false);
@@ -447,21 +470,20 @@ const HealthChecks = () => {
           
           // Refresh confirmations to show updated status
           fetchConfirmations(selectedNotice.id);
-        } catch (medicalProfileError) {
-          console.error('Error creating medical profile:', medicalProfileError);
-          // Even if medical profile creation fails, we don't show any success message
-          // Only show warning for medical profile failure if needed
-          console.error('Không thể tạo hồ sơ y tế:', medicalProfileError.message || '');
+        } catch (basicHealthDataError) {
+          console.error('Error updating basic health data:', basicHealthDataError);
+          // Show warning for basic health data update failure
+          console.error('Không thể cập nhật dữ liệu sức khỏe cơ bản:', basicHealthDataError.message || '');
+          
+          // Close the modal and refresh data anyway since health check was successful
           setResultModalVisible(false);
           resultForm.resetFields();
-          // Refresh confirmations to show updated status
           fetchConfirmations(selectedNotice.id);
         }
       } catch (healthCheckError) {
         console.error('Error submitting health check result:', healthCheckError);
         
         // Enhanced error logging for better debugging
-        // Just log the error to console without showing any user message
         if (healthCheckError.response) {
           console.error('Error response details:', {
             status: healthCheckError.response.status,
@@ -472,45 +494,44 @@ const HealthChecks = () => {
           console.error('Error details:', healthCheckError.message || 'Unknown error');
         }
         
-        // Try to create medical profile anyway
+        // Try to update basic health data anyway
         try {
-          const medicalProfileData = {
-            allergies: values.allergies || "Không có",
-            chronicDiseases: values.chronicDiseases || "Không có",
-            hearingStatus: values.hearingStatus || "Bình thường",
-            immunizationStatus: values.immunizationStatus || "Đầy đủ",
-            pastTreatments: values.recommendations || "Không có",
-            visionStatusLeft: values.visionStatusLeft || "Bình thường",
-            visionStatusRight: values.visionStatusRight || "Bình thường"
+          const basicHealthData = {
+            studentId: studentId,
+            heightCm: values.heightCm || 150,
+            weightKg: values.weightKg || 50,
+            visionLeft: values.visionStatusLeft || "10/10",
+            visionRight: values.visionStatusRight || "10/10",
+            hearingStatus: values.hearingStatus?.toLowerCase() || "normal",
+            gender: values.gender || "male",
+            bloodType: values.bloodType || "A"
           };
           
-          await nurseApi.createMedicalProfile(studentId, medicalProfileData);
-          // Don't show any success or warning messages
+          await nurseApi.updateBasicHealthData(basicHealthData);
+          
           // Close the modal and refresh data since at least one operation succeeded
           setResultModalVisible(false);
           resultForm.resetFields();
           fetchConfirmations(selectedNotice.id);
-                  } catch (medicalProfileError) {
-            console.error('Error creating medical profile after health check error:', medicalProfileError);
-            // Both API calls failed, but we should still close the modal without showing any error message
-            setResultModalVisible(false);
-            resultForm.resetFields();
-            
-            // Try to refresh data anyway
-            fetchConfirmations(selectedNotice.id);
-          }
+        } catch (basicHealthDataError) {
+          console.error('Error updating basic health data after health check error:', basicHealthDataError);
+          // Both API calls failed, but we should still close the modal
+          setResultModalVisible(false);
+          resultForm.resetFields();
+          
+          // Try to refresh data anyway
+          fetchConfirmations(selectedNotice.id);
         }
-      } catch (error) {
-        console.error('Error in handleSubmitResult:', error);
-        // Don't show any error message to the user
-        
-        // Always close the modal and refresh data, even on general errors
-        setResultModalVisible(false);
-        resultForm.resetFields();
-        fetchConfirmations(selectedNotice.id);
-      } finally {
-        setLoading(false);
       }
+    } catch (error) {
+      console.error('Error in handleSubmitResult:', error);
+      // Always close the modal and refresh data, even on general errors
+      setResultModalVisible(false);
+      resultForm.resetFields();
+      fetchConfirmations(selectedNotice.id);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Handle recording a result for a student
@@ -528,61 +549,97 @@ const HealthChecks = () => {
     }
   };
 
-  // Fetch health check records for a specific student
+  // Fetch health check records and health snapshots for a specific student
   const fetchStudentHealthRecords = async (studentId) => {
     if (!studentId) return;
     
     setStudentRecordsLoading(true);
-    setMedicalProfilesLoading(true);
     
+    // Fetch health snapshots
     try {
-      // Fetch health check records
-      const response = await nurseApi.getStudentHealthCheckHistory(studentId);
+      // Fetch health snapshots using the API
+      const response = await nurseApi.getStudentHealthSnapshots(studentId, currentPage, pageSize);
       
-      // The response format might be { time_stamp, data: [...records] }
-      const recordsData = response.data || [];
+      // Get the content array from the response
+      const snapshotsData = response.content || [];
       
-      // Format the records data
-      const formattedRecords = Array.isArray(recordsData) ? recordsData.map(record => ({
-        key: record.recordId.toString(),
-        recordId: record.recordId,
-        studentId: record.studentId,
-        nurseId: record.nurseId,
-        healthCheckNoticeId: record.healthCheckNoticeId,
-        result: record.result,
-        // Format the date from array [year, month, day] to string for display
-        date: Array.isArray(record.date) ? 
-          `${record.date[0]}-${record.date[1].toString().padStart(2, '0')}-${record.date[2].toString().padStart(2, '0')}` : 
-          (record.date || 'N/A'),
-        // Include any additional details if available
-        details: record.details || {}
-      })) : [];
+      // Format snapshot data for the table
+      const formattedSnapshots = snapshotsData.map(snapshot => {
+        // Extract basic health data from the snapshot
+        const basicHealthData = snapshot.medicalProfileData?.basicHealthData || {};
+        
+        // Format snapshot time
+        let snapshotDate = 'N/A';
+        if (Array.isArray(snapshot.snapshotTime) && snapshot.snapshotTime.length >= 3) {
+          snapshotDate = `${snapshot.snapshotTime[0]}-${String(snapshot.snapshotTime[1]).padStart(2, '0')}-${String(snapshot.snapshotTime[2]).padStart(2, '0')}`;
+        }
+        
+        // Format last measured date from basic health data
+        let lastMeasuredDate = 'N/A';
+        if (Array.isArray(basicHealthData.lastMeasured) && basicHealthData.lastMeasured.length >= 3) {
+          lastMeasuredDate = `${basicHealthData.lastMeasured[0]}-${String(basicHealthData.lastMeasured[1]).padStart(2, '0')}-${String(basicHealthData.lastMeasured[2]).padStart(2, '0')}`;
+        }
+        
+        return {
+          key: snapshot.id.toString(),
+          id: snapshot.id,
+          medicalProfileId: snapshot.medicalProfileId,
+          snapshotDate: snapshotDate,
+          snapshotTime: snapshot.snapshotTime,
+          heightCm: basicHealthData.heightCm || 'N/A',
+          weightKg: basicHealthData.weightKg || 'N/A',
+          bmi: basicHealthData.heightCm && basicHealthData.weightKg ? 
+            (basicHealthData.weightKg / ((basicHealthData.heightCm / 100) * (basicHealthData.heightCm / 100))).toFixed(2) : 
+            'N/A',
+          visionLeft: basicHealthData.visionLeft || 'N/A',
+          visionRight: basicHealthData.visionRight || 'N/A',
+          hearingStatus: basicHealthData.hearingStatus || 'N/A',
+          gender: basicHealthData.gender || 'N/A',
+          bloodType: basicHealthData.bloodType || 'N/A',
+          lastMeasuredDate: lastMeasuredDate,
+          allergies: snapshot.medicalProfileData?.allergies || [],
+          diseases: snapshot.medicalProfileData?.diseases || [],
+          conditions: snapshot.medicalProfileData?.conditions || [],
+          // Keep the entire snapshot for details view
+          rawData: snapshot,
+          basicHealthData: basicHealthData
+        };
+      });
       
-      setStudentHealthRecords(formattedRecords);
-      console.log('Fetched student health records:', formattedRecords);
+      // Update state with formatted data
+      setHealthSnapshots(formattedSnapshots);
       
-      if (formattedRecords.length === 0) {
-        message.info('Không có dữ liệu kiểm tra sức khỏe cho học sinh này');
+      // Update pagination info
+      setTotalSnapshots(response.totalElements || 0);
+      
+      console.log('Fetched student health snapshots:', formattedSnapshots);
+      
+      if (formattedSnapshots.length === 0) {
+        message.info('Không có lịch sử sức khỏe cho học sinh này');
       }
     } catch (error) {
-      console.error(`Error fetching health records for student ID ${studentId}:`, error);
-      message.error('Không thể lấy lịch sử kiểm tra sức khỏe của học sinh');
-      setStudentHealthRecords([]);
-    } finally {
-      setStudentRecordsLoading(false);
-    }
+      console.error(`Error fetching health snapshots for student ID ${studentId}:`, error);
+      message.error('Không thể lấy lịch sử sức khỏe của học sinh');
+      setHealthSnapshots([]);
+    } 
     
-    // Fetch medical profiles separately
+    // Fetch detailed health check records
     try {
-      const profiles = await nurseApi.getStudentMedicalProfiles(studentId);
-      setMedicalProfiles(profiles);
-      console.log('Fetched student medical profiles:', profiles);
+      // Also fetch detailed health check records using the new API
+      const healthCheckResponse = await nurseApi.getStudentHealthCheckHistory(studentId);
+      console.log('Fetched student health check records:', healthCheckResponse);
+      // Store the health check records data for access in the detail modal
+      if (healthCheckResponse && healthCheckResponse.data) {
+        setHealthCheckRecords(healthCheckResponse.data);
+      } else {
+        setHealthCheckRecords([]);
+      }
     } catch (error) {
-      console.error(`Error fetching medical profiles for student ID ${studentId}:`, error);
-      message.error('Không thể lấy hồ sơ sức khỏe của học sinh');
-      setMedicalProfiles([]);
+      console.error(`Error fetching health check records for student ID ${studentId}:`, error);
+      setHealthCheckRecords([]);
     } finally {
-      setMedicalProfilesLoading(false);
+      // Finish loading when both API calls are complete
+      setStudentRecordsLoading(false);
     }
   };
   
@@ -625,8 +682,6 @@ const HealthChecks = () => {
   const handleClearSearch = () => {
     setSearchValue('');
     setSelectedStudent(null);
-    setStudentHealthRecords([]);
-    setMedicalProfiles([]);
     // Reset search options to all students
     const allOptions = students.map(student => ({
       value: student.accountId,
@@ -637,15 +692,15 @@ const HealthChecks = () => {
 
   // Columns for notices table
   const noticesColumns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      sorter: (a, b) => b.id - a.id,
-      sortDirections: ['descend', 'ascend'],
-      defaultSortOrder: 'descend',
-      width: 80,
-    },
+    // {
+    //   title: 'ID',
+    //   dataIndex: 'id',
+    //   key: 'id',
+    //   sorter: (a, b) => b.id - a.id,
+    //   sortDirections: ['descend', 'ascend'],
+    //   defaultSortOrder: 'descend',
+    //   width: 80,
+    // },
     {
       title: 'Tiêu đề',
       dataIndex: 'title',
@@ -697,6 +752,19 @@ const HealthChecks = () => {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
+      sorter: (a, b) => {
+        // Priority order: CONFIRMED (1), PENDING (2), CANCELLED (3)
+        const priorityMap = {
+          'CONFIRMED': 1,
+          'PENDING': 2,
+          'CANCELLED': 3,
+          'DECLINED': 3
+        };
+        
+        return priorityMap[a.status] - priorityMap[b.status];
+      },
+      sortDirections: ['ascend', 'descend'],
+      defaultSortOrder: 'ascend',
       filters: [
         { text: 'Đã xác nhận', value: 'CONFIRMED' },
         { text: 'Chưa xác nhận', value: 'PENDING' },
@@ -755,137 +823,35 @@ const HealthChecks = () => {
     },
   ];
 
-  // Columns for student health records table
-  const studentHealthRecordsColumns = [
-    {
-      title: 'Ngày kiểm tra',
-      dataIndex: 'date',
-      key: 'date',
-    },
-    {
-      title: 'Kết quả',
-      dataIndex: 'result',
-      key: 'result',
-      render: (result) => {
-        let color = '';
-        let text = result;
-        
-        switch (result) {
-          case 'nomal':
-            color = 'green';
-            text = 'Khỏe mạnh';
-            break;
-          case 'NEEDS_ATTENTION':
-            color = 'gold';
-            text = 'Cần theo dõi';
-            break;
-          case 'NEEDS_TREATMENT':
-            color = 'red';
-            text = 'Cần điều trị';
-            break;
-          default:
-            color = 'default';
-        }
-        
-        return <Tag color={color}>{text}</Tag>;
-      },
-    },
-    {
-      title: 'Chiều cao (cm)',
-      key: 'height',
-      render: (_, record) => record.details?.height || 'N/A',
-    },
-    {
-      title: 'Cân nặng (kg)',
-      key: 'weight',
-      render: (_, record) => record.details?.weight || 'N/A',
-    },
-    {
-      title: 'BMI',
-      key: 'bmi',
-      render: (_, record) => {
-        if (record.details?.height && record.details?.weight) {
-          const height = record.details.height / 100; // convert cm to m
-          const weight = record.details.weight;
-          const bmi = (weight / (height * height)).toFixed(1);
-          return bmi;
-        }
-        return 'N/A';
-      },
-    },
-    {
-      title: 'Thị lực (T/P)',
-      key: 'vision',
-      render: (_, record) => {
-        const leftEye = record.details?.leftEye || 'N/A';
-        const rightEye = record.details?.rightEye || 'N/A';
-        return `${leftEye} / ${rightEye}`;
-      },
-    },
-    {
-      title: 'Hành động',
-      key: 'action',
-      render: (_, record) => (
-        <Button 
-          type="primary" 
-          onClick={() => showRecordDetailModal(record)}
-        >
-          Xem chi tiết
-        </Button>
-      ),
-    },
-  ];
-
   // Show detailed record modal
   const showRecordDetailModal = (record) => {
     setSelectedRecord(record);
-    setRecordDetailVisible(true);
-  };
-
-  // Render medical profile card
-  const renderMedicalProfileCard = (profile) => {
-    return (
-      <Card 
-        key={profile.medicalProfileId} 
-        title={
-          <div className="medical-profile-header">
-            <MedicineBoxOutlined style={{ marginRight: 8 }} />
-            {`Hồ sơ sức khỏe #${profile.medicalProfileId}`}
-            <Badge 
-              className="profile-date-badge"
-              count={profile.lastUpdated} 
-              style={{ backgroundColor: '#52c41a' }} 
-            />
-          </div>
+    
+    // Find corresponding health check record by date
+    if (healthCheckRecords && healthCheckRecords.length > 0) {
+      const matchingRecord = healthCheckRecords.find(checkRecord => {
+        // Format date from check record for comparison
+        if (Array.isArray(checkRecord.date) && checkRecord.date.length >= 3) {
+          const checkDate = `${checkRecord.date[0]}-${String(checkRecord.date[1]).padStart(2, '0')}-${String(checkRecord.date[2]).padStart(2, '0')}`;
+          return checkDate === record.snapshotDate;
         }
-        className="medical-profile-card"
-      >
-        <Descriptions bordered size="small" column={1}>
-          <Descriptions.Item label="Dị ứng">
-            {profile.allergies === 'nomal' ? 'Không có' : profile.allergies}
-          </Descriptions.Item>
-          <Descriptions.Item label="Bệnh mãn tính">
-            {profile.chronicDiseases === 'nomal' ? 'Không có' : profile.chronicDiseases}
-          </Descriptions.Item>
-          <Descriptions.Item label="Thính lực">
-            {profile.hearingStatus === 'nomal' ? 'Bình thường' : profile.hearingStatus}
-          </Descriptions.Item>
-          <Descriptions.Item label="Tình trạng tiêm chủng">
-            <Tag color={profile.immunizationStatus === 'Complete' ? 'green' : 'orange'}>
-              {profile.immunizationStatus === 'Complete' ? 'Đầy đủ' : 
-               profile.immunizationStatus === 'nomal' ? 'Bình thường' : profile.immunizationStatus}
-            </Tag>
-          </Descriptions.Item>
-          <Descriptions.Item label="Điều trị trước đây">
-            {profile.pastTreatments === 'nomal' ? 'Không có' : profile.pastTreatments}
-          </Descriptions.Item>
-          <Descriptions.Item label="Thị lực (Trái/Phải)">
-            {profile.visionStatusLeft === 'nomal' ? 'Bình thường' : profile.visionStatusLeft} / 
-            {profile.visionStatusRight === 'nomal' ? 'Bình thường' : profile.visionStatusRight}
-          </Descriptions.Item>
-        </Descriptions>
-      </Card>
-    );
+        return false;
+      });
+      
+      if (matchingRecord) {
+        // If we found a matching health check record, update the selected record with its data
+        setSelectedRecord(prev => ({
+          ...prev,
+          checkNoticeId: matchingRecord.checkNoticeId,
+          recordId: matchingRecord.recordId,
+          result: matchingRecord.results,
+          recommendations: matchingRecord.recommendations,
+          healthCheckDetails: matchingRecord
+        }));
+      }
+    }
+    
+    setRecordDetailVisible(true);
   };
 
   return (
@@ -965,42 +931,95 @@ const HealthChecks = () => {
             </div>
             
             <div className="records-container">
-              {(studentRecordsLoading || medicalProfilesLoading) ? (
+              {(studentRecordsLoading) ? (
                 <div className="loading-container" style={{ textAlign: 'center', padding: '40px 0' }}>
                   <Spin size="large" />
                   <div style={{ marginTop: 16 }}>Đang tải dữ liệu...</div>
                 </div>
               ) : selectedStudent ? (
                 <div>
-                  {/* Medical Profiles Section */}
-                  <div className="medical-profiles-section">
-                    <Title level={4}>
-                      <FileTextOutlined /> Hồ sơ sức khỏe
-                    </Title>
-                    
-                    {medicalProfiles.length > 0 ? (
-                      <div className="medical-profiles-list">
-                        {medicalProfiles.map(profile => renderMedicalProfileCard(profile))}
-                      </div>
-                    ) : (
-                      <Empty 
-                        description="Không có hồ sơ sức khỏe cho học sinh này" 
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                      />
-                    )}
-                  </div>
-                  
                   {/* Health Check Records Section */}
-                  <div className="health-check-records-section" style={{ marginTop: 24 }}>
+                  <div className="health-check-records-section">
                     <Title level={4}>
                       <MedicineBoxOutlined /> Lịch sử kiểm tra sức khỏe
                     </Title>
                     
-                    {studentHealthRecords.length > 0 ? (
+                    {healthSnapshots.length > 0 ? (
                       <Table 
-                        columns={studentHealthRecordsColumns} 
-                        dataSource={studentHealthRecords} 
-                        pagination={{ pageSize: 10 }}
+                        columns={[
+                          {
+                            title: 'Ngày kiểm tra',
+                            key: 'snapshotDate',
+                            dataIndex: 'snapshotDate',
+                          },
+                          {
+                            title: 'Kết quả',
+                            key: 'result',
+                            render: (_, record) => {
+                              // Find the corresponding health check record to display its status
+                              const matchingHealthCheckRecord = healthCheckRecords.find(
+                                checkRecord => checkRecord.date && checkRecord.date.length >= 3 && 
+                                `${checkRecord.date[0]}-${String(checkRecord.date[1]).padStart(2, '0')}-${String(checkRecord.date[2]).padStart(2, '0')}` === record.snapshotDate
+                              );
+                              return matchingHealthCheckRecord ? (
+                                <Tag icon={<CheckCircleOutlined />} color="green">
+                                  {matchingHealthCheckRecord.results === 'nomal' ? 'Khỏe mạnh' : 
+                                   matchingHealthCheckRecord.results === 'NEEDS_ATTENTION' ? 'Cần theo dõi' : 
+                                   matchingHealthCheckRecord.results === 'NEEDS_TREATMENT' ? 'Cần điều trị' : 
+                                   matchingHealthCheckRecord.results || 'N/A'}
+                                </Tag>
+                              ) : (
+                                <span>—</span>
+                              );
+                            }
+                          },
+                          {
+                            title: 'Chiều cao (cm)',
+                            key: 'height',
+                            dataIndex: 'heightCm',
+                          },
+                          {
+                            title: 'Cân nặng (kg)',
+                            key: 'weight',
+                            dataIndex: 'weightKg',
+                          },
+                          {
+                            title: 'BMI',
+                            key: 'bmi',
+                            dataIndex: 'bmi',
+                          },
+                          {
+                            title: 'Thị lực (T/P)',
+                            key: 'vision',
+                            render: (_, record) => {
+                              const leftEye = record.visionLeft || 'N/A';
+                              const rightEye = record.visionRight || 'N/A';
+                              return `${leftEye} / ${rightEye}`;
+                            },
+                          },
+                          {
+                            title: 'Hành động',
+                            key: 'action',
+                            render: (_, record) => (
+                              <Button 
+                                type="primary" 
+                                onClick={() => showRecordDetailModal(record)}
+                              >
+                                Xem chi tiết
+                              </Button>
+                            ),
+                          },
+                        ]} 
+                        dataSource={healthSnapshots} 
+                        pagination={{ 
+                          pageSize: pageSize, 
+                          total: totalSnapshots, 
+                          onChange: (page, pageSize) => {
+                            setCurrentPage(page - 1);
+                            setPageSize(pageSize || 20);
+                            fetchStudentHealthRecords(selectedStudent.accountId);
+                          }
+                        }}
                       />
                     ) : (
                       <Empty 
@@ -1035,7 +1054,9 @@ const HealthChecks = () => {
           initialValues={{
             title: '',
             description: '',
-            date: null
+            date: null,
+            priority: 'strong',
+            grade: 1
           }}
         >
           <Form.Item
@@ -1065,6 +1086,39 @@ const HealthChecks = () => {
               format="YYYY-MM-DD"
             />
           </Form.Item>
+          
+          <Form.Item
+            name="priority"
+            label="Mức độ ưu tiên"
+            rules={[{ required: true, message: 'Vui lòng chọn mức độ ưu tiên!' }]}
+          >
+            <Select placeholder="Chọn mức độ ưu tiên">
+              <Option value="strong">Cao</Option>
+              <Option value="medium">Trung bình</Option>
+              <Option value="low">Thấp</Option>
+            </Select>
+          </Form.Item>
+          
+          <Form.Item
+            name="grade"
+            label="Khối lớp"
+            rules={[{ required: true, message: 'Vui lòng chọn khối lớp!' }]}
+          >
+            <Select placeholder="Chọn khối lớp">
+              <Option value={1}>Khối 1</Option>
+              <Option value={2}>Khối 2</Option>
+              <Option value={3}>Khối 3</Option>
+              <Option value={4}>Khối 4</Option>
+              <Option value={5}>Khối 5</Option>
+              <Option value={6}>Khối 6</Option>
+              <Option value={7}>Khối 7</Option>
+              <Option value={8}>Khối 8</Option>
+              <Option value={9}>Khối 9</Option>
+              <Option value={10}>Khối 10</Option>
+              <Option value={11}>Khối 11</Option>
+              <Option value={12}>Khối 12</Option>
+            </Select>
+          </Form.Item>
 
           <Form.Item>
             <Row justify="end" gutter={8}>
@@ -1083,7 +1137,7 @@ const HealthChecks = () => {
         </Form>
       </Modal>
 
-      {/* Modal xem xác nhận kiểm tra sức khỏe */}
+      {/* Modal displaying confirmations for a health check notice */}
       <Modal
         title={`Danh sách xác nhận - ${selectedNotice?.title || ''}`}
         open={confirmationsModalVisible}
@@ -1097,30 +1151,40 @@ const HealthChecks = () => {
       >
         <div className="confirmation-stats">
           <div className="stat-card confirmed">
+            <div className="stat-icon">
+              <CheckCircleOutlined />
+            </div>
             <div className="stat-number">
               {confirmations.filter(c => c.status === 'CONFIRMED').length}
             </div>
             <div className="stat-label">Đã xác nhận</div>
           </div>
           <div className="stat-card pending">
+            <div className="stat-icon">
+              <QuestionCircleOutlined />
+            </div>
             <div className="stat-number">
               {confirmations.filter(c => c.status === 'PENDING').length}
             </div>
             <div className="stat-label">Chưa xác nhận</div>
           </div>
           <div className="stat-card declined">
+            <div className="stat-icon">
+              <CloseCircleOutlined />
+            </div>
             <div className="stat-number">
-              {confirmations.filter(c => c.status === 'CANCELLED').length}
+              {confirmations.filter(c => c.status === 'CANCELLED' || c.status === 'DECLINED').length}
             </div>
             <div className="stat-label">Đã từ chối</div>
           </div>
         </div>
         
-        <Table 
-          columns={confirmationsColumns} 
-          dataSource={confirmations} 
+        <Table
+          columns={confirmationsColumns}
+          dataSource={confirmations}
           loading={loading}
           pagination={{ pageSize: 10 }}
+          rowKey="key"
         />
       </Modal>
 
@@ -1157,6 +1221,57 @@ const HealthChecks = () => {
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
+                  name="heightCm"
+                  label={<><span className="required-field">*</span> Chiều cao (cm)</>}
+                  rules={[{ required: true, message: 'Vui lòng nhập chiều cao!' }]}
+                >
+                  <Input type="number" placeholder="Nhập chiều cao (cm)" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="weightKg"
+                  label={<><span className="required-field">*</span> Cân nặng (kg)</>}
+                  rules={[{ required: true, message: 'Vui lòng nhập cân nặng!' }]}
+                >
+                  <Input type="number" placeholder="Nhập cân nặng (kg)" />
+                </Form.Item>
+              </Col>
+            </Row>
+            
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name="gender"
+                  label={<><span className="required-field">*</span> Giới tính</>}
+                  rules={[{ required: true, message: 'Vui lòng chọn giới tính!' }]}
+                  initialValue="male"
+                >
+                  <Select placeholder="Chọn giới tính">
+                    <Option value="male">Nam</Option>
+                    <Option value="female">Nữ</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="bloodType"
+                  label={<><span className="required-field">*</span> Nhóm máu</>}
+                  rules={[{ required: true, message: 'Vui lòng chọn nhóm máu!' }]}
+                >
+                  <Select placeholder="Chọn nhóm máu">
+                    <Option value="A">A</Option>
+                    <Option value="B">B</Option>
+                    <Option value="AB">AB</Option>
+                    <Option value="O">O</Option>
+                  </Select>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
                   name="visionStatusLeft"
                   label={<><span className="required-field">*</span> Thị lực mắt trái</>}
                   rules={[{ required: true, message: 'Vui lòng nhập thị lực mắt trái!' }]}
@@ -1183,18 +1298,17 @@ const HealthChecks = () => {
                   rules={[{ required: true, message: 'Vui lòng chọn tình trạng thính giác!' }]}
                 >
                   <Select placeholder="Chọn tình trạng thính giác">
-                    <Option value="Bình thường">Bình thường</Option>
-                    <Option value="Giảm thính lực nhẹ">Giảm thính lực nhẹ</Option>
-                    <Option value="Giảm thính lực nặng">Giảm thính lực nặng</Option>
-                    <Option value="Cần điều trị">Cần điều trị</Option>
+                    <Option value="normal">Bình thường</Option>
+                    <Option value="mild">Giảm thính lực nhẹ</Option>
+                    <Option value="severe">Giảm thính lực nặng</Option>
+                    <Option value="treatment">Cần điều trị</Option>
                   </Select>
                 </Form.Item>
               </Col>
-              <Col span={12}>
+              {/* <Col span={12}>
                 <Form.Item
                   name="immunizationStatus"
-                  label={<><span className="required-field">*</span> Tình trạng tiêm chủng</>}
-                  rules={[{ required: true, message: 'Vui lòng chọn tình trạng tiêm chủng!' }]}
+                  label="Tình trạng tiêm chủng"
                 >
                   <Select placeholder="Chọn tình trạng tiêm chủng">
                     <Option value="Đầy đủ">Đầy đủ</Option>
@@ -1202,10 +1316,10 @@ const HealthChecks = () => {
                     <Option value="Cần cập nhật">Cần cập nhật</Option>
                   </Select>
                 </Form.Item>
-              </Col>
+              </Col> */}
             </Row>
 
-            <Form.Item
+            {/* <Form.Item
               name="allergies"
               label="Dị ứng"
             >
@@ -1224,7 +1338,7 @@ const HealthChecks = () => {
               label="Điều trị trước đây"
             >
               <TextArea rows={3} placeholder="Nhập thông tin về điều trị trước đây (nếu có)" />
-            </Form.Item>
+            </Form.Item> */}
           </Card>
 
           {/* Thông tin bổ sung - sẽ được lưu trong pastTreatments */}
@@ -1331,43 +1445,104 @@ const HealthChecks = () => {
             <Row gutter={[16, 16]}>
               <Col span={24}>
                 <Card title="Thông tin chung" className="detail-card">
-                  <p><strong>Ngày kiểm tra:</strong> {selectedRecord.date}</p>
-                  <p><strong>Kết quả tổng quát:</strong> {
-                    selectedRecord.result === 'nomal' ? 'Khỏe mạnh' : 
-                    selectedRecord.result === 'NEEDS_ATTENTION' ? 'Cần theo dõi' : 
-                    selectedRecord.result === 'NEEDS_TREATMENT' ? 'Cần điều trị' : 
-                    selectedRecord.result
-                  }</p>
+                  <p>
+                    <strong>Ngày kiểm tra:</strong> {selectedRecord.snapshotDate}
+                  </p>
+                  {/* <p>
+                    <strong>Ngày đo:</strong> {selectedRecord.lastMeasuredDate}
+                  </p> */}
+                  <p>
+                    <strong>Kết quả tổng quát:</strong> {
+                      selectedRecord.result === 'nomal' ? 'Khỏe mạnh' : 
+                      selectedRecord.result === 'NEEDS_ATTENTION' ? 'Cần theo dõi' : 
+                      selectedRecord.result === 'NEEDS_TREATMENT' ? 'Cần điều trị' : 
+                      selectedRecord.result || 'N/A'
+                    }
+                  </p>
                 </Card>
               </Col>
               
               <Col span={12}>
                 <Card title="Chỉ số cơ thể" className="detail-card">
-                  <p><strong>Chiều cao:</strong> {selectedRecord.details?.height || 'N/A'} cm</p>
-                  <p><strong>Cân nặng:</strong> {selectedRecord.details?.weight || 'N/A'} kg</p>
-                  <p><strong>BMI:</strong> {
-                    selectedRecord.details?.height && selectedRecord.details?.weight ? 
-                    (selectedRecord.details.weight / ((selectedRecord.details.height / 100) ** 2)).toFixed(1) : 
-                    'N/A'
-                  }</p>
-                  <p><strong>Huyết áp:</strong> {selectedRecord.details?.bloodPressure || 'N/A'}</p>
+                  <p><strong>Chiều cao:</strong> {selectedRecord.heightCm} cm</p>
+                  <p><strong>Cân nặng:</strong> {selectedRecord.weightKg} kg</p>
+                  {/* <p><strong>BMI:</strong> {selectedRecord.bmi}</p> */}
+                  <p><strong>Giới tính:</strong> {selectedRecord.gender === 'male' ? 'Nam' : selectedRecord.gender === 'female' ? 'Nữ' : selectedRecord.gender}</p>
+                  <p><strong>Nhóm máu:</strong> {selectedRecord.bloodType}</p>
+                  {/* <p><strong>Huyết áp:</strong> {selectedRecord.healthCheckDetails?.bloodPressure || 'N/A'}</p> */}
                 </Card>
               </Col>
               
               <Col span={12}>
-                <Card title="Thị lực & Răng miệng" className="detail-card">
-                  <p><strong>Thị lực mắt trái:</strong> {selectedRecord.details?.leftEye || 'N/A'}</p>
-                  <p><strong>Thị lực mắt phải:</strong> {selectedRecord.details?.rightEye || 'N/A'}</p>
-                  <p><strong>Tình trạng răng miệng:</strong> {selectedRecord.details?.dentalStatus || 'N/A'}</p>
-                  <p><strong>Sức khỏe tổng quát:</strong> {selectedRecord.details?.generalHealth || 'N/A'}</p>
+                <Card title="Thị lực & Thính giác" className="detail-card">
+                  <p><strong>Thị lực mắt trái:</strong> {selectedRecord.visionLeft}</p>
+                  <p><strong>Thị lực mắt phải:</strong> {selectedRecord.visionRight}</p>
+                  <p><strong>Thính giác:</strong> {
+                    selectedRecord.hearingStatus === 'normal' ? 'Bình thường' : 
+                    selectedRecord.hearingStatus === 'mild' ? 'Giảm thính lực nhẹ' : 
+                    selectedRecord.hearingStatus === 'severe' ? 'Giảm thính lực nặng' :
+                    selectedRecord.hearingStatus === 'treatment' ? 'Cần điều trị' :
+                    selectedRecord.hearingStatus
+                  }</p>
+                  {/* <p><strong>Tình trạng răng miệng:</strong> {selectedRecord.healthCheckDetails?.dentalStatus || 'N/A'}</p>
+                  <p><strong>Sức khỏe tổng quát:</strong> {selectedRecord.healthCheckDetails?.generalHealth || 'N/A'}</p> */}
+                </Card>
+              </Col>
+
+              <Col span={24}>
+                <Card title="Tình trạng sức khỏe" className="detail-card">
+                  {selectedRecord.conditions && selectedRecord.conditions.length > 0 ? (
+                    <div>
+                      <p><strong>Bệnh lý/Hội chứng:</strong></p>
+                      <ul>
+                        {selectedRecord.conditions.map((condition, index) => (
+                          <li key={index}>
+                            {condition.syndromeDisability?.name || 'N/A'}
+                            {condition.note && <span> - Ghi chú: {condition.note}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p>Không có bệnh lý/hội chứng</p>
+                  )}
+                  
+                  {selectedRecord.diseases && selectedRecord.diseases.length > 0 ? (
+                    <div style={{marginTop: 16}}>
+                      <p><strong>Bệnh mãn tính:</strong></p>
+                      <ul>
+                        {selectedRecord.diseases.map((disease, index) => (
+                          <li key={index}>{disease.disease?.name || 'N/A'}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p style={{marginTop: 16}}>Không có bệnh mãn tính</p>
+                  )}
+                  
+                  {selectedRecord.allergies && selectedRecord.allergies.length > 0 ? (
+                    <div style={{marginTop: 16}}>
+                      <p><strong>Dị ứng:</strong></p>
+                      <ul>
+                        {selectedRecord.allergies.map((allergy, index) => (
+                          <li key={index}>
+                            {allergy.allergen?.name || 'N/A'} 
+                            {allergy.reaction && <span> - Phản ứng: {allergy.reaction}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <p style={{marginTop: 16}}>Không có dị ứng</p>
+                  )}
                 </Card>
               </Col>
               
-              <Col span={24}>
+              {/* <Col span={24}>
                 <Card title="Khuyến nghị" className="detail-card">
-                  <p>{selectedRecord.details?.recommendations || 'Không có khuyến nghị'}</p>
+                  <p>{selectedRecord.recommendations || 'Không có khuyến nghị'}</p>
                 </Card>
-              </Col>
+              </Col> */}
             </Row>
           </div>
         )}

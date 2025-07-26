@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Table, Button, Tag, Modal, Form, Select, Input, DatePicker, Tabs, message, Spin, InputNumber, Radio, Space, Checkbox, Tooltip, Divider, Popconfirm } from 'antd';
+import { Card, Typography, Table, Button, Tag, Modal, Form, Select, Input, DatePicker, Tabs, message, Spin, InputNumber, Radio, Space, Checkbox, Tooltip, Divider, Popconfirm, Row, Col } from 'antd';
 import { CheckCircleOutlined, ClockCircleOutlined, ExclamationCircleOutlined, MedicineBoxOutlined, ReloadOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import './MedicineRequestPage.css';
 import parentApi from '../../../api/parentApi';
@@ -395,13 +395,13 @@ const MedicineRequestPage = () => {
 
   // Cột cho bảng lịch sử yêu cầu thuốc
   const historyColumns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-      ellipsis: true,
-    },
+    // {
+    //   title: 'ID',
+    //   dataIndex: 'id',
+    //   key: 'id',
+    //   width: 80,
+    //   ellipsis: true,
+    // },
     {
       title: 'Học sinh',
       dataIndex: 'student',
@@ -457,7 +457,7 @@ const MedicineRequestPage = () => {
         switch (status) {
           case 'APPROVED':
             color = 'green';
-            text = 'Đã duyệt';
+            text = 'Đã hoàn thành';
             break;
           case 'REJECTED':
             color = 'red';
@@ -569,7 +569,8 @@ const MedicineRequestPage = () => {
               timingNotes: dosage.timingNotes,
               medicationItems: dosage.medicationItems.map(item => ({
                 medicationName: item.medicationName,
-                amount: parseInt(item.amount)
+                amount: parseInt(item.amount),
+                unit: item.unit || "vien" // Thêm trường đơn vị
               }))
             }))
           };
@@ -726,13 +727,32 @@ const MedicineRequestPage = () => {
                         <Input placeholder="Nhập tên thuốc" />
                       </Form.Item>
                       
-                      <Form.Item
-                        name={[field.name, 'amount']}
-                        label="Liều lượng"
-                        rules={[{ required: true, message: 'Vui lòng nhập liều lượng' }]}
-                      >
-                        <InputNumber min={1} placeholder="Số lượng" style={{ width: '100%' }} />
-                      </Form.Item>
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item
+                            name={[field.name, 'amount']}
+                            label="Liều lượng"
+                            rules={[{ required: true, message: 'Vui lòng nhập liều lượng' }]}
+                          >
+                            <InputNumber min={0.5} step={0.5} placeholder="Số lượng" style={{ width: '100%' }} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item
+                            name={[field.name, 'unit']}
+                            label="Đơn vị"
+                            rules={[{ required: true, message: 'Vui lòng chọn đơn vị' }]}
+                            initialValue="vien"
+                          >
+                            <Select placeholder="Chọn đơn vị">
+                              <Option value="vien">Viên</Option>
+                              <Option value="ml">ml</Option>
+                              <Option value="mg">mg</Option>
+                              <Option value="goi">Gói</Option>
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                      </Row>
                       
                       {fields.length > 1 && (
                         <Button 
@@ -749,7 +769,7 @@ const MedicineRequestPage = () => {
                   <Form.Item className="add-medication-container">
                     <Button 
                       type="dashed" 
-                      onClick={() => add({ medicationName: '', amount: 1 })} 
+                      onClick={() => add({ medicationName: '', amount: 1, unit: 'vien' })} 
                       block
                       icon={<PlusOutlined />}
                     >
@@ -893,7 +913,7 @@ const MedicineRequestPage = () => {
           <div className="request-detail">
             <div className="detail-section">
               <Title level={5}>Thông tin chung</Title>
-              <p><strong>Mã yêu cầu:</strong> {selectedRequest.id}</p>
+              {/* <p><strong>Mã yêu cầu:</strong> {selectedRequest.id}</p> */}
               <p><strong>Học sinh:</strong> {selectedRequest.student}</p>
               {selectedRequest.class && <p><strong>Lớp:</strong> {selectedRequest.class}</p>}
               
@@ -938,7 +958,7 @@ const MedicineRequestPage = () => {
                         <ul style={{ paddingLeft: '20px' }}>
                           {dosage.medicationItems.map((med, medIndex) => (
                             <li key={medIndex}>
-                              <strong>{med.medicationName}</strong> - Liều lượng: {med.amount}
+                              <strong>{med.medicationName}</strong> - Liều lượng: {med.amount} {med.unit || 'viên'}
                             </li>
                           ))}
                         </ul>

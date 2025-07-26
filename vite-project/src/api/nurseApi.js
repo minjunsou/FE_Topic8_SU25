@@ -435,16 +435,56 @@ const nurseApi = {
   /**
    * Tạo thông báo kiểm tra sức khỏe mới
    * @param {Object} healthCheckData - Dữ liệu kiểm tra sức khỏe
+   * @param {string} healthCheckData.title - Tiêu đề thông báo
+   * @param {string} healthCheckData.description - Mô tả chi tiết về buổi kiểm tra sức khỏe
+   * @param {string} healthCheckData.date - Ngày kiểm tra sức khỏe, định dạng YYYY-MM-DD
+   * @param {string} healthCheckData.priority - Mức độ ưu tiên (strong, medium, low)
+   * @param {number} healthCheckData.grade - Lớp học (số nguyên)
    * @returns {Promise} - Promise chứa kết quả tạo thông báo
    */
   createHealthCheckNotice: async (healthCheckData) => {
     try {
       console.log('Creating health check notice with data:', healthCheckData);
+      
+      // Ensure date is in the right format (YYYY-MM-DD)
+      if (healthCheckData.date && typeof healthCheckData.date === 'string') {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(healthCheckData.date)) {
+          console.warn('Date format may be incorrect. Expected format: YYYY-MM-DD');
+        }
+      }
+
+      // Ensure priority and grade are included
+      if (!healthCheckData.priority) {
+        console.warn('Missing priority field, defaulting to "medium"');
+        healthCheckData.priority = "medium";
+      }
+      
+      if (healthCheckData.grade === undefined) {
+        console.warn('Missing grade field, defaulting to 1');
+        healthCheckData.grade = 1;
+      }
+
       const response = await axiosInstance.post('/v1/health-check-notices/create', healthCheckData);
       console.log('Health check notice API response:', response);
-      return response.data;
+      
+      if (response && response.data) {
+        return response.data;
+      }
+      return response;
     } catch (error) {
       console.error('Lỗi khi tạo thông báo kiểm tra sức khỏe:', error);
+      
+      // Log more detailed error information
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      
       throw error;
     }
   },
@@ -582,11 +622,20 @@ const nurseApi = {
   getStudentHealthCheckHistory: async (studentId) => {
     try {
       const response = await axiosInstance.get(`/v1/health-check-records/getByStudent/${studentId}`);
-      // The response format might be { time_stamp, data: [...records] }
+      console.log('API response for student health check history:', response.data);
+      // The response format is { time_stamp, data: [...records] }
       return response.data;
     } catch (error) {
       console.error(`Lỗi khi lấy lịch sử kiểm tra sức khỏe cho học sinh ID ${studentId}:`, error);
-      throw error;
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      return { time_stamp: null, data: [] };
     }
   },
 
@@ -1255,6 +1304,108 @@ const nurseApi = {
       }
       
       return [];
+    }
+  },
+
+  /**
+   * Cập nhật dữ liệu sức khỏe cơ bản cho học sinh
+   * @param {Object} healthData - Dữ liệu sức khỏe cơ bản
+   * @param {string} healthData.studentId - ID của học sinh
+   * @param {number} healthData.heightCm - Chiều cao (cm)
+   * @param {number} healthData.weightKg - Cân nặng (kg)
+   * @param {string} healthData.visionLeft - Thị lực mắt trái
+   * @param {string} healthData.visionRight - Thị lực mắt phải
+   * @param {string} healthData.hearingStatus - Tình trạng thính giác
+   * @param {string} healthData.gender - Giới tính (male/female)
+   * @param {string} healthData.bloodType - Nhóm máu (A/B/AB/O)
+   * @returns {Promise} - Promise chứa kết quả cập nhật
+   */
+  updateBasicHealthData: async (healthData) => {
+    try {
+      console.log('Updating basic health data with:', healthData);
+      
+      // Validate required fields
+      if (!healthData.studentId) {
+        throw new Error('studentId là bắt buộc để cập nhật dữ liệu sức khỏe cơ bản');
+      }
+      
+      // Ensure numeric values are actually numbers
+      if (healthData.heightCm) {
+        healthData.heightCm = Number(healthData.heightCm);
+      }
+      
+      if (healthData.weightKg) {
+        healthData.weightKg = Number(healthData.weightKg);
+      }
+
+      // Call the API
+      const response = await axiosInstance.put('/medicalProfiles/basic-health-data/update', healthData);
+      
+      console.log('Basic health data update response:', response);
+      
+      if (response && response.status >= 200 && response.status < 300) {
+        return response.data || { success: true };
+      }
+      
+      throw new Error(`Unsuccessful response: ${response?.status || 'No response'}`);
+    } catch (error) {
+      console.error('Lỗi khi cập nhật dữ liệu sức khỏe cơ bản:', error);
+      
+      // Enhanced error logging
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      
+      throw error;
+    }
+  },
+
+  /**
+   * Lấy lịch sử dữ liệu sức khỏe (snapshots) của một học sinh
+   * @param {string} studentId - ID của học sinh
+   * @param {number} page - Số trang (mặc định là 0)
+   * @param {number} size - Kích thước trang (mặc định là 20)
+   * @returns {Promise} - Promise chứa dữ liệu lịch sử sức khỏe
+   */
+  getStudentHealthSnapshots: async (studentId, page = 0, size = 20) => {
+    try {
+      if (!studentId) {
+        throw new Error('studentId là bắt buộc để lấy lịch sử sức khỏe');
+      }
+      
+      console.log(`Đang gọi API để lấy lịch sử sức khỏe của học sinh ID: ${studentId}`);
+      const response = await axiosInstance.get(`/snapshots/student/${studentId}?page=${page}&size=${size}`);
+      
+      console.log('API response student health snapshots:', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi lấy lịch sử sức khỏe của học sinh ID ${studentId}:`, error);
+      
+      // Enhanced error logging
+      if (error.response) {
+        console.error('Error response data:', error.response.data);
+        console.error('Error response status:', error.response.status);
+        console.error('Error response headers:', error.response.headers);
+      } else if (error.request) {
+        console.error('Error request:', error.request);
+      } else {
+        console.error('Error message:', error.message);
+      }
+      
+      // Return empty content to avoid crashes
+      return {
+        content: [],
+        totalElements: 0,
+        totalPages: 0,
+        empty: true
+      };
     }
   }
 
