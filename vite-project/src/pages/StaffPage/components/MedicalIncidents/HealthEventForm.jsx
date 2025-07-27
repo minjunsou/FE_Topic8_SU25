@@ -52,8 +52,7 @@ const HealthEventForm = ({
       { required: true, message: 'Vui lòng chọn ngày xảy ra' }
     ],
     eventType: [
-      { required: true, message: 'Vui lòng nhập loại sự cố' },
-      { min: 2, message: 'Loại sự cố phải có ít nhất 2 ký tự' }
+      { required: true, message: 'Vui lòng nhập loại sự cố' }
     ],
     description: [
       { required: true, message: 'Vui lòng nhập mô tả' },
