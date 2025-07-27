@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Descriptions, Button, message, Skeleton, Select, Empty, Tabs, Avatar, Spin, Tag, List, Modal, Form, InputNumber, DatePicker, Radio, Input } from 'antd';
+import { Card, Typography, Descriptions, Button, message, Skeleton, Select, Empty, Tabs, Avatar, Spin, Tag, List, Modal, Form, InputNumber, DatePicker, Radio, Input, Row, Col } from 'antd';
 import { UserOutlined, TeamOutlined, MedicineBoxOutlined, AlertOutlined, BugOutlined, MedicineBoxTwoTone, PlusOutlined, EditOutlined } from '@ant-design/icons';
 import { parentApi } from '../../api';
 import axios from 'axios';
 import './UserProfile.css';
+import moment from 'moment';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -63,6 +64,10 @@ const ChildrenInfo = () => {
   // State để quản lý tab đang được chọn
   const [activeHealthTab, setActiveHealthTab] = useState('healthIssues');
 
+  // Thêm state và function mới cho phần tiêm chủng
+  const [vaccinationModalVisible, setVaccinationModalVisible] = useState(false);
+  const [vaccinationForm] = Form.useForm();
+  
   // Lấy dữ liệu tham chiếu (dị ứng, hội chứng, bệnh)
   useEffect(() => {
     const fetchReferenceData = async () => {
@@ -862,6 +867,33 @@ const ChildrenInfo = () => {
     );
   };
 
+  // Hiển thị modal khai báo tiêm chủng
+  const showAddVaccinationModal = () => {
+    vaccinationForm.resetFields();
+    setVaccinationModalVisible(true);
+  };
+
+  // Xử lý khi submit form tiêm chủng
+  const handleAddVaccination = async (values) => {
+    try {
+      console.log('Dữ liệu tiêm chủng:', values);
+      
+      // Format lại dữ liệu nếu cần
+      const formattedValues = {
+        ...values,
+        vaccinationDate: values.vaccinationDate ? values.vaccinationDate.format('YYYY-MM-DD') : null
+      };
+      
+      // Hiển thị thông báo thành công (API integration sẽ được thêm sau)
+      console.log('Dữ liệu đã format:', formattedValues);
+      message.success('Đã lưu thông tin tiêm chủng thành công!');
+      setVaccinationModalVisible(false);
+    } catch (error) {
+      console.error('Lỗi khi lưu thông tin tiêm chủng:', error);
+      message.error('Không thể lưu thông tin tiêm chủng. Vui lòng thử lại sau.');
+    }
+  };
+
   if (loading) {
     return (
       <Card className="user-profile-card">
@@ -1019,15 +1051,32 @@ const ChildrenInfo = () => {
                 <div style={{ textAlign: 'center', padding: '30px' }}>
                   <Spin size="large" tip="Đang tải thông tin tiêm chủng..." />
                 </div>
-              ) : medicalProfile && medicalProfile.active ? (
-                <div className="vaccination-info">
-                  <div className="vaccination-status-complete">
-                    <MedicineBoxOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
-                    <Text strong style={{ marginLeft: '10px', fontSize: '16px' }}>Đã hoàn thành tất cả các mũi tiêm chủng cần thiết</Text>
-                  </div>
-                </div>
               ) : (
-                <Empty description="Không có thông tin tiêm chủng" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                <div className="vaccination-info">
+                  <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+                    <Col>
+                      <Typography.Title level={5}>Lịch sử tiêm chủng</Typography.Title>
+                    </Col>
+                    <Col>
+                      <Button 
+                        type="primary" 
+                        icon={<PlusOutlined />} 
+                        onClick={showAddVaccinationModal}
+                      >
+                        Khai báo tiêm chủng
+                      </Button>
+                    </Col>
+                  </Row>
+
+                  {medicalProfile && medicalProfile.active ? (
+                    <div className="vaccination-status-complete">
+                      <MedicineBoxOutlined style={{ fontSize: '24px', color: '#52c41a' }} />
+                      <Text strong style={{ marginLeft: '10px', fontSize: '16px' }}>Đã hoàn thành tất cả các mũi tiêm chủng cần thiết</Text>
+                    </div>
+                  ) : (
+                    <Empty description="Chưa có thông tin tiêm chủng" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  )}
+                </div>
               )}
             </TabPane>
           </Tabs>
@@ -1388,6 +1437,104 @@ const ChildrenInfo = () => {
                 >
                   Lưu
                 </Button>
+              </Form.Item>
+            </Form>
+          </Modal>
+
+          {/* Modal khai báo tiêm chủng */}
+          <Modal
+            title="Khai báo tiêm chủng"
+            open={vaccinationModalVisible}
+            onCancel={() => setVaccinationModalVisible(false)}
+            footer={null}
+            destroyOnClose
+            width={600}
+          >
+            <Form
+              form={vaccinationForm}
+              layout="vertical"
+              onFinish={handleAddVaccination}
+            >
+              <Form.Item
+                name="vaccineName"
+                label="Tên vắc xin"
+                rules={[{ required: true, message: 'Vui lòng nhập tên vắc xin' }]}
+              >
+                <Input placeholder="Nhập tên vắc xin" />
+              </Form.Item>
+              
+              <Form.Item
+                name="vaccinationDate"
+                label="Ngày tiêm"
+                rules={[{ required: true, message: 'Vui lòng chọn ngày tiêm' }]}
+              >
+                <DatePicker
+                  format="DD/MM/YYYY"
+                  placeholder="Chọn ngày tiêm"
+                  style={{ width: '100%' }}
+                  disabledDate={current => current && current > moment().endOf('day')}
+                />
+              </Form.Item>
+              
+              <Form.Item
+                name="doseNumber"
+                label="Mũi số"
+                rules={[{ required: true, message: 'Vui lòng nhập số mũi tiêm' }]}
+              >
+                <InputNumber 
+                  min={1} 
+                  placeholder="Số mũi tiêm" 
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+              
+              <Form.Item
+                name="manufacturer"
+                label="Nhà sản xuất"
+              >
+                <Input placeholder="Nhập tên nhà sản xuất vắc xin" />
+              </Form.Item>
+              
+              <Form.Item
+                name="batchNumber"
+                label="Số lô"
+              >
+                <Input placeholder="Nhập số lô vắc xin" />
+              </Form.Item>
+              
+              <Form.Item
+                name="location"
+                label="Địa điểm tiêm"
+              >
+                <Input placeholder="Nhập địa điểm tiêm" />
+              </Form.Item>
+              
+              <Form.Item
+                name="notes"
+                label="Ghi chú"
+              >
+                <Input.TextArea rows={4} placeholder="Nhập ghi chú nếu có" />
+              </Form.Item>
+              
+              <Form.Item
+                name="sideEffects"
+                label="Phản ứng sau tiêm"
+              >
+                <Input.TextArea rows={2} placeholder="Nhập phản ứng sau tiêm (nếu có)" />
+              </Form.Item>
+              
+              <Form.Item style={{ marginBottom: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Button 
+                    onClick={() => setVaccinationModalVisible(false)} 
+                    style={{ marginRight: 8 }}
+                  >
+                    Hủy
+                  </Button>
+                  <Button type="primary" htmlType="submit">
+                    Lưu thông tin
+                  </Button>
+                </div>
               </Form.Item>
             </Form>
           </Modal>

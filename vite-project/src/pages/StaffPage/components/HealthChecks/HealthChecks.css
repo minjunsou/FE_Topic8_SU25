@@ -282,3 +282,39 @@
     grid-template-columns: 1fr;
   }
 } 
+
+/* Health Profile Card Styles - These are no longer needed */
+.health-profile-card,
+.health-profile-header,
+.health-profile-title,
+.health-profile-date,
+.health-profile-card .ant-table-tbody > tr > td,
+.health-profile-card .ant-table-tbody > tr > td:nth-child(odd),
+.health-profile-card .ant-table-tbody > tr > td:nth-child(even) {
+  /* Remove these styles */
+}
+
+/* Ensure responsive behavior */
+@media (max-width: 768px) {
+  .health-profile-card .ant-table-tbody > tr > td {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+} 
+
+.stat-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.stat-card.confirmed .stat-icon {
+  color: #52c41a;
+}
+
+.stat-card.pending .stat-icon {
+  color: #faad14;
+}
+
+.stat-card.declined .stat-icon {
+  color: #f5222d;
+} 

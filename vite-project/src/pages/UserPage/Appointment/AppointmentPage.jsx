@@ -13,28 +13,60 @@ import {
   Tag,
   Row,
   Col,
-  Divider
+  Divider,
+  Alert
 } from 'antd';
 import { CalendarOutlined, ClockCircleOutlined, UserOutlined } from '@ant-design/icons';
 import parentApi from '../../../api/parentApi';
 import './AppointmentPage.css';
+import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import dayjs from 'dayjs';
 
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 const { TextArea } = Input;
 
 const AppointmentPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [form] = Form.useForm();
   const [children, setChildren] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-
-  // Lấy danh sách con và lịch sử đặt hẹn khi component mount
+  const [fromHealthCheck, setFromHealthCheck] = useState(false);
+  const [nurses, setNurses] = useState([]);
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  
+  // On mount, check localStorage for pending appointment
   useEffect(() => {
+    const pending = localStorage.getItem('pendingAppointment');
+    if (pending) {
+      try {
+        const data = JSON.parse(pending);
+        setFromHealthCheck(true);
+        // Prefill form
+        form.setFieldsValue({
+          studentId: data.studentId,
+          staffId: data.staffId,
+          // date, slot, reason left for user to pick
+        });
+        form.healthCheckRecordId = data.healthCheckRecordId;
+        form.parentId = data.parentId;
+        // Optionally show a message
+        if (data.studentName && data.nurseName) {
+          message.info(`Đặt lịch khám cho học sinh ${data.studentName} với y tá ${data.nurseName}`);
+        }
+      } catch (e) {}
+      // Clear after use
+      localStorage.removeItem('pendingAppointment');
+    }
     fetchChildren();
     fetchAppointments();
+    fetchNurses();
   }, []);
 
   // Lấy danh sách con từ API
@@ -98,7 +130,6 @@ const AppointmentPage = () => {
         class: child.className || child.classId || 'N/A',
         school: child.schoolName || 'Trường học',
         birthdate: formatDate(child.dob) || 'Chưa cập nhật',
-        dob: child.dob || ''
       }));
       
       console.log('Dữ liệu con đã định dạng:', formattedChildren);
@@ -106,73 +137,76 @@ const AppointmentPage = () => {
     } catch (error) {
       console.error('Lỗi khi tải dữ liệu con:', error);
       message.error('Không thể tải thông tin học sinh');
-      
-      // Thêm dữ liệu demo cho trường hợp lỗi
-      const demoChildren = [
-        { 
-          id: 'demo1', 
-          name: 'Nguyễn Văn A',
-          age: 7,
-          grade: '1',
-          class: '1A',
-          school: 'Trường Tiểu học XYZ'
-        },
-        { 
-          id: 'demo2', 
-          name: 'Nguyễn Thị B',
-          age: 5,
-          grade: 'Mẫu giáo',
-          class: 'Lớp Hoa',
-          school: 'Trường Mầm non ABC'
-        }
-      ];
-      setChildren(demoChildren);
     } finally {
       setLoading(false);
     }
   };
+  
+  // Fetch nurses
+  const fetchNurses = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/accounts?page=0&size=10&roleId=3&sortBy=fullName&direction=asc');
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      console.log('Nurses API response:', data);
+      
+      const nursesList = data.accounts || [];
+      setNurses(nursesList);
+    } catch (error) {
+      console.error('Error fetching nurses:', error);
+      message.error('Không thể lấy danh sách y tá');
+    }
+  };
 
-  // Hàm tính tuổi từ ngày sinh (copy từ ChildrenInfo.jsx)
   const calculateAge = (dob) => {
     if (!dob) return 'N/A';
     
-    try {
-      const birthDate = new Date(dob);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      
-      return age;
-    } catch (error) {
-      console.error('Lỗi khi tính tuổi:', error);
+    let birthDate;
+    if (Array.isArray(dob)) {
+      // Nếu dob là mảng [năm, tháng, ngày]
+      birthDate = new Date(dob[0], dob[1] - 1, dob[2]);
+    } else if (typeof dob === 'string') {
+      // Nếu dob là chuỗi ISO
+      birthDate = new Date(dob);
+    } else {
       return 'N/A';
     }
+    
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
   };
 
-  // Hàm định dạng ngày tháng (copy từ ChildrenInfo.jsx)
   const formatDate = (dateString) => {
-    if (!dateString) return null;
+    if (!dateString) return '';
     
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return null;
+      let date;
+      if (Array.isArray(dateString)) {
+        // Nếu dateString là mảng [năm, tháng, ngày]
+        date = new Date(dateString[0], dateString[1] - 1, dateString[2]);
+      } else if (typeof dateString === 'string') {
+        // Nếu dateString là chuỗi ISO
+        date = new Date(dateString);
+      } else {
+        return '';
+      }
       
-      return date.toLocaleDateString('vi-VN', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
+      return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
     } catch (error) {
-      console.error('Lỗi khi định dạng ngày tháng:', error);
-      return null;
+      console.error('Lỗi khi định dạng ngày:', error);
+      return '';
     }
   };
 
-  // Giả lập: Lấy lịch sử đặt lịch hẹn (sẽ cập nhật khi có API thật)
   const fetchAppointments = async () => {
     setTableLoading(true);
     try {
@@ -223,7 +257,6 @@ const AppointmentPage = () => {
     }
   };
 
-  // Hàm trợ giúp để sử dụng dữ liệu mẫu cho lịch hẹn
   const useDefaultAppointments = () => {
     const demoAppointments = [
       {
@@ -247,43 +280,93 @@ const AppointmentPage = () => {
     setAppointments(demoAppointments);
   };
 
-  // Xử lý đặt lịch hẹn
+  // Handle form submission
   const handleSubmit = async (values) => {
     setSubmitting(true);
+    
     try {
-      const storedUserInfo = localStorage.getItem('userInfo');
-      if (!storedUserInfo) {
-        throw new Error('Không tìm thấy thông tin người dùng');
+      // Format date to yyyy-MM-dd
+      const formattedDate = values.date.format('YYYY-MM-DD');
+      
+      // Get parent ID from localStorage or from URL params
+      const parentId = form.parentId || (() => {
+        const storedUserInfo = localStorage.getItem('userInfo');
+        if (storedUserInfo) {
+          const parsedUserInfo = JSON.parse(storedUserInfo);
+          return parsedUserInfo.accountId;
+        }
+        return null;
+      })();
+      
+      if (!parentId) {
+        message.error('Không tìm thấy ID phụ huynh');
+        setSubmitting(false);
+        return;
       }
       
-      const parsedUserInfo = JSON.parse(storedUserInfo);
-      const userAccountId = parsedUserInfo.accountId;
-      
-      if (!userAccountId) {
-        throw new Error('Không tìm thấy ID người dùng');
-      }
-
-      const appointmentData = {
-        appointmentDate: values.appointmentDate.format('YYYY-MM-DD'),
-        timeSlot: values.timeSlot,
+      // Prepare request body
+      const requestBody = {
+        studentId: values.studentId,
+        parentId: parentId,
+        staffId: values.staffId,
+        healthCheckRecordId: form.healthCheckRecordId || 1, // Use the one from URL params or default to 1
+        scheduledDate: formattedDate,
+        slot: values.slot,
         reason: values.reason
       };
-
-      console.log(`Đang đặt lịch hẹn cho học sinh ID: ${values.childId}, phụ huynh ID: ${userAccountId}`);
-      console.log('Thông tin lịch hẹn:', appointmentData);
       
-      await parentApi.scheduleAppointment(values.childId, userAccountId, appointmentData);
+      console.log('Booking request body:', requestBody);
       
-      message.success('Đặt lịch hẹn thành công!');
+      // Call the API
+      const response = await axios.post('http://localhost:8080/api/v1/consultations/schedule', requestBody);
+      console.log('Booking response:', response);
+      
+      // Show success message
+      message.success('Đặt lịch khám thành công!');
+      
+      // Reset form
       form.resetFields();
       
-      // Cập nhật lại danh sách đặt lịch
+      // Refresh appointments list
       fetchAppointments();
+      
+      // Reset fromHealthCheck
+      if (fromHealthCheck) {
+        setFromHealthCheck(false);
+        // Clear URL params
+        navigate('/appointment', { replace: true });
+      }
     } catch (error) {
-      console.error('Lỗi khi đặt lịch hẹn:', error);
-      message.error('Đặt lịch hẹn thất bại. Vui lòng thử lại sau.');
+      console.error('Error booking appointment:', error);
+      message.error('Đặt lịch khám thất bại: ' + (error.response?.data?.message || error.message));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Watch for nurse and date selection to fetch available slots
+  useEffect(() => {
+    const staffId = form.getFieldValue('staffId');
+    const date = form.getFieldValue('date');
+    if (staffId && date) {
+      fetchAvailableSlots(staffId, date.format('YYYY-MM-DD'));
+    } else {
+      setAvailableSlots([]);
+    }
+  }, [form.getFieldValue('staffId'), form.getFieldValue('date')]);
+
+  // Fetch available slots for a nurse and date
+  const fetchAvailableSlots = async (staffId, date) => {
+    setLoadingSlots(true);
+    setAvailableSlots([]);
+    try {
+      const response = await axios.get(`http://localhost:8080/api/v1/consultations/staff-availability?staffId=${staffId}&date=${date}`);
+      setAvailableSlots(response.data || []);
+    } catch (error) {
+      setAvailableSlots([]);
+      message.error('Không thể lấy khung giờ khả dụng.');
+    } finally {
+      setLoadingSlots(false);
     }
   };
 
@@ -342,156 +425,154 @@ const AppointmentPage = () => {
   ];
 
   return (
-    <div className="appointment-page-container">
-      <Row gutter={[24, 24]}>
-        <Col xs={24}>
-          <Title level={2}>
-            <CalendarOutlined /> Đặt lịch hẹn với bác sĩ
-          </Title>
-          <Paragraph>
-            Đặt lịch hẹn để khám sức khỏe định kỳ hoặc khám chữa bệnh cho con bạn với bác sĩ trường học.
-          </Paragraph>
-        </Col>
-
-        {/* Form đặt lịch hẹn */}
-        <Col xs={24} lg={12}>
-          <Card 
-            title={<Title level={4}>Đặt lịch hẹn mới</Title>}
-            className="appointment-form-card"
-          >
-            <Spin spinning={loading}>
-              <Form
-                form={form}
-                layout="vertical"
-                onFinish={handleSubmit}
+    <div className="appointment-page">
+      <Card className="appointment-card">
+        <Title level={3} className="appointment-title">
+          <CalendarOutlined /> Đặt lịch khám
+        </Title>
+        
+        {fromHealthCheck && (
+          <Alert
+            message="Thông tin từ kiểm tra sức khỏe"
+            description="Thông tin lịch hẹn đã được điền từ bản ghi kiểm tra sức khỏe. Bạn có thể điều chỉnh thông tin nếu cần."
+            type="info"
+            showIcon
+            style={{ marginBottom: 24 }}
+          />
+        )}
+        
+        <Row gutter={24}>
+          <Col xs={24} lg={12}>
+            <Form
+              form={form}
+              layout="vertical"
+              onFinish={handleSubmit}
+              className="appointment-form"
+            >
+              <Form.Item
+                name="studentId"
+                label="Học sinh"
+                rules={[{ required: true, message: 'Vui lòng chọn học sinh!' }]}
               >
-                <Form.Item
-                  name="childId"
-                  label="Chọn học sinh"
-                  rules={[{ required: true, message: 'Vui lòng chọn học sinh!' }]}
-                >
-                  <Select 
-                    placeholder="Chọn học sinh cần đặt lịch"
-                    style={{ width: '100%' }}
-                    suffixIcon={<UserOutlined />}
-                  >
-                    {children.map(child => (
-                      <Option key={child.id} value={child.id}>
-                        {child.name} {child.age && `(${child.age} tuổi)`} {child.grade && child.grade !== 'N/A' ? `- Lớp ${child.grade}` : ''}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-                <Form.Item
-                  name="appointmentDate"
-                  label="Ngày hẹn"
-                  rules={[{ required: true, message: 'Vui lòng chọn ngày hẹn!' }]}
-                >
-                  <DatePicker 
-                    style={{ width: '100%' }} 
-                    placeholder="Chọn ngày hẹn"
-                    format="DD/MM/YYYY"
-                    disabledDate={(current) => {
-                      // Không cho phép chọn ngày trong quá khứ và ngày hiện tại
-                      return current && current.valueOf() < Date.now();
-                    }}
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="timeSlot"
-                  label="Khung giờ"
-                  rules={[{ required: true, message: 'Vui lòng chọn khung giờ!' }]}
-                >
-                  <Select 
-                    placeholder="Chọn khung giờ"
-                    suffixIcon={<ClockCircleOutlined />}
-                  >
-                    <Option value="MORNING">Buổi sáng (8:00 - 11:30)</Option>
-                    <Option value="AFTERNOON">Buổi chiều (13:30 - 16:30)</Option>
-                  </Select>
-                </Form.Item>
-
-                <Form.Item
-                  name="reason"
-                  label="Lý do khám"
-                  rules={[{ required: true, message: 'Vui lòng nhập lý do khám!' }]}
-                >
-                  <TextArea 
-                    rows={4} 
-                    placeholder="Nhập lý do khám" 
-                    maxLength={500}
-                    showCount
-                  />
-                </Form.Item>
-
-                <Form.Item>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit" 
-                    loading={submitting}
-                    block
-                    icon={<CalendarOutlined />}
-                  >
-                    Đặt lịch hẹn
-                  </Button>
-                </Form.Item>
-              </Form>
-            </Spin>
-          </Card>
-        </Col>
-
-        {/* Lưu ý và hướng dẫn */}
-        <Col xs={24} lg={12}>
-          <Card title={<Title level={4}>Lưu ý khi đặt lịch</Title>} className="appointment-info-card">
-            <div className="appointment-info-content">
-              <ul>
-                <li>
-                  <Text strong>Thời gian đặt lịch:</Text> Vui lòng đặt lịch trước ít nhất 2 ngày làm việc.
-                </li>
-                <li>
-                  <Text strong>Thời gian khám:</Text> Buổi sáng từ 8:00 - 11:30, buổi chiều từ 13:30 - 16:30.
-                </li>
-                <li>
-                  <Text strong>Xác nhận lịch hẹn:</Text> Y tá trường sẽ xác nhận lịch hẹn của bạn trong vòng 24 giờ.
-                </li>
-                <li>
-                  <Text strong>Hủy hoặc đổi lịch:</Text> Vui lòng thông báo trước ít nhất 1 ngày làm việc.
-                </li>
-                <li>
-                  <Text strong>Giấy tờ cần mang theo:</Text> Thẻ bảo hiểm y tế, sổ tiêm chủng (nếu có).
-                </li>
-              </ul>
+                <Select placeholder="Chọn học sinh" loading={loading} disabled={fromHealthCheck}>
+                  {children.map(child => (
+                    <Option key={child.id} value={child.id}>
+                      {child.name} {child.class ? `- ${child.class}` : ''}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
               
-              <Divider />
+              <Form.Item
+                name="staffId"
+                label="Y tá phụ trách"
+                rules={[{ required: true, message: 'Vui lòng chọn y tá phụ trách!' }]}
+              >
+                <Select
+                  placeholder="Chọn y tá phụ trách"
+                  loading={loading}
+                  disabled={fromHealthCheck}
+                  onChange={() => {
+                    form.setFieldsValue({ slot: undefined });
+                    setAvailableSlots([]);
+                  }}
+                >
+                  {nurses.map(nurse => (
+                    <Option key={nurse.accountId} value={nurse.accountId}>
+                      {nurse.fullName} ({nurse.username})
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
               
-              <Paragraph strong>
-                Thông tin liên hệ:
-              </Paragraph>
+              <Form.Item
+                name="date"
+                label="Ngày hẹn khám"
+                rules={[{ required: true, message: 'Vui lòng chọn ngày hẹn khám!' }]}
+              >
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="DD/MM/YYYY"
+                  disabledDate={(current) => current && current < dayjs().startOf('day')}
+                  placeholder="Chọn ngày hẹn khám"
+                  onChange={() => {
+                    form.setFieldsValue({ slot: undefined });
+                    setAvailableSlots([]);
+                  }}
+                />
+              </Form.Item>
+              
+              <Form.Item
+                name="slot"
+                label="Khung giờ"
+                rules={[{ required: true, message: 'Vui lòng chọn khung giờ!' }]}
+              >
+                <Select
+                  placeholder="Chọn khung giờ"
+                  loading={loadingSlots}
+                  disabled={!(form.getFieldValue('staffId') && form.getFieldValue('date')) || loadingSlots}
+                >
+                  {availableSlots.length === 0 && !loadingSlots && (
+                    <Option value="" disabled>
+                      {form.getFieldValue('staffId') && form.getFieldValue('date') ? 'Không có khung giờ khả dụng' : 'Chọn y tá và ngày trước'}
+                    </Option>
+                  )}
+                  {availableSlots.includes('MORNING_SLOT_1') && (
+                    <Option value="MORNING_SLOT_1">Sáng ca 1 (7:30-9:00)</Option>
+                  )}
+                  {availableSlots.includes('MORNING_SLOT_2') && (
+                    <Option value="MORNING_SLOT_2">Sáng ca 2 (9:00-10:30)</Option>
+                  )}
+                  {availableSlots.includes('AFTERNOON_SLOT_1') && (
+                    <Option value="AFTERNOON_SLOT_1">Chiều ca 1 (13:30-15:00)</Option>
+                  )}
+                  {availableSlots.includes('AFTERNOON_SLOT_2') && (
+                    <Option value="AFTERNOON_SLOT_2">Chiều ca 2 (15:00-16:30)</Option>
+                  )}
+                </Select>
+              </Form.Item>
+              
+              <Form.Item
+                name="reason"
+                label="Lý do khám"
+                rules={[{ required: true, message: 'Vui lòng nhập lý do khám!' }]}
+              >
+                <TextArea rows={4} placeholder="Nhập lý do khám" />
+              </Form.Item>
+              
+              <Form.Item>
+                <Button 
+                  type="primary" 
+                  htmlType="submit" 
+                  loading={submitting} 
+                  block
+                >
+                  Đặt lịch
+                </Button>
+              </Form.Item>
+            </Form>
+          </Col>
+          
+          <Col xs={24} lg={12}>
+            <div className="appointment-info">
+              <Title level={4}>Lịch sử đặt hẹn</Title>
               <Paragraph>
-                <Text>Phòng y tế trường: 028.1234.5678</Text>
-                <br />
-                <Text>Email: healthcare@school.edu.vn</Text>
+                <Text type="secondary">Dưới đây là danh sách các lịch hẹn khám đã đặt.</Text>
               </Paragraph>
+              
+              <Table
+                dataSource={appointments}
+                loading={tableLoading}
+                pagination={{ pageSize: 5 }}
+                rowKey="id"
+                scroll={{ x: 800 }}
+                locale={{ emptyText: 'Chưa có lịch hẹn nào' }}
+                className="appointments-table"
+              />
             </div>
-          </Card>
-        </Col>
-
-        {/* Lịch sử đặt lịch hẹn */}
-        <Col xs={24}>
-          <Card title={<Title level={4}>Lịch sử đặt lịch hẹn</Title>} className="appointment-history-card">
-            <Table
-              columns={columns}
-              dataSource={appointments}
-              rowKey="id"
-              loading={tableLoading}
-              pagination={{ pageSize: 5 }}
-              locale={{ emptyText: 'Chưa có lịch hẹn nào' }}
-            />
-          </Card>
-        </Col>
-      </Row>
+          </Col>
+        </Row>
+      </Card>
     </div>
   );
 };

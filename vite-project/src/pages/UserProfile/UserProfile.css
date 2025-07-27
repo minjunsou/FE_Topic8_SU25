@@ -276,3 +276,158 @@
 .ant-modal-body .ant-form-item:last-child {
   margin-bottom: 0;
 } 
+
+/* Health Check History Styles */
+.user-profile-section {
+  margin-bottom: 24px;
+  border-radius: 8px;
+}
+
+.child-select-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.child-select {
+  margin-left: 12px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.loading-container .ant-spin {
+  margin-bottom: 16px;
+}
+
+.health-check-row:hover {
+  cursor: pointer;
+  background-color: #f5f5f5;
+}
+
+.health-check-history {
+  margin-top: 20px;
+}
+
+.health-check-detail {
+  margin-top: 16px;
+}
+
+.health-check-detail .ant-descriptions-item-label {
+  width: 30%;
+}
+
+.health-check-detail .ant-descriptions {
+  margin-bottom: 20px;
+}
+
+.tag-status-normal {
+  background-color: #52c41a;
+  color: white;
+}
+
+.tag-status-attention {
+  background-color: #faad14;
+  color: white;
+}
+
+.tag-status-treatment {
+  background-color: #f5222d;
+  color: white;
+}
+
+/* Nurse Detail Modal Styles */
+.nurse-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.nurse-title {
+  margin-left: 20px;
+}
+
+.nurse-title h4 {
+  margin-bottom: 5px !important;
+}
+
+.nurse-detail .ant-descriptions-item {
+  padding: 12px 16px;
+}
+
+.nurse-detail .ant-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nurse-detail .ant-descriptions-item-label {
+  width: 30%;
+  font-weight: 500;
+}
+
+/* Medical Profile Styles */
+.medical-profile-section {
+  margin-top: 24px;
+}
+
+.medical-profile-section .ant-tabs-tab {
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.medical-profile-section .ant-list-item {
+  padding: 12px 16px;
+}
+
+.medical-profile-section .ant-list-item-meta-title {
+  margin-bottom: 8px !important;
+}
+
+.medical-profile-section .ant-badge-count {
+  padding: 0 8px;
+  height: 22px;
+  border-radius: 10px;
+  line-height: 22px;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.medical-profile-section .ant-divider-inner-text {
+  font-weight: 500;
+}
+
+.medical-profile-section .ant-alert {
+  border-radius: 4px;
+} 
+
+/* Appointment Booking Styles */
+.ant-modal-content .ant-radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ant-modal-content .ant-radio-wrapper {
+  margin-right: 0;
+  margin-bottom: 8px;
+}
+
+.ant-modal-content .ant-form-item-label > label {
+  font-weight: 500;
+}
+
+/* Button Styles for Booking */
+button.ant-btn-primary[style*="background-color: #52c41a"] {
+  box-shadow: 0 2px 0 rgba(82, 196, 26, 0.1);
+}
+
+button.ant-btn-primary[style*="background-color: #52c41a"]:hover {
+  background-color: #73d13d !important;
+  border-color: #73d13d !important;
+} 
