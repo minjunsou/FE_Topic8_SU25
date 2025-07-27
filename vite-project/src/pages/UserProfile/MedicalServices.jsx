@@ -33,7 +33,7 @@ const MedicalServices = () => {
       color: '#52c41a'
     },
     {
-      title: 'Sự kiện y tế',
+      title: 'Sự cố y tế',
       description: 'Theo dõi các sự kiện y tế của học sinh',
       icon: <SolutionOutlined />,
       path: '/medical-incidents',
@@ -60,13 +60,13 @@ const MedicalServices = () => {
       path: '/health-declaration',
       color: '#13c2c2'
     },
-    {
-      title: 'Đặt lịch hẹn',
-      description: 'Đặt lịch hẹn khám với bác sĩ trường học',
-      icon: <CalendarOutlined />,
-      path: '/appointment',
-      color: '#1d39c4'
-    }
+    // {
+    //   title: 'Đặt lịch hẹn',
+    //   description: 'Đặt lịch hẹn khám với bác sĩ trường học',
+    //   icon: <CalendarOutlined />,
+    //   path: '/appointment',
+    //   color: '#1d39c4'
+    // }
   ];
 
   // Xử lý khi click vào dịch vụ

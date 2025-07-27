@@ -14,12 +14,13 @@ import {
   Row,
   Col,
   Divider,
-  Alert
+  Alert,
+  Modal
 } from 'antd';
-import { CalendarOutlined, ClockCircleOutlined, UserOutlined } from '@ant-design/icons';
+import { CalendarOutlined, ClockCircleOutlined, UserOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import parentApi from '../../../api/parentApi';
 import './AppointmentPage.css';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import dayjs from 'dayjs';
 
@@ -29,17 +30,15 @@ const { TextArea } = Input;
 
 const AppointmentPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [form] = Form.useForm();
   const [children, setChildren] = useState([]);
-  const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [tableLoading, setTableLoading] = useState(false);
   const [fromHealthCheck, setFromHealthCheck] = useState(false);
   const [nurses, setNurses] = useState([]);
   const [availableSlots, setAvailableSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
   
   // On mount, check localStorage for pending appointment
   useEffect(() => {
@@ -60,12 +59,13 @@ const AppointmentPage = () => {
         if (data.studentName && data.nurseName) {
           message.info(`Đặt lịch khám cho học sinh ${data.studentName} với y tá ${data.nurseName}`);
         }
-      } catch (e) {}
+      } catch (e) {
+        console.error('Error parsing pending appointment data:', e);
+      }
       // Clear after use
       localStorage.removeItem('pendingAppointment');
     }
     fetchChildren();
-    fetchAppointments();
     fetchNurses();
   }, []);
 
@@ -207,78 +207,28 @@ const AppointmentPage = () => {
     }
   };
 
-  const fetchAppointments = async () => {
-    setTableLoading(true);
-    try {
-      const storedUserInfo = localStorage.getItem('userInfo');
-      if (!storedUserInfo) {
-        console.log('Không tìm thấy thông tin người dùng để lấy lịch sử đặt hẹn');
-        useDefaultAppointments();
-        return;
-      }
-      
-      const parsedUserInfo = JSON.parse(storedUserInfo);
-      const userAccountId = parsedUserInfo.accountId;
-      
-      if (!userAccountId) {
-        console.log('Không tìm thấy ID người dùng để lấy lịch sử đặt hẹn');
-        useDefaultAppointments();
-        return;
-      }
-      
-      console.log(`Đang gọi API để lấy lịch sử đặt hẹn của phụ huynh ID: ${userAccountId}`);
-      
-      // Gọi API thực tế để lấy lịch sử đặt hẹn
-      const appointmentsData = await parentApi.getAppointments(userAccountId);
-      
-      if (appointmentsData && appointmentsData.length > 0) {
-        // Xử lý dữ liệu từ API nếu cần
-        const formattedAppointments = appointmentsData.map(appointment => ({
-          id: appointment.id || appointment.appointmentId,
-          childName: appointment.childName || appointment.studentName || 'Không có tên',
-          appointmentDate: appointment.appointmentDate,
-          timeSlot: appointment.timeSlot,
-          reason: appointment.reason,
-          status: appointment.status || 'PENDING'
-        }));
-        
-        setAppointments(formattedAppointments);
-      } else {
-        // Nếu API trả về dữ liệu rỗng hoặc lỗi, sử dụng dữ liệu demo
-        console.log('Không có dữ liệu lịch hẹn từ API, sử dụng dữ liệu demo');
-        useDefaultAppointments();
-      }
-    } catch (error) {
-      console.error('Lỗi khi lấy lịch sử đặt lịch:', error);
-      message.error('Không thể lấy lịch sử đặt lịch. Vui lòng thử lại sau.');
-      useDefaultAppointments();
-    } finally {
-      setTableLoading(false);
-    }
-  };
-
-  const useDefaultAppointments = () => {
-    const demoAppointments = [
-      {
-        id: '1',
-        childName: 'Nguyễn Văn A',
-        appointmentDate: '2025-07-10',
-        timeSlot: 'MORNING',
-        reason: 'Khám sức khỏe định kỳ',
-        status: 'PENDING'
-      },
-      {
-        id: '2',
-        childName: 'Nguyễn Thị B',
-        appointmentDate: '2025-07-15',
-        timeSlot: 'AFTERNOON',
-        reason: 'Tiêm vắc-xin',
-        status: 'APPROVED'
-      }
-    ];
+  // const useDefaultAppointments = () => {
+  //   const demoAppointments = [
+  //     {
+  //       id: '1',
+  //       childName: 'Nguyễn Văn A',
+  //       appointmentDate: '2025-07-10',
+  //       timeSlot: 'MORNING',
+  //       reason: 'Khám sức khỏe định kỳ',
+  //       status: 'PENDING'
+  //     },
+  //     {
+  //       id: '2',
+  //       childName: 'Nguyễn Thị B',
+  //       appointmentDate: '2025-07-15',
+  //       timeSlot: 'AFTERNOON',
+  //       reason: 'Tiêm vắc-xin',
+  //       status: 'APPROVED'
+  //     }
+  //   ];
     
-    setAppointments(demoAppointments);
-  };
+  //   setAppointments(demoAppointments);
+  // };
 
   // Handle form submission
   const handleSubmit = async (values) => {
@@ -308,10 +258,11 @@ const AppointmentPage = () => {
       const requestBody = {
         studentId: values.studentId,
         parentId: parentId,
-        staffId: values.staffId,
-        healthCheckRecordId: form.healthCheckRecordId || 1, // Use the one from URL params or default to 1
+        nurseId: values.staffId, // Đổi staffId thành nurseId
+        healthCheckRecordId: form.healthCheckRecordId || 1, // giữ nguyên nếu backend cần
         scheduledDate: formattedDate,
-        slot: values.slot,
+        slot: values.slot, // Gửi cả hai trường
+        timeSlot: values.slot,
         reason: values.reason
       };
       
@@ -323,13 +274,12 @@ const AppointmentPage = () => {
       
       // Show success message
       message.success('Đặt lịch khám thành công!');
-      
+      // Show success modal
+      setSuccessModalVisible(true);
       // Reset form
       form.resetFields();
       
       // Refresh appointments list
-      fetchAppointments();
-      
       // Reset fromHealthCheck
       if (fromHealthCheck) {
         setFromHealthCheck(false);
@@ -360,7 +310,9 @@ const AppointmentPage = () => {
     setLoadingSlots(true);
     setAvailableSlots([]);
     try {
-      const response = await axios.get(`http://localhost:8080/api/v1/consultations/staff-availability?staffId=${staffId}&date=${date}`);
+      // Đổi endpoint và tên biến cho đúng API mới
+      const nurseId = staffId;
+      const response = await axios.get(`http://localhost:8080/api/v1/consultations/nurse-availability?nurseId=${nurseId}&date=${date}`);
       setAvailableSlots(response.data || []);
     } catch (error) {
       setAvailableSlots([]);
@@ -370,67 +322,12 @@ const AppointmentPage = () => {
     }
   };
 
-  // Cấu hình cột cho bảng lịch sử đặt lịch
-  const columns = [
-    {
-      title: 'Học sinh',
-      dataIndex: 'childName',
-      key: 'childName',
-    },
-    {
-      title: 'Ngày hẹn',
-      dataIndex: 'appointmentDate',
-      key: 'appointmentDate',
-      render: (date) => {
-        const formattedDate = new Date(date).toLocaleDateString('vi-VN');
-        return formattedDate;
-      }
-    },
-    {
-      title: 'Thời gian',
-      dataIndex: 'timeSlot',
-      key: 'timeSlot',
-      render: (slot) => {
-        return slot === 'MORNING' ? 'Buổi sáng (8:00 - 11:30)' : 'Buổi chiều (13:30 - 16:30)';
-      }
-    },
-    {
-      title: 'Lý do khám',
-      dataIndex: 'reason',
-      key: 'reason',
-      ellipsis: true,
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => {
-        let color = 'blue';
-        let text = 'Đang xử lý';
-        
-        if (status === 'APPROVED') {
-          color = 'green';
-          text = 'Đã xác nhận';
-        } else if (status === 'REJECTED') {
-          color = 'red';
-          text = 'Đã từ chối';
-        } else if (status === 'COMPLETED') {
-          color = 'purple';
-          text = 'Đã hoàn thành';
-        }
-        
-        return <Tag color={color}>{text}</Tag>;
-      }
-    },
-  ];
-
   return (
-    <div className="appointment-page">
-      <Card className="appointment-card">
-        <Title level={3} className="appointment-title">
-          <CalendarOutlined /> Đặt lịch khám
+    <div className="appointment-page" style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#f4f8fb' }}>
+      <Card className="appointment-card" style={{ maxWidth: 480, width: '100%', borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.08)', padding: 32 }}>
+        <Title level={3} className="appointment-title" style={{ textAlign: 'center', marginBottom: 32, color: '#0078FF', letterSpacing: 1 }}>
+          <CalendarOutlined style={{ color: '#0078FF', marginRight: 8 }} /> Đặt lịch khám
         </Title>
-        
         {fromHealthCheck && (
           <Alert
             message="Thông tin từ kiểm tra sức khỏe"
@@ -440,138 +337,135 @@ const AppointmentPage = () => {
             style={{ marginBottom: 24 }}
           />
         )}
-        
-        <Row gutter={24}>
-          <Col xs={24} lg={12}>
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleSubmit}
-              className="appointment-form"
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          className="appointment-form"
+          style={{ marginTop: 8 }}
+        >
+          <Form.Item
+            name="studentId"
+            label={<span style={{ fontWeight: 500 }}>Học sinh <span style={{ color: 'red' }}>*</span></span>}
+            rules={[{ required: true, message: 'Vui lòng chọn học sinh!' }]}
+            style={{ marginBottom: 20 }}
+          >
+            <Select placeholder="Chọn học sinh" loading={loading} disabled={fromHealthCheck} size="large">
+              {children.map(child => (
+                <Option key={child.id} value={child.id}>
+                  {child.name} {child.class ? `- ${child.class}` : ''}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="staffId"
+            label={<span style={{ fontWeight: 500 }}>Y tá phụ trách <span style={{ color: 'red' }}>*</span></span>}
+            rules={[{ required: true, message: 'Vui lòng chọn y tá phụ trách!' }]}
+            style={{ marginBottom: 20 }}
+          >
+            <Select
+              placeholder="Chọn y tá phụ trách"
+              loading={loading}
+              disabled={fromHealthCheck}
+              size="large"
+              onChange={() => {
+                form.setFieldsValue({ slot: undefined });
+                setAvailableSlots([]);
+              }}
             >
-              <Form.Item
-                name="studentId"
-                label="Học sinh"
-                rules={[{ required: true, message: 'Vui lòng chọn học sinh!' }]}
-              >
-                <Select placeholder="Chọn học sinh" loading={loading} disabled={fromHealthCheck}>
-                  {children.map(child => (
-                    <Option key={child.id} value={child.id}>
-                      {child.name} {child.class ? `- ${child.class}` : ''}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              
-              <Form.Item
-                name="staffId"
-                label="Y tá phụ trách"
-                rules={[{ required: true, message: 'Vui lòng chọn y tá phụ trách!' }]}
-              >
-                <Select
-                  placeholder="Chọn y tá phụ trách"
-                  loading={loading}
-                  disabled={fromHealthCheck}
-                  onChange={() => {
-                    form.setFieldsValue({ slot: undefined });
-                    setAvailableSlots([]);
-                  }}
-                >
-                  {nurses.map(nurse => (
-                    <Option key={nurse.accountId} value={nurse.accountId}>
-                      {nurse.fullName} ({nurse.username})
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-              
-              <Form.Item
-                name="date"
-                label="Ngày hẹn khám"
-                rules={[{ required: true, message: 'Vui lòng chọn ngày hẹn khám!' }]}
-              >
-                <DatePicker
-                  style={{ width: '100%' }}
-                  format="DD/MM/YYYY"
-                  disabledDate={(current) => current && current < dayjs().startOf('day')}
-                  placeholder="Chọn ngày hẹn khám"
-                  onChange={() => {
-                    form.setFieldsValue({ slot: undefined });
-                    setAvailableSlots([]);
-                  }}
-                />
-              </Form.Item>
-              
-              <Form.Item
-                name="slot"
-                label="Khung giờ"
-                rules={[{ required: true, message: 'Vui lòng chọn khung giờ!' }]}
-              >
-                <Select
-                  placeholder="Chọn khung giờ"
-                  loading={loadingSlots}
-                  disabled={!(form.getFieldValue('staffId') && form.getFieldValue('date')) || loadingSlots}
-                >
-                  {availableSlots.length === 0 && !loadingSlots && (
-                    <Option value="" disabled>
-                      {form.getFieldValue('staffId') && form.getFieldValue('date') ? 'Không có khung giờ khả dụng' : 'Chọn y tá và ngày trước'}
-                    </Option>
-                  )}
-                  {availableSlots.includes('MORNING_SLOT_1') && (
-                    <Option value="MORNING_SLOT_1">Sáng ca 1 (7:30-9:00)</Option>
-                  )}
-                  {availableSlots.includes('MORNING_SLOT_2') && (
-                    <Option value="MORNING_SLOT_2">Sáng ca 2 (9:00-10:30)</Option>
-                  )}
-                  {availableSlots.includes('AFTERNOON_SLOT_1') && (
-                    <Option value="AFTERNOON_SLOT_1">Chiều ca 1 (13:30-15:00)</Option>
-                  )}
-                  {availableSlots.includes('AFTERNOON_SLOT_2') && (
-                    <Option value="AFTERNOON_SLOT_2">Chiều ca 2 (15:00-16:30)</Option>
-                  )}
-                </Select>
-              </Form.Item>
-              
-              <Form.Item
-                name="reason"
-                label="Lý do khám"
-                rules={[{ required: true, message: 'Vui lòng nhập lý do khám!' }]}
-              >
-                <TextArea rows={4} placeholder="Nhập lý do khám" />
-              </Form.Item>
-              
-              <Form.Item>
-                <Button 
-                  type="primary" 
-                  htmlType="submit" 
-                  loading={submitting} 
-                  block
-                >
-                  Đặt lịch
-                </Button>
-              </Form.Item>
-            </Form>
-          </Col>
-          
-          <Col xs={24} lg={12}>
-            <div className="appointment-info">
-              <Title level={4}>Lịch sử đặt hẹn</Title>
-              <Paragraph>
-                <Text type="secondary">Dưới đây là danh sách các lịch hẹn khám đã đặt.</Text>
-              </Paragraph>
-              
-              <Table
-                dataSource={appointments}
-                loading={tableLoading}
-                pagination={{ pageSize: 5 }}
-                rowKey="id"
-                scroll={{ x: 800 }}
-                locale={{ emptyText: 'Chưa có lịch hẹn nào' }}
-                className="appointments-table"
-              />
-            </div>
-          </Col>
-        </Row>
+              {nurses.map(nurse => (
+                <Option key={nurse.accountId} value={nurse.accountId}>
+                  {nurse.fullName} ({nurse.username})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="date"
+            label={<span style={{ fontWeight: 500 }}>Ngày hẹn khám <span style={{ color: 'red' }}>*</span></span>}
+            rules={[{ required: true, message: 'Vui lòng chọn ngày hẹn khám!' }]}
+            style={{ marginBottom: 20 }}
+          >
+            <DatePicker
+              style={{ width: '100%' }}
+              format="DD/MM/YYYY"
+              disabledDate={(current) => current && current < dayjs().startOf('day')}
+              placeholder="Chọn ngày hẹn khám"
+              size="large"
+              onChange={() => {
+                form.setFieldsValue({ slot: undefined });
+                setAvailableSlots([]);
+              }}
+            />
+          </Form.Item>
+          <Form.Item
+            name="slot"
+            label={<span style={{ fontWeight: 500 }}>Khung giờ <span style={{ color: 'red' }}>*</span></span>}
+            rules={[{ required: true, message: 'Vui lòng chọn khung giờ!' }]}
+            style={{ marginBottom: 20 }}
+          >
+            <Select
+              placeholder="Chọn khung giờ"
+              loading={loadingSlots}
+              disabled={!(form.getFieldValue('staffId') && form.getFieldValue('date')) || loadingSlots}
+              size="large"
+            >
+              {availableSlots.length === 0 && !loadingSlots && (
+                <Option value="" disabled>
+                  {form.getFieldValue('staffId') && form.getFieldValue('date') ? 'Không có khung giờ khả dụng' : 'Chọn y tá và ngày trước'}
+                </Option>
+              )}
+              {availableSlots.includes('MORNING_SLOT_1') && (
+                <Option value="MORNING_SLOT_1">Sáng ca 1 (7:30-9:00)</Option>
+              )}
+              {availableSlots.includes('MORNING_SLOT_2') && (
+                <Option value="MORNING_SLOT_2">Sáng ca 2 (9:00-10:30)</Option>
+              )}
+              {availableSlots.includes('AFTERNOON_SLOT_1') && (
+                <Option value="AFTERNOON_SLOT_1">Chiều ca 1 (13:30-15:00)</Option>
+              )}
+              {availableSlots.includes('AFTERNOON_SLOT_2') && (
+                <Option value="AFTERNOON_SLOT_2">Chiều ca 2 (15:00-16:30)</Option>
+              )}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            name="reason"
+            label={<span style={{ fontWeight: 500 }}>Lý do khám <span style={{ color: 'red' }}>*</span></span>}
+            rules={[{ required: true, message: 'Vui lòng nhập lý do khám!' }]}
+            style={{ marginBottom: 28 }}
+          >
+            <TextArea rows={4} placeholder="Nhập lý do khám" size="large" />
+          </Form.Item>
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button 
+              type="primary" 
+              htmlType="submit" 
+              loading={submitting} 
+              block
+              size="large"
+              style={{ borderRadius: 8, fontWeight: 600, letterSpacing: 1 }}
+            >
+              Đặt lịch
+            </Button>
+          </Form.Item>
+        </Form>
+        <Modal
+          open={successModalVisible}
+          onCancel={() => setSuccessModalVisible(false)}
+          footer={null}
+          centered
+        >
+          <div style={{ textAlign: 'center', padding: 16 }}>
+            <CheckCircleOutlined style={{ fontSize: 48, color: '#52c41a', marginBottom: 16 }} />
+            <Title level={4} style={{ color: '#52c41a', marginBottom: 8 }}>Đặt lịch thành công!</Title>
+            <p>Bạn đã đặt lịch khám thành công. Bạn có thể xem lại lịch sử đặt lịch của mình.</p>
+            <Button type="primary" size="large" style={{ marginTop: 16 }} onClick={() => navigate('/profile?tab=appointment')}>
+              Đi đến lịch sử đặt lịch
+            </Button>
+          </div>
+        </Modal>
       </Card>
     </div>
   );

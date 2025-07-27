@@ -107,6 +107,14 @@ const StaffTabs = ({
           } 
           key="vaccine" 
         />
+        <TabPane 
+          tab={
+            <span>
+              Lịch khám
+            </span>
+          } 
+          key="consultationSchedule" 
+        />
       </Tabs>
     </div>
   );

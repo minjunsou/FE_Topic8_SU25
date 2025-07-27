@@ -1027,7 +1027,7 @@ const HealthChecks = () => {
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                       />
                     )}
-                  </div> */}
+                  </div> 
                 </div>
               ) : (
                 <Empty 

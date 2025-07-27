@@ -1288,6 +1288,92 @@ getHealthCheckRecordsByStudent: async (studentId) => {
 },
 
 /**
+ * Lấy lịch sử đặt lịch khám của phụ huynh (consultations)
+ * @param {string} parentId - ID của phụ huynh
+ * @returns {Promise} - Promise chứa danh sách lịch đặt lịch khám
+ */
+  getConsultationAppointmentsByParent: async (parentId) => {
+    try {
+      if (!parentId) {
+        throw new Error('parentId là bắt buộc để lấy lịch sử đặt lịch khám');
+      }
+      const response = await axios.get(`http://localhost:8080/api/v1/consultations/parent-consultations?parentId=${parentId}`);
+      // Map lại dữ liệu cho dễ dùng ở frontend
+      if (Array.isArray(response.data)) {
+        return response.data.map(item => ({
+          id: item.consultationId,
+          studentId: item.studentId,
+          parentId: item.parentId,
+          nurseId: item.nurseId,
+          healthCheckRecordId: item.healthCheckRecordId,
+          scheduledDate: Array.isArray(item.scheduledDate) && item.scheduledDate.length >= 3
+            ? `${item.scheduledDate[2]}/${item.scheduledDate[1]}/${item.scheduledDate[0]}`
+            : '',
+          slot: item.slot,
+          status: item.status,
+          createdAt: Array.isArray(item.createdAt) && item.createdAt.length >= 3
+            ? `${item.createdAt[2]}/${item.createdAt[1]}/${item.createdAt[0]}`
+            : '',
+          reason: item.reason,
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error('Lỗi khi lấy lịch sử đặt lịch khám của phụ huynh:', error);
+      throw error;
+    }
+  },
+
+/**
+ * Hủy lịch hẹn khám của phụ huynh
+ * @param {string|number} consultationId - ID của lịch hẹn
+ * @param {string} parentId - ID của phụ huynh
+ * @returns {Promise} - Promise chứa kết quả hủy lịch hẹn
+ */
+  cancelConsultationAppointment: async (consultationId, parentId) => {
+    try {
+      if (!consultationId || !parentId) {
+        throw new Error('consultationId và parentId là bắt buộc để hủy lịch hẹn');
+      }
+      const response = await axios.put(`http://localhost:8080/api/v1/consultations/cancel/${consultationId}?parentId=${parentId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi hủy lịch hẹn:', error);
+      throw error;
+    }
+  },
+
+/**
+ * Lấy tất cả lịch hẹn theo ngày (dành cho nurse xem tổng)
+ * @param {string} date - Ngày (YYYY-MM-DD)
+ * @returns {Promise} - Promise chứa danh sách lịch hẹn
+ */
+  getConsultationAppointmentsByDate: async (date) => {
+    try {
+      if (!date) throw new Error('date là bắt buộc');
+      const response = await axios.get(`http://localhost:8080/api/v1/consultations/search?date=${date}&sort=asc`);
+      if (Array.isArray(response.data)) {
+        return response.data.map(item => ({
+          id: item.consultationId,
+          studentId: item.studentId,
+          parentId: item.parentId,
+          nurseId: item.nurseId,
+          healthCheckRecordId: item.healthCheckRecordId,
+          scheduledDate: item.scheduledDate,
+          slot: item.slot,
+          status: item.status,
+          createdAt: item.createdAt,
+          reason: item.reason,
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.error('Lỗi khi lấy lịch hẹn theo ngày:', error);
+      throw error;
+    }
+  },
+
+/**
  * Lấy danh sách tất cả y tá
  * @param {number} page - Số trang (mặc định là 0)
  * @param {number} size - Kích thước trang (mặc định là 10)
