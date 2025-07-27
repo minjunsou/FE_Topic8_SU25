@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   Card, 
@@ -15,86 +15,177 @@ import {
   Tabs,
   Modal, 
   Form,
-  Empty
+  Empty,
+  message,
+  DatePicker,
+  Spin,
+  Popconfirm,
+  Tooltip
 } from 'antd';
 import { 
   SearchOutlined, 
   PlusOutlined, 
   AlertOutlined,
-  FilterOutlined
+  FilterOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  EyeOutlined,
+  ReloadOutlined,
+  BarChartOutlined
 } from '@ant-design/icons';
-import NewMedicalIncidentForm from './NewMedicalIncidentForm';
+import moment from 'moment';
+import nurseApi from '../../../../api/nurseApi';
+import HealthEventStatistics from './HealthEventStatistics';
 import './MedicalIncidents.css';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
 const { TabPane } = Tabs;
+const { TextArea } = Input;
 
-const MedicalIncidents = ({ 
-  medicalIncidents, 
-  handleViewIncidentDetail,
-  loading 
-}) => {
+const MedicalIncidents = () => {
+  const [healthEvents, setHealthEvents] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPriority, setFilterPriority] = useState('all');
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [newIncidentModalVisible, setNewIncidentModalVisible] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [form] = Form.useForm();
+  const [isEdit, setIsEdit] = useState(false);
+  const [activeTab, setActiveTab] = useState('list');
 
-  // Lọc dữ liệu theo tìm kiếm và trạng thái
-  const filteredData = medicalIncidents
-    .filter(item => {
-      const matchSearch = 
-        item.studentName.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.class.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.incidentType.toLowerCase().includes(searchText.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchText.toLowerCase());
-      
-      const matchStatus = filterStatus === 'all' || item.status === filterStatus;
-      
-      return matchSearch && matchStatus;
-    });
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchHealthEvents();
+    fetchStudents();
+  }, []);
 
-  // Hàm hiển thị trạng thái
+  // Fetch health events from API
+  const fetchHealthEvents = async () => {
+    setLoading(true);
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const nurseId = userInfo.accountId;
+      
+      let events;
+      if (nurseId) {
+        events = await nurseApi.getHealthEventsByNurse(nurseId);
+      } else {
+        events = await nurseApi.getAllHealthEvents();
+      }
+      
+      // Ensure events is an array and add key for table
+      const formattedEvents = Array.isArray(events) ? events.map(event => ({
+        ...event,
+        key: event.eventId?.toString() || Math.random().toString(),
+        // Map backend fields to frontend display fields
+        id: event.eventId,
+        studentName: event.studentName || 'Không xác định',
+        class: event.student?.classId || 'Không xác định',
+        incidentDate: event.eventDate,
+        incidentType: event.eventType,
+        description: event.description,
+        solution: event.solution,
+        note: event.note,
+        status: event.status || 'new',
+        severity: event.priority?.toLowerCase() || 'medium',
+        priority: event.priority,
+        parentApprovalStatus: event.parentApprovalStatus,
+        requiresHomeCare: event.requiresHomeCare,
+        createdAt: event.createdAt,
+        updatedAt: event.updatedAt
+      })) : [];
+      
+      setHealthEvents(formattedEvents);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách sự cố y tế:', error);
+      message.error('Không thể tải danh sách sự cố y tế');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch students for form
+  const fetchStudents = async () => {
+    setStudentsLoading(true);
+    try {
+      const studentsData = await nurseApi.getAllStudents();
+      setStudents(Array.isArray(studentsData) ? studentsData : []);
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách học sinh:', error);
+      message.error('Không thể tải danh sách học sinh');
+    } finally {
+      setStudentsLoading(false);
+    }
+  };
+
+  // Filter data based on search and filters
+  const filteredData = healthEvents.filter(item => {
+    const matchSearch = 
+      item.studentName?.toLowerCase().includes(searchText.toLowerCase()) ||
+      item.class?.toLowerCase().includes(searchText.toLowerCase()) ||
+      item.incidentType?.toLowerCase().includes(searchText.toLowerCase()) ||
+      item.description?.toLowerCase().includes(searchText.toLowerCase());
+    
+    const matchStatus = filterStatus === 'all' || item.status === filterStatus;
+    const matchPriority = filterPriority === 'all' || item.priority === filterPriority;
+    
+    return matchSearch && matchStatus && matchPriority;
+  });
+
+  // Render status badge
   const renderStatus = (status) => {
     const statusConfig = {
-      new: {
-        color: 'gold',
-        text: 'Mới'
-      },
-      processing: {
-        color: 'blue',
-        text: 'Đang xử lý'
-      },
-      closed: {
-        color: 'green',
-        text: 'Đã đóng'
-      }
+      new: { color: 'gold', text: 'Mới' },
+      processing: { color: 'blue', text: 'Đang xử lý' },
+      closed: { color: 'green', text: 'Đã đóng' },
+      pending: { color: 'orange', text: 'Chờ phê duyệt' },
+      approved: { color: 'green', text: 'Đã phê duyệt' },
+      rejected: { color: 'red', text: 'Đã từ chối' }
     };
 
-    return <Badge color={statusConfig[status].color} text={statusConfig[status].text} />;
+    const config = statusConfig[status] || { color: 'default', text: status };
+    return <Badge color={config.color} text={config.text} />;
   };
 
-  // Hàm hiển thị mức độ nghiêm trọng
-  const renderSeverity = (severity) => {
-    const severityConfig = {
-      low: {
-        color: 'blue',
-        text: 'Thấp'
-      },
-      medium: {
-        color: 'orange',
-        text: 'Trung bình'
-      },
-      high: {
-        color: 'red',
-        text: 'Cao'
-      }
+  // Render priority tag
+  const renderPriority = (priority) => {
+    const priorityConfig = {
+      LOW: { color: 'blue', text: 'Thấp' },
+      MEDIUM: { color: 'orange', text: 'Trung bình' },
+      HIGH: { color: 'red', text: 'Cao' },
+      CRITICAL: { color: 'red', text: 'Khẩn cấp' }
     };
 
-    return <Tag color={severityConfig[severity].color}>{severityConfig[severity].text}</Tag>;
+    const config = priorityConfig[priority] || { color: 'default', text: priority };
+    return <Tag color={config.color}>{config.text}</Tag>;
   };
 
-  // Cấu hình cột cho bảng
+  // Format date for display
+  const formatDate = (dateInput) => {
+    if (!dateInput) return 'N/A';
+    try {
+      let parsedDate;
+      if (Array.isArray(dateInput) && dateInput.length === 3) {
+        const [year, month, day] = dateInput;
+        parsedDate = moment([year, month - 1, day]);
+      } else if (typeof dateInput === 'string') {
+        parsedDate = moment(dateInput);
+      } else {
+        parsedDate = moment(dateInput);
+      }
+      return parsedDate.isValid() ? parsedDate.format('DD/MM/YYYY') : 'N/A';
+    } catch (error) {
+      console.error('Error parsing date:', dateInput, error);
+      return 'N/A';
+    }
+  };
+
+  // Table columns configuration
   const columns = [
     {
       title: 'ID',
@@ -107,7 +198,7 @@ const MedicalIncidents = ({
       dataIndex: 'studentName',
       key: 'studentName',
       render: (text, record) => (
-        <a onClick={() => handleViewDetail(record.id)}>
+        <a onClick={() => handleViewDetail(record)}>
           {text}
         </a>
       ),
@@ -119,10 +210,11 @@ const MedicalIncidents = ({
       width: 100,
     },
     {
-      title: 'Ngày ghi nhận',
+      title: 'Ngày xảy ra',
       dataIndex: 'incidentDate',
       key: 'incidentDate',
       width: 130,
+      render: (date) => formatDate(date),
     },
     {
       title: 'Loại sự cố',
@@ -131,9 +223,9 @@ const MedicalIncidents = ({
     },
     {
       title: 'Mức độ',
-      dataIndex: 'severity',
-      key: 'severity',
-      render: (severity) => renderSeverity(severity),
+      dataIndex: 'priority',
+      key: 'priority',
+      render: (priority) => renderPriority(priority),
       width: 120,
     },
     {
@@ -144,228 +236,406 @@ const MedicalIncidents = ({
       width: 150,
     },
     {
+      title: 'Phê duyệt',
+      dataIndex: 'parentApprovalStatus',
+      key: 'parentApprovalStatus',
+      render: (status) => renderStatus(status?.toLowerCase()),
+      width: 120,
+    },
+    {
       title: 'Hành động',
       key: 'action',
       render: (_, record) => (
         <Space size="small">
-          <Button 
-            type="primary" 
-            size="small"
-            onClick={() => handleViewDetail(record.id)}
-          >
-            Chi tiết
-          </Button>
-          <Button 
-            type={record.status === 'new' ? 'default' : 'primary'} 
-            size="small"
-            ghost={record.status !== 'new'}
-            onClick={() => handleViewDetail(record.id)}
-          >
-            {record.status === 'new' ? 'Xử lý' : 'Cập nhật'}
-          </Button>
+          <Tooltip title="Xem chi tiết">
+            <Button 
+              type="primary" 
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetail(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Chỉnh sửa">
+            <Button 
+              type="default" 
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <Popconfirm
+              title="Bạn có chắc chắn muốn xóa sự cố này?"
+              onConfirm={() => handleDelete(record.id)}
+              okText="Có"
+              cancelText="Không"
+            >
+              <Button 
+                type="default" 
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
+          </Tooltip>
         </Space>
       ),
     },
   ];
 
-  // Xử lý khi click vào xem chi tiết
-  const handleViewDetail = (id) => {
+  // Handle view detail
+  const handleViewDetail = (record) => {
+    setSelectedEvent(record);
     setDrawerVisible(true);
-    handleViewIncidentDetail(id);
   };
 
-  // Xử lý tạo sự cố y tế mới
-  const handleNewIncident = () => {
-    setNewIncidentModalVisible(true);
+  // Handle edit
+  const handleEdit = (record) => {
+    setSelectedEvent(record);
+    setIsEdit(true);
+    form.setFieldsValue({
+      studentId: record.student?.accountId,
+      eventDate: record.incidentDate ? moment(record.incidentDate) : null,
+      eventType: record.incidentType,
+      description: record.description,
+      solution: record.solution,
+      note: record.note,
+      status: record.status,
+      priority: record.priority,
+      requiresHomeCare: record.requiresHomeCare
+    });
+    setModalVisible(true);
   };
 
-  // Xử lý khi submit form tạo sự cố mới
-  const handleFormSubmit = (values) => {
-    console.log('New medical incident:', values);
-    setNewIncidentModalVisible(false);
-    // Thêm logic gọi API tạo sự cố mới ở đây
+  // Handle delete
+  const handleDelete = async (eventId) => {
+    try {
+      await nurseApi.deleteHealthEvent(eventId);
+      message.success('Xóa sự cố y tế thành công');
+      fetchHealthEvents();
+    } catch (error) {
+      console.error('Lỗi khi xóa sự cố y tế:', error);
+      message.error('Không thể xóa sự cố y tế');
+    }
   };
 
-  // Lấy dữ liệu chi tiết sự cố (giả lập)
-  const getIncidentDetail = (id) => {
-    return medicalIncidents.find(incident => incident.id === id) || {};
+  // Handle create new
+  const handleCreate = () => {
+    setSelectedEvent(null);
+    setIsEdit(false);
+    form.resetFields();
+    setModalVisible(true);
   };
 
-  const incidentDetail = drawerVisible && medicalIncidents.length > 0 
-    ? getIncidentDetail(1) // Giả lập lấy chi tiết incident đầu tiên
-    : {};
+  // Handle form submit
+  const handleFormSubmit = async (values) => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const nurseId = userInfo.accountId;
+      
+      const healthEventData = {
+        eventDate: values.eventDate?.format('YYYY-MM-DD'),
+        eventType: values.eventType,
+        description: values.description,
+        solution: values.solution,
+        note: values.note,
+        status: values.status,
+        priority: values.priority,
+        requiresHomeCare: values.requiresHomeCare
+      };
+
+      if (isEdit && selectedEvent) {
+        await nurseApi.updateHealthEvent(selectedEvent.id, healthEventData);
+        message.success('Cập nhật sự cố y tế thành công');
+      } else {
+        await nurseApi.createHealthEvent(values.studentId, nurseId, healthEventData);
+        message.success('Tạo sự cố y tế thành công');
+      }
+      
+      setModalVisible(false);
+      fetchHealthEvents();
+    } catch (error) {
+      console.error('Lỗi khi lưu sự cố y tế:', error);
+      message.error('Không thể lưu sự cố y tế');
+    }
+  };
 
   return (
     <div className="medical-incidents-container">
       <Card
         title={
           <Space>
-            <AlertOutlined style={{ color: '#ff4d4f' }} />
-            <Title level={4} style={{ margin: 0 }}>Quản lý sự cố y tế</Title>
+            <AlertOutlined />
+            <span>Quản lý sự cố y tế</span>
           </Space>
         }
         extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={handleNewIncident}
-          >
-            Sự cố mới
-          </Button>
+          <Space>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={handleCreate}
+            >
+              Tạo sự cố mới
+            </Button>
+            <Button 
+              icon={<BarChartOutlined />}
+              onClick={() => setActiveTab(activeTab === 'list' ? 'statistics' : 'list')}
+            >
+              {activeTab === 'list' ? 'Thống kê' : 'Danh sách'}
+            </Button>
+            <Button 
+              icon={<ReloadOutlined />}
+              onClick={fetchHealthEvents}
+              loading={loading}
+            >
+              Làm mới
+            </Button>
+          </Space>
         }
       >
-        <div className="filter-section">
-          <Input
-            placeholder="Tìm kiếm học sinh, lớp, loại sự cố..."
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            style={{ width: 300, marginRight: 16 }}
-            allowClear
-          />
-          <Select
-            defaultValue="all"
-            style={{ width: 200 }}
-            onChange={value => setFilterStatus(value)}
-            prefix={<FilterOutlined />}
-          >
-            <Option value="all">Tất cả trạng thái</Option>
-            <Option value="new">Mới</Option>
-            <Option value="processing">Đang xử lý</Option>
-            <Option value="closed">Đã đóng</Option>
-          </Select>
-        </div>
+        {activeTab === 'statistics' ? (
+          <HealthEventStatistics />
+        ) : (
+          <>
+        {/* Search and Filter */}
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col span={8}>
+            <Input
+              placeholder="Tìm kiếm sự cố..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+          </Col>
+          <Col span={4}>
+            <Select
+              placeholder="Trạng thái"
+              value={filterStatus}
+              onChange={setFilterStatus}
+              style={{ width: '100%' }}
+            >
+              <Option value="all">Tất cả</Option>
+              <Option value="new">Mới</Option>
+              <Option value="processing">Đang xử lý</Option>
+              <Option value="closed">Đã đóng</Option>
+              <Option value="pending">Chờ phê duyệt</Option>
+            </Select>
+          </Col>
+          <Col span={4}>
+            <Select
+              placeholder="Mức độ"
+              value={filterPriority}
+              onChange={setFilterPriority}
+              style={{ width: '100%' }}
+            >
+              <Option value="all">Tất cả</Option>
+              <Option value="LOW">Thấp</Option>
+              <Option value="MEDIUM">Trung bình</Option>
+              <Option value="HIGH">Cao</Option>
+              <Option value="CRITICAL">Khẩn cấp</Option>
+            </Select>
+          </Col>
+        </Row>
 
+        {/* Table */}
         <Table
           columns={columns}
           dataSource={filteredData}
-          rowKey="id"
           loading={loading}
           pagination={{
             pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
             showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} sự cố`
           }}
+          locale={{
+            emptyText: <Empty description="Không có sự cố y tế nào" />
+          }}
         />
+          </>
+        )}
       </Card>
 
-      {/* Drawer hiển thị chi tiết sự cố y tế */}
+      {/* Detail Drawer */}
       <Drawer
-        title={`Chi tiết sự cố #${incidentDetail.id}`}
+        title="Chi tiết sự cố y tế"
         placement="right"
         width={600}
         onClose={() => setDrawerVisible(false)}
         open={drawerVisible}
       >
-        {drawerVisible && (
-          <div className="incident-detail">
-            <Tabs defaultActiveKey="1">
-              <TabPane tab="Thông tin chung" key="1">
-                <Row gutter={[16, 16]}>
-                  <Col span={24}>
-                    <Card className="detail-card" bordered={false}>
-                      <Row gutter={[16, 16]}>
-                        <Col span={12}>
-                          <Text type="secondary">Học sinh:</Text>
-                          <div><strong>{incidentDetail.studentName}</strong></div>
-                        </Col>
-                        <Col span={12}>
-                          <Text type="secondary">Lớp:</Text>
-                          <div><strong>{incidentDetail.class}</strong></div>
-                        </Col>
-                      </Row>
-                      
-                      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-                        <Col span={12}>
-                          <Text type="secondary">Ngày ghi nhận:</Text>
-                          <div><strong>{incidentDetail.incidentDate}</strong></div>
-                        </Col>
-                        <Col span={12}>
-                          <Text type="secondary">Trạng thái:</Text>
-                          <div>{renderStatus(incidentDetail.status)}</div>
-                        </Col>
-                      </Row>
-
-                      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-                        <Col span={12}>
-                          <Text type="secondary">Loại sự cố:</Text>
-                          <div><strong>{incidentDetail.incidentType}</strong></div>
-                        </Col>
-                        <Col span={12}>
-                          <Text type="secondary">Mức độ:</Text>
-                          <div>{renderSeverity(incidentDetail.severity)}</div>
-                        </Col>
-                      </Row>
-
-                      <Row style={{ marginTop: 16 }}>
-                        <Col span={24}>
-                          <Text type="secondary">Mô tả:</Text>
-                          <div><strong>{incidentDetail.description}</strong></div>
-                        </Col>
-                      </Row>
-                    </Card>
-                  </Col>
-                </Row>
-              </TabPane>
-              
-              <TabPane tab="Hành động đã thực hiện" key="2">
-                <Card className="detail-card" bordered={false}>
-                  {incidentDetail.actions?.length ? (
-                    <ul className="action-list">
-                      {incidentDetail.actions.map((action, index) => (
-                        <li key={index}>{action}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <Empty description="Chưa có hành động nào được ghi nhận" />
-                  )}
-                </Card>
-              </TabPane>
-              
-              <TabPane tab="Thuốc đã dùng" key="3">
-                <Card className="detail-card" bordered={false}>
-                  {incidentDetail.medicinesUsed?.length ? (
-                    <ul className="medicines-list">
-                      {incidentDetail.medicinesUsed.map((medicine, index) => (
-                        <li key={index}>{medicine}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <Empty description="Chưa có thuốc nào được sử dụng" />
-                  )}
-                </Card>
-              </TabPane>
-            </Tabs>
-
-            <div className="drawer-footer">
-              <Space>
-                <Button onClick={() => setDrawerVisible(false)}>Đóng</Button>
-                <Button type="primary">
-                  {incidentDetail.status === 'new' ? 'Bắt đầu xử lý' : 
-                   incidentDetail.status === 'processing' ? 'Cập nhật' : 'Tạo báo cáo'}
-                </Button>
-              </Space>
-            </div>
+        {selectedEvent && (
+          <div>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Title level={5}>Thông tin cơ bản</Title>
+                <Paragraph><strong>ID:</strong> {selectedEvent.id}</Paragraph>
+                <Paragraph><strong>Học sinh:</strong> {selectedEvent.studentName}</Paragraph>
+                <Paragraph><strong>Lớp:</strong> {selectedEvent.class}</Paragraph>
+                <Paragraph><strong>Ngày xảy ra:</strong> {formatDate(selectedEvent.incidentDate)}</Paragraph>
+                <Paragraph><strong>Loại sự cố:</strong> {selectedEvent.incidentType}</Paragraph>
+              </Col>
+              <Col span={12}>
+                <Title level={5}>Trạng thái</Title>
+                <Paragraph><strong>Mức độ:</strong> {renderPriority(selectedEvent.priority)}</Paragraph>
+                <Paragraph><strong>Trạng thái:</strong> {renderStatus(selectedEvent.status)}</Paragraph>
+                <Paragraph><strong>Phê duyệt:</strong> {renderStatus(selectedEvent.parentApprovalStatus?.toLowerCase())}</Paragraph>
+                <Paragraph><strong>Cần chăm sóc tại nhà:</strong> {selectedEvent.requiresHomeCare ? 'Có' : 'Không'}</Paragraph>
+              </Col>
+            </Row>
+            
+            <Title level={5}>Mô tả</Title>
+            <Paragraph>{selectedEvent.description}</Paragraph>
+            
+            <Title level={5}>Giải pháp</Title>
+            <Paragraph>{selectedEvent.solution}</Paragraph>
+            
+            {selectedEvent.note && (
+              <>
+                <Title level={5}>Ghi chú</Title>
+                <Paragraph>{selectedEvent.note}</Paragraph>
+              </>
+            )}
           </div>
         )}
       </Drawer>
 
-      {/* Modal tạo sự cố y tế mới */}
+      {/* Create/Edit Modal */}
       <Modal
-        title={
-          <Space>
-            <AlertOutlined style={{ color: '#ff4d4f' }} />
-            <span>Tạo sự cố y tế mới</span>
-          </Space>
-        }
-        open={newIncidentModalVisible}
-        onCancel={() => setNewIncidentModalVisible(false)}
+        title={isEdit ? "Chỉnh sửa sự cố y tế" : "Tạo sự cố y tế mới"}
+        open={modalVisible}
+        onCancel={() => setModalVisible(false)}
         footer={null}
-        width={700}
+        width={800}
       >
-        <NewMedicalIncidentForm 
-          onSubmit={handleFormSubmit} 
-          onCancel={() => setNewIncidentModalVisible(false)} 
-        />
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleFormSubmit}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="studentId"
+                label="Học sinh"
+                rules={[{ required: true, message: 'Vui lòng chọn học sinh!' }]}
+              >
+                <Select
+                  placeholder="Chọn học sinh"
+                  loading={studentsLoading}
+                  showSearch
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {students.map(student => (
+                    <Option key={student.accountId} value={student.accountId}>
+                      {student.fullName} - {student.classId || 'N/A'}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="eventDate"
+                label="Ngày xảy ra"
+                rules={[{ required: true, message: 'Vui lòng chọn ngày!' }]}
+              >
+                <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="eventType"
+                label="Loại sự cố"
+                rules={[{ required: true, message: 'Vui lòng nhập loại sự cố!' }]}
+              >
+                <Input placeholder="Ví dụ: Sốt cao, Chấn thương, Dị ứng..." />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="priority"
+                label="Mức độ"
+                rules={[{ required: true, message: 'Vui lòng chọn mức độ!' }]}
+              >
+                <Select placeholder="Chọn mức độ">
+                  <Option value="LOW">Thấp</Option>
+                  <Option value="MEDIUM">Trung bình</Option>
+                  <Option value="HIGH">Cao</Option>
+                  <Option value="CRITICAL">Khẩn cấp</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            name="description"
+            label="Mô tả"
+            rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}
+          >
+            <TextArea rows={3} placeholder="Mô tả chi tiết sự cố..." />
+          </Form.Item>
+
+          <Form.Item
+            name="solution"
+            label="Giải pháp"
+            rules={[{ required: true, message: 'Vui lòng nhập giải pháp!' }]}
+          >
+            <TextArea rows={3} placeholder="Giải pháp xử lý..." />
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="status"
+                label="Trạng thái"
+                rules={[{ required: true, message: 'Vui lòng chọn trạng thái!' }]}
+              >
+                <Select placeholder="Chọn trạng thái">
+                  <Option value="new">Mới</Option>
+                  <Option value="processing">Đang xử lý</Option>
+                  <Option value="closed">Đã đóng</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="requiresHomeCare"
+                label="Cần chăm sóc tại nhà"
+                valuePropName="checked"
+              >
+                <Select placeholder="Chọn">
+                  <Option value={true}>Có</Option>
+                  <Option value={false}>Không</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item
+            name="note"
+            label="Ghi chú"
+          >
+            <TextArea rows={2} placeholder="Ghi chú bổ sung..." />
+          </Form.Item>
+
+          <Form.Item>
+            <Space>
+              <Button type="primary" htmlType="submit">
+                {isEdit ? 'Cập nhật' : 'Tạo'}
+              </Button>
+              <Button onClick={() => setModalVisible(false)}>
+                Hủy
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );

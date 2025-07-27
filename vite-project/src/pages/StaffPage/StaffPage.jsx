@@ -576,11 +576,7 @@ const StaffPage = () => {
 
       case 'medical-incidents':
         return (
-          <MedicalIncidents 
-            medicalIncidents={medicalIncidents}
-            handleViewIncidentDetail={handleViewIncidentDetail}
-            loading={loading} 
-          />
+          <MedicalIncidents />
         );
       case 'medicine-supplies':
         return (

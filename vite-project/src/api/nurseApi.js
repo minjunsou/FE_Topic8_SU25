@@ -1519,6 +1519,109 @@ const nurseApi = {
       throw error;
     }
   },
+
+  /**
+   * Health Event APIs
+   */
+  getAllHealthEvents: async () => {
+    try {
+      const response = await axiosInstance.get('/v1/healthEvents/get-all');
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách sự cố y tế:', error);
+      throw error;
+    }
+  },
+
+  getHealthEventsByNurse: async (nurseId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/healthEvents/nurse/${nurseId}`);
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy sự cố y tế của nurse ${nurseId}:`, error);
+      throw error;
+    }
+  },
+
+  createHealthEvent: async (studentId, nurseId, healthEventData) => {
+    try {
+      const response = await axiosInstance.post(`/v1/healthEvents/create/${studentId}/${nurseId}`, healthEventData);
+      return response.data?.data || response.data;
+    } catch (error) {
+      console.error('Lỗi khi tạo sự cố y tế:', error);
+      throw error;
+    }
+  },
+
+  updateHealthEvent: async (eventId, healthEventData) => {
+    try {
+      const response = await axiosInstance.put(`/v1/healthEvents/update/${eventId}`, healthEventData);
+      return response.data?.data || response.data;
+    } catch (error) {
+      console.error(`Lỗi khi cập nhật sự cố y tế ${eventId}:`, error);
+      throw error;
+    }
+  },
+
+  deleteHealthEvent: async (eventId) => {
+    try {
+      const response = await axiosInstance.delete(`/v1/healthEvents/delete/${eventId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi xóa sự cố y tế ${eventId}:`, error);
+      throw error;
+    }
+  },
+
+  getHealthEventsByDate: async (eventDate) => {
+    try {
+      const response = await axiosInstance.get(`/v1/healthEvents/get-by-date/${eventDate}`);
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy sự cố y tế theo ngày ${eventDate}:`, error);
+      throw error;
+    }
+  },
+
+  getHealthEventsByPriority: async (priority) => {
+    try {
+      const response = await axiosInstance.get(`/v1/healthEvents/priority/${priority}`);
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy sự cố y tế theo priority ${priority}:`, error);
+      throw error;
+    }
+  },
+
+  searchHealthEvents: async (searchParams) => {
+    try {
+      const response = await axiosInstance.get('/v1/healthEvents/search', { params: searchParams });
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.error('Lỗi khi tìm kiếm sự cố y tế:', error);
+      throw error;
+    }
+  },
+
+  getHealthEventMedications: async (eventId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/healthEvents/${eventId}/medications`);
+      return response.data?.data || response.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy thuốc của sự cố y tế ${eventId}:`, error);
+      throw error;
+    }
+  },
+
+  getHealthEventStatistics: async () => {
+    try {
+      const response = await axiosInstance.get('/v1/healthEvents/statistics');
+      return response.data?.data || response.data || {};
+    } catch (error) {
+      console.error('Lỗi khi lấy thống kê sự cố y tế:', error);
+      throw error;
+    }
+  },
 };
 
 export default nurseApi;

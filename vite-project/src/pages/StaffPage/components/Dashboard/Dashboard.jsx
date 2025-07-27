@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Typography, Space, Badge, Tooltip, Tag, Popconfirm } from 'antd';
 import {
   MedicineBoxOutlined,
@@ -12,6 +12,7 @@ import {
   CheckOutlined,
   CloseOutlined
 } from '@ant-design/icons';
+import nurseApi from '../../../../api/nurseApi';
 import './Dashboard.css';
 
 const { Title, Text } = Typography;
@@ -97,6 +98,49 @@ const Dashboard = ({
   onRequestStatusChange,
 }) => {
   const [processingRequestId, setProcessingRequestId] = useState(null);
+  const [healthEventsStats, setHealthEventsStats] = useState({
+    total: 0,
+    new: 0,
+    processing: 0,
+    closed: 0,
+    critical: 0
+  });
+  const [healthEventsLoading, setHealthEventsLoading] = useState(false);
+
+  // Fetch health events statistics
+  useEffect(() => {
+    const fetchHealthEventsStats = async () => {
+      setHealthEventsLoading(true);
+      try {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const nurseId = userInfo.accountId;
+        
+        let events;
+        if (nurseId) {
+          events = await nurseApi.getHealthEventsByNurse(nurseId);
+        } else {
+          events = await nurseApi.getAllHealthEvents();
+        }
+        
+        if (Array.isArray(events)) {
+          const stats = {
+            total: events.length,
+            new: events.filter(e => e.status === 'new').length,
+            processing: events.filter(e => e.status === 'processing').length,
+            closed: events.filter(e => e.status === 'closed').length,
+            critical: events.filter(e => e.priority === 'CRITICAL').length
+          };
+          setHealthEventsStats(stats);
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy thống kê sự cố y tế:', error);
+      } finally {
+        setHealthEventsLoading(false);
+      }
+    };
+
+    fetchHealthEventsStats();
+  }, []);
 
   // Xử lý khi y tá chấp nhận yêu cầu thuốc từ dashboard
   const handleAccept = async (medicationSentId) => {
@@ -466,8 +510,8 @@ const Dashboard = ({
               </div>
               <div className="stat-info">
                 <Text className="stat-title">Sự cố y tế</Text>
-                <Title level={2} className="stat-number">{medicalIncidents?.length || 0}</Title>
-                <Text className="stat-highlight">{medicalIncidents?.filter(item => item.status === 'new').length || 0} mới</Text>
+                <Title level={2} className="stat-number">{healthEventsStats.total}</Title>
+                <Text className="stat-highlight">{healthEventsStats.new} mới, {healthEventsStats.critical} khẩn cấp</Text>
               </div>
             </div>
           </Card>
