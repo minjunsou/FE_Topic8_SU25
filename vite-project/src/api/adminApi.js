@@ -245,4 +245,47 @@ export const getVaccineBatches = (vaccineId) => axios.get(`/vaccines/${vaccineId
  * @param {number} quantityToReduce
  * @returns {Promise<{message: string}>}
  */
-export const reduceVaccineBatchQuantity = (batchId, quantityToReduce) => axios.patch(`/vaccine-batches/${batchId}/reduce`, { quantityToReduce }); 
+export const reduceVaccineBatchQuantity = (batchId, quantityToReduce) => axios.patch(`/vaccine-batches/${batchId}/reduce`, { quantityToReduce });
+
+// ===================== MEDICAL REFERENCE (Tham chiếu y tế) =====================
+/**
+ * Tạo dị ứng mới
+ * @param {Object} data - { name }
+ * @returns {Promise<Allergen>}
+ */
+export const createAllergen = (data) => axios.post('/reference/allergens', data);
+
+/**
+ * Tìm kiếm dị ứng theo tên (hoặc lấy tất cả nếu không truyền name)
+ * @param {string} [name]
+ * @returns {Promise<Allergen[]>}
+ */
+export const searchAllergens = (name = '') => axios.get('/reference/allergens/search', { params: { name } });
+
+/**
+ * Tạo bệnh mới
+ * @param {Object} data - { name }
+ * @returns {Promise<Disease>}
+ */
+export const createDisease = (data) => axios.post('/reference/diseases', data);
+
+/**
+ * Tìm kiếm bệnh theo tên (hoặc lấy tất cả nếu không truyền name)
+ * @param {string} [name]
+ * @returns {Promise<Disease[]>}
+ */
+export const searchDiseases = (name = '') => axios.get('/reference/diseases/search', { params: { name } });
+
+/**
+ * Tạo hội chứng/khuyết tật mới
+ * @param {Object} data - { name }
+ * @returns {Promise<SyndromeDisability>}
+ */
+export const createSyndrome = (data) => axios.post('/reference/syndromes', data);
+
+/**
+ * Tìm kiếm hội chứng/khuyết tật theo tên (hoặc lấy tất cả nếu không truyền name)
+ * @param {string} [name]
+ * @returns {Promise<SyndromeDisability[]>}
+ */
+export const searchSyndromes = (name = '') => axios.get('/reference/syndromes/search', { params: { name } }); 

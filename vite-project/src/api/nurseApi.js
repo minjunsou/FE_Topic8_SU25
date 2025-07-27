@@ -797,7 +797,7 @@ const nurseApi = {
 
   getVaccinationConfirmationsByStatus: async (status) => {
     try {
-      const response = await axiosInstance.get(`/v1/vaccination-confirmations/status/${status}`);
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/all-by-status/${status}`);
       return response.data.data || [];
     } catch (error) {
       console.error(`Lỗi khi lấy xác nhận tiêm chủng theo trạng thái ${status}:`, error);
@@ -805,12 +805,22 @@ const nurseApi = {
     }
   },
 
-  updateVaccinationConfirmation: async (id, confirmationData) => {
+  updateVaccinationConfirmation: async (confirmationData) => {
     try {
-      const response = await axiosInstance.put(`/v1/vaccination-confirmations/${id}`, confirmationData);
+      const response = await axiosInstance.put(`/v1/vaccination-confirmations/update`, confirmationData);
       return response.data;
     } catch (error) {
-      console.error(`Lỗi khi cập nhật xác nhận tiêm chủng ID ${id}:`, error);
+      console.error(`Lỗi khi cập nhật xác nhận tiêm chủng:`, error);
+      throw error;
+    }
+  },
+
+  updateVaccinationConfirmationStatusOnly: async (statusData) => {
+    try {
+      const response = await axiosInstance.put(`/v1/vaccination-confirmations/update-status-only`, statusData);
+      return response.data;
+    } catch (error) {
+      console.error(`Lỗi khi cập nhật trạng thái xác nhận tiêm chủng:`, error);
       throw error;
     }
   },
@@ -845,17 +855,22 @@ const nurseApi = {
     }
   },
 
-  /**
-   * Xác nhận tất cả xác nhận tiêm chủng (PUT /api/v1/vaccination-confirmations/confirm-all)
-   * @param {Array} confirmationIds - Mảng các ID xác nhận cần xác nhận
-   * @returns {Promise}
-   */
-  confirmAllVaccinationConfirmations: async (confirmationIds) => {
+  confirmAllVaccinationConfirmationsByParent: async (parentId) => {
     try {
-      const response = await axiosInstance.put('/v1/vaccination-confirmations/confirm-all', confirmationIds);
+      const response = await axiosInstance.put(`/v1/vaccination-confirmations/confirm-all`, null, { params: { parentId } });
       return response.data;
     } catch (error) {
-      console.error('Lỗi khi xác nhận tất cả xác nhận tiêm chủng:', error);
+      console.error('Lỗi khi xác nhận tất cả xác nhận tiêm chủng cho parent:', error);
+      throw error;
+    }
+  },
+
+  getVaccinationNoticeStatistics: async (noticeId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/statistics/${noticeId}`);
+      return response.data.data;
+    } catch (error) {
+      console.error('Lỗi khi lấy thống kê xác nhận tiêm chủng:', error);
       throw error;
     }
   },
@@ -1308,6 +1323,22 @@ const nurseApi = {
   },
 
   /**
+   * Lấy danh sách bệnh (disease) theo tên hoặc tất cả
+   * @param {string} name - Tên bệnh để tìm kiếm (có thể để rỗng)
+   * @returns {Promise<Array>} - Danh sách bệnh
+   */
+  searchDiseases: async (name = "") => {
+    try {
+      const response = await axiosInstance.get(`/reference/diseases/search`, {
+        params: { name }
+      });
+      // API trả về mảng DiseaseResponse
+      return response.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách bệnh:', error);
+      throw error;
+    }
+
    * Cập nhật dữ liệu sức khỏe cơ bản cho học sinh
    * @param {Object} healthData - Dữ liệu sức khỏe cơ bản
    * @param {string} healthData.studentId - ID của học sinh
@@ -1409,6 +1440,7 @@ const nurseApi = {
     }
   }
 
+  
 };
 
 export default nurseApi;

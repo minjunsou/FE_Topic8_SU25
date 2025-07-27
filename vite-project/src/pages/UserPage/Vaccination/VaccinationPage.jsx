@@ -37,11 +37,14 @@ const VaccinationPage = ({ parentId }) => {
   // Xác nhận cho 1 học sinh
   const handleConfirm = async (values) => {
     setLoading(true);
+    const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+    const parentId = userInfo?.accountId;
     try {
-      await parentApi.updateVaccinationConfirmation(selectedConfirmation.confirmationId, {
+      await parentApi.updateVaccinationConfirmation({
+        vaccinationConfirmationId: selectedConfirmation.confirmationId,
         vaccineNoticeId: selectedConfirmation.vaccineNoticeId,
         studentId: selectedConfirmation.studentId,
-        parentId: selectedConfirmation.parentId,
+        parentId,
         status: values.confirmStatus === 'yes' ? 'CONFIRMED' : 'DECLINED',
       });
       message.success('Đã xác nhận!');
@@ -57,12 +60,13 @@ const VaccinationPage = ({ parentId }) => {
   const handleConfirmAll = async () => {
     setLoading(true);
     try {
-      const ids = confirmations.filter(c => c.status === 'PENDING').map(c => c.confirmationId);
-      if (ids.length === 0) {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const parentId = userInfo?.accountId;
+      if (!parentId) {
         setLoading(false);
         return;
       }
-      await parentApi.confirmAllVaccinationConfirmations(ids);
+      await parentApi.confirmAllVaccinationConfirmationsByParent(parentId);
       message.success('Đã xác nhận tất cả!');
       await fetchConfirmations();
     } catch {
@@ -85,31 +89,31 @@ const VaccinationPage = ({ parentId }) => {
           { title: 'Học sinh', dataIndex: 'studentName' },
           { title: 'Tên đợt tiêm', dataIndex: 'vaccineName' },
           { title: 'Ngày tiêm', dataIndex: 'vaccinationDate' },
-          {
-            title: 'Trạng thái',
-            dataIndex: 'status',
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
             render: status => (
               <Tag color={status === 'CONFIRMED' ? 'green' : status === 'DECLINED' ? 'red' : 'orange'}>
                 {status === 'CONFIRMED' ? 'Đã xác nhận' : status === 'DECLINED' ? 'Đã từ chối' : 'Chưa xác nhận'}
               </Tag>
             ),
-          },
-          {
-            title: 'Hành động',
-            render: (_, record) => (
-              <Button
-                type="primary"
+    },
+    {
+      title: 'Hành động',
+      render: (_, record) => (
+        <Button 
+          type="primary" 
                 disabled={record.status !== 'PENDING'}
                 onClick={() => {
                   setSelectedConfirmation(record);
                   setModalVisible(true);
                   form.resetFields();
                 }}
-              >
+        >
                 Xác nhận
-              </Button>
-            ),
-          },
+        </Button>
+      ),
+    },
         ]}
         dataSource={confirmations}
         rowKey="confirmationId"
@@ -121,25 +125,25 @@ const VaccinationPage = ({ parentId }) => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
-      >
-        <Form form={form} layout="vertical" onFinish={handleConfirm}>
-          <Form.Item
-            name="confirmStatus"
-            label="Xác nhận tham gia"
-            rules={[{ required: true, message: 'Vui lòng chọn xác nhận!' }]}
           >
-            <Radio.Group>
-              <Radio value="yes">Đồng ý cho con tham gia tiêm chủng</Radio>
-              <Radio value="no">Không đồng ý cho con tham gia tiêm chủng</Radio>
-            </Radio.Group>
-          </Form.Item>
+        <Form form={form} layout="vertical" onFinish={handleConfirm}>
+              <Form.Item
+                name="confirmStatus"
+                label="Xác nhận tham gia"
+                rules={[{ required: true, message: 'Vui lòng chọn xác nhận!' }]}
+              >
+                <Radio.Group>
+                  <Radio value="yes">Đồng ý cho con tham gia tiêm chủng</Radio>
+                  <Radio value="no">Không đồng ý cho con tham gia tiêm chủng</Radio>
+                </Radio.Group>
+              </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" loading={loading}>Xác nhận</Button>
-          </Form.Item>
-        </Form>
+              </Form.Item>
+            </Form>
       </Modal>
     </Card>
   );
 };
 
-export default VaccinationPage;
+export default VaccinationPage; 

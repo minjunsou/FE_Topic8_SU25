@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Button, Modal, message, Form, Input, DatePicker, InputNumber, Select, Tag, Spin, Tabs } from 'antd';
 import nurseApi from '../../../../api/nurseApi';
+import moment from 'moment';
 
 
 const { Option } = Select;
@@ -34,6 +35,10 @@ const Vaccine = () => {
   // Thêm state cho học sinh theo notice
   const [studentsByNotice, setStudentsByNotice] = useState([]);
   const [selectedNoticeId, setSelectedNoticeId] = useState(null);
+  const [excludeDiseaseIds, setExcludeDiseaseIds] = useState([]);
+  // State cho danh sách bệnh
+  const [diseaseOptions, setDiseaseOptions] = useState([]);
+  const [diseaseLoading, setDiseaseLoading] = useState(false);
 
   // Lấy danh sách vaccine khi load
   useEffect(() => {
@@ -127,7 +132,9 @@ const Vaccine = () => {
         description: values.description,
         vaccinationDate: values.vaccinationDate.format('YYYY-MM-DD'),
         grade: values.grade,
-      }, values.vaccineBatchId);
+        vaccineBatchId: values.vaccineBatchId,
+        excludeDiseaseIds: values.excludeDiseaseIds || [],
+      });
       message.success('Tạo thông báo tiêm chủng thành công!');
       setShowNoticeModal(false);
       noticeForm.resetFields();
@@ -142,28 +149,55 @@ const Vaccine = () => {
   const handleViewConfirmed = async (noticeId) => {
     setViewNoticeId(noticeId);
     try {
-      const students = await nurseApi.getConfirmedStudentsByNotice(noticeId);
-      setConfirmedStudents(students);
+      // Lấy danh sách xác nhận tiêm chủng theo noticeId (bao gồm trạng thái)
+      const confirmations = await nurseApi.getVaccinationConfirmationsByNotice(noticeId);
+      // Lấy ngày tiêm của notice
+      const notice = notices.find(n => n.vaccineNoticeId === noticeId);
+      const vaccinationDate = notice ? moment(notice.vaccinationDate) : null;
+      // Auto chuyển CONFIRMED -> ONGOING nếu đã đến ngày tiêm
+      const today = moment().startOf('day');
+      for (const conf of confirmations) {
+        if (conf.status === 'CONFIRMED' && vaccinationDate && today.isSameOrAfter(vaccinationDate, 'day')) {
+          await nurseApi.updateVaccinationConfirmationStatusOnly({
+            vaccinationConfirmationId: conf.confirmationId,
+            status: 'ONGOING',
+          });
+          conf.status = 'ONGOING';
+        }
+      }
+      setConfirmedStudents(confirmations);
       Modal.info({
         title: 'Danh sách học sinh đã xác nhận',
-        width: 600,
+        width: 700,
         content: (
           <Table
             columns={[
-              { title: 'Họ tên', dataIndex: 'fullName' },
+              { title: 'Họ tên', dataIndex: 'studentName' },
               { title: 'Lớp', dataIndex: 'className' },
-              { title: 'Trạng thái', dataIndex: 'status', render: () => <Tag color="green">Đã xác nhận</Tag> },
+              { title: 'Trạng thái', dataIndex: 'status', render: (status) => {
+                let color = 'orange', text = 'Chưa xác nhận';
+                if (status === 'CONFIRMED') { color = 'green'; text = 'Đã xác nhận'; }
+                else if (status === 'ONGOING') { color = 'blue'; text = 'Đang tiêm'; }
+                else if (status === 'COMPLETED') { color = 'purple'; text = 'Hoàn thành'; }
+                else if (status === 'DECLINED') { color = 'red'; text = 'Từ chối'; }
+                return <Tag color={color}>{text}</Tag>;
+              } },
               {
-                title: 'Record',
-                render: (_, record) => (
-                  <Button type="primary" onClick={() => handleCreateRecord(record)}>
-                    Tạo record
-                  </Button>
-                ),
-              },
+                title: 'Hành động',
+                render: (_, record) => record.status === 'ONGOING' || record.status === 'CONFIRMED' ? (
+                  <Button type="primary" onClick={async () => {
+                    await nurseApi.updateVaccinationConfirmationStatusOnly({
+                      vaccinationConfirmationId: record.confirmationId,
+                      status: 'COMPLETED',
+                    });
+                    message.success('Cập nhật trạng thái hoàn thành!');
+                    handleViewConfirmed(noticeId); // refresh
+                  }}>Đánh dấu hoàn thành</Button>
+                ) : null
+              }
             ]}
-            dataSource={students}
-            rowKey="accountId"
+            dataSource={confirmations}
+            rowKey="confirmationId"
             pagination={false}
           />
         ),
@@ -179,12 +213,30 @@ const Vaccine = () => {
     ? notices.filter((n) => n.vaccineId === selectedVaccineNoticeId)
     : notices;
 
-  // Khi mở modal tạo notice, vaccineId mặc định là vaccine đang filter
+  // Hàm fetch danh sách bệnh (có thể truyền name để search)
+  const fetchDiseases = async (name = "") => {
+    setDiseaseLoading(true);
+    try {
+      const data = await nurseApi.searchDiseases(name);
+      setDiseaseOptions(data);
+    } catch {
+      setDiseaseOptions([]);
+    }
+    setDiseaseLoading(false);
+  };
+
+  // Khi mở modal tạo notice, fetch danh sách bệnh
   const handleOpenNoticeModal = () => {
     setShowNoticeModal(true);
     if (selectedVaccineNoticeId) {
       noticeForm.setFieldsValue({ vaccineId: selectedVaccineNoticeId });
     }
+    fetchDiseases();
+  };
+
+  // Xử lý search bệnh trong Select
+  const handleDiseaseSearch = (value) => {
+    fetchDiseases(value);
   };
 
   // Hàm tạo record tiêm chủng
@@ -436,9 +488,23 @@ const Vaccine = () => {
           <Spin spinning={noticeLoading} tip="Đang tải...">
             <Table
               columns={[
+                { title: 'ID', dataIndex: 'vaccineNoticeId' },
                 { title: 'Tiêu đề', dataIndex: 'title' },
-                { title: 'Ngày tiêm', dataIndex: 'vaccinationDate' },
+                { title: 'Mô tả', dataIndex: 'description' },
                 { title: 'Khối lớp', dataIndex: 'grade' },
+                { title: 'Vaccine', dataIndex: 'vaccineName' },
+                { title: 'Ngày tiêm', dataIndex: 'vaccinationDate', render: (date) => date ? new Date(date).toLocaleDateString() : '' },
+                { title: 'Lô vaccine', dataIndex: 'vaccineBatchId' },
+                { title: 'Bệnh loại trừ', dataIndex: 'excludedDiseaseIds', render: (ids) =>
+                  ids && ids.length > 0
+                    ? ids.map(id => {
+                        const disease = diseaseOptions.find(d => d.diseaseId === id);
+                        return disease ? disease.name : id;
+                      }).join(', ')
+                    : 'Không'
+                },
+                { title: 'Số học sinh nhận phiếu', dataIndex: 'totalStudentsSentForm' },
+                { title: 'Ngày tạo', dataIndex: 'createdAt', render: (date) => date ? new Date(date).toLocaleDateString() : '' },
                 {
                   title: 'Hành động',
                   render: (_, record) => (
@@ -508,10 +574,27 @@ const Vaccine = () => {
               <Input.TextArea />
             </Form.Item>
             <Form.Item name="vaccinationDate" label="Ngày tiêm" rules={[{ required: true }]}>
-              <DatePicker />
+              <DatePicker
+                disabledDate={current => current && current <= moment().endOf('day')}
+              />
             </Form.Item>
             <Form.Item name="grade" label="Khối lớp" rules={[{ required: true }]}>
               <InputNumber min={1} max={12} />
+            </Form.Item>
+            <Form.Item name="excludeDiseaseIds" label="Chọn bệnh">
+              <Select
+                placeholder="Chọn bệnh"
+                mode="multiple"
+                allowClear
+                showSearch
+                filterOption={false}
+                onSearch={handleDiseaseSearch}
+                loading={diseaseLoading}
+              >
+                {diseaseOptions.map(disease => (
+                  <Option key={disease.diseaseId} value={disease.diseaseId}>{disease.name}</Option>
+                ))}
+              </Select>
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit" loading={loading}>Tạo thông báo</Button>
