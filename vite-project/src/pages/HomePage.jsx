@@ -77,7 +77,7 @@ const HomePage = () => {
           <Paragraph className="hero-description">
             Providing comprehensive healthcare solutions for schools
           </Paragraph>
-          <Button type="primary" size="large" className="hero-button">
+          <Button type="primary" size="large" className="hero-button" href="/login">
             Learn More
           </Button>
         </div>

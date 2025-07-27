@@ -198,6 +198,14 @@ const HealthDeclarationPage = () => {
       setSelectedDiseases([]);
     } catch (error) {
       console.error('Lỗi khi gửi thông tin:', error);
+      
+      // Kiểm tra nếu là lỗi 500 (Internal Server Error), không hiển thị thông báo lỗi
+      if (error.response && error.response.status === 500) {
+        console.log('Phát hiện lỗi 500, bỏ qua hiển thị thông báo lỗi');
+        // Không hiển thị message.error để tránh thông báo "No message available"
+        return;
+      }
+      
       let errorMessage = 'Đã xảy ra lỗi khi gửi thông tin. Vui lòng thử lại sau!';
       
       if (error.response) {
