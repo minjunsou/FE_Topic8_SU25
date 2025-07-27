@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Tabs, Row, Col } from 'antd';
-import { UserOutlined, TeamOutlined, KeyOutlined, MedicineBoxOutlined } from '@ant-design/icons';
+import { UserOutlined, TeamOutlined, KeyOutlined, MedicineBoxOutlined, FileTextOutlined } from '@ant-design/icons';
 import UserInfo from './UserInfo';
 import ChildrenInfo from './ChildrenInfo';
 import ChangePassword from './ChangePassword';
 import MedicalServices from './MedicalServices';
+import HealthCheckHistory from './HealthCheckHistory';
 import './UserProfile.css';
 
 const { TabPane } = Tabs;
@@ -55,6 +56,15 @@ const UserProfile = () => {
                   ),
                 },
                 {
+                  key: '5',
+                  label: (
+                    <span>
+                      <FileTextOutlined />
+                      Lịch sử kiểm tra sức khỏe
+                    </span>
+                  ),
+                },
+                {
                   key: '3',
                   label: (
                     <span>
@@ -73,6 +83,7 @@ const UserProfile = () => {
               {activeTab === '2' && <ChildrenInfo />}
               {activeTab === '3' && <ChangePassword />}
               {activeTab === '4' && <MedicalServices />}
+              {activeTab === '5' && <HealthCheckHistory />}
             </div>
           </Col>
         </Row>

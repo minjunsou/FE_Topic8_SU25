@@ -199,7 +199,7 @@ const nurseApi = {
       const response = await axiosInstance.get('/v1/accounts', {
         params: {
           page: 0,
-          size: 100,
+          size: 150,
           roleId: 1,
           sortBy: 'fullName',
           direction: 'asc'
