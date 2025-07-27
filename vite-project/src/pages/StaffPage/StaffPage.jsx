@@ -499,9 +499,41 @@ const StaffPage = () => {
           console.error('Lỗi khi lấy thông tin thống kê thuốc:', medicationError);
         }
         
+        // Lấy sự cố y tế từ API thực tế
+        try {
+          const healthEventsData = await nurseApi.getHealthEventsByCurrentNurse();
+          console.log('Sự cố y tế:', healthEventsData);
+          
+          // Transform data to match frontend format
+          const transformedHealthEvents = healthEventsData.map(event => ({
+            id: event.eventId,
+            studentName: event.studentName || 'Không xác định',
+            class: event.student?.classId || 'Không xác định',
+            incidentDate: event.eventDate,
+            incidentType: event.eventType,
+            description: event.description,
+            status: event.status || 'NEW',
+            severity: event.priority?.toLowerCase() || 'medium',
+            priority: event.priority,
+            solution: event.solution,
+            note: event.note,
+            requiresHomeCare: event.requiresHomeCare,
+            parentApprovalStatus: event.parentApprovalStatus,
+            createdAt: event.createdAt,
+            updatedAt: event.updatedAt,
+            medications: event.medications || [],
+            followUps: event.followUps || []
+          }));
+          
+          setMedicalIncidents(transformedHealthEvents);
+        } catch (healthEventsError) {
+          console.error('Lỗi khi lấy sự cố y tế:', healthEventsError);
+          // Fallback to mock data if API fails
+          setMedicalIncidents(mockMedicalIncidents);
+        }
+        
         // Giữ nguyên dữ liệu mẫu cho các loại dữ liệu khác
         setHealthDeclarations(mockHealthDeclarations);
-        setMedicalIncidents(mockMedicalIncidents);
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu:', error);
         message.error('Không thể tải dữ liệu. Vui lòng thử lại sau.');

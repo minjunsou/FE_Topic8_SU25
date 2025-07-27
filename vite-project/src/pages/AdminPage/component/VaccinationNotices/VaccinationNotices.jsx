@@ -67,7 +67,7 @@ export default function VaccinationNotices() {
       <Spin spinning={loading} tip="Đang tải...">
         <Table
           columns={columns}
-          dataSource={notices}
+          dataSource={Array.isArray(notices) ? notices : []}
           rowKey={r => r.vaccineNoticeId}
           pagination={false}
         />

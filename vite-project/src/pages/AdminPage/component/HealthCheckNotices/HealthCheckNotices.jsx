@@ -53,7 +53,7 @@ export default function HealthCheckNotices() {
       <Spin spinning={loading} tip="Đang tải...">
         <Table
           columns={columns}
-          dataSource={notices}
+          dataSource={Array.isArray(notices) ? notices : []}
           rowKey={r => r.checkNoticeId}
           pagination={false}
         />
