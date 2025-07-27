@@ -262,7 +262,7 @@ const HealthChecks = () => {
             columns={noticesColumns} 
             dataSource={notices} 
             loading={loading}
-            pagination={{ pageSize: 5 }}
+                                                     pagination={{ pageSize: 5 }}
           />
         </TabPane>
       </Tabs>
@@ -336,7 +336,7 @@ const HealthChecks = () => {
           columns={confirmationsColumns} 
           dataSource={confirmations} 
           loading={loading}
-          pagination={{ pageSize: 10 }}
+                                                 pagination={{ pageSize: 10 }}
         />
       </Modal>
 

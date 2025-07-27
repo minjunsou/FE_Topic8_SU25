@@ -506,7 +506,7 @@ const HealthCheckHistory = () => {
           <Table
             columns={columns}
             dataSource={healthCheckHistory}
-            pagination={{ pageSize: 5 }}
+                          pagination={{ pageSize: 5 }}
             rowClassName="health-check-row"
           />
         ) : (
