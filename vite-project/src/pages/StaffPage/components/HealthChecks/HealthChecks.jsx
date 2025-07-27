@@ -120,13 +120,24 @@ const HealthChecks = () => {
     try {
       // Use nurseApi.getAllStudents instead of direct API call
       const studentsData = await nurseApi.getAllStudents();
-      
-      setStudents(studentsData.map(student => ({
-        ...student,
-        key: student.accountId
-      })));
-      
-      console.log('Fetched students:', studentsData.length);
+      // Lấy thông tin lớp cho từng học sinh
+      const studentsWithClass = await Promise.all(studentsData.map(async student => {
+        try {
+          const res = await fetch(`http://localhost:8080/api/v1/classes/by-student?studentId=${student.accountId}`);
+          const classData = await res.json();
+          return {
+            ...student,
+            classId: classData.className || 'N/A',
+          };
+        } catch {
+          return {
+            ...student,
+            classId: 'N/A',
+          };
+        }
+      }));
+      setStudents(studentsWithClass.map(student => ({ ...student, key: student.accountId })));
+      console.log('Fetched students:', studentsWithClass.length);
     } catch (error) {
       console.error('Error fetching students:', error);
       message.error('Không thể lấy danh sách học sinh');
@@ -952,27 +963,27 @@ const HealthChecks = () => {
                             key: 'snapshotDate',
                             dataIndex: 'snapshotDate',
                           },
-                          {
-                            title: 'Kết quả',
-                            key: 'result',
-                            render: (_, record) => {
-                              // Find the corresponding health check record to display its status
-                              const matchingHealthCheckRecord = healthCheckRecords.find(
-                                checkRecord => checkRecord.date && checkRecord.date.length >= 3 && 
-                                `${checkRecord.date[0]}-${String(checkRecord.date[1]).padStart(2, '0')}-${String(checkRecord.date[2]).padStart(2, '0')}` === record.snapshotDate
-                              );
-                              return matchingHealthCheckRecord ? (
-                                <Tag icon={<CheckCircleOutlined />} color="green">
-                                  {matchingHealthCheckRecord.results === 'nomal' ? 'Khỏe mạnh' : 
-                                   matchingHealthCheckRecord.results === 'NEEDS_ATTENTION' ? 'Cần theo dõi' : 
-                                   matchingHealthCheckRecord.results === 'NEEDS_TREATMENT' ? 'Cần điều trị' : 
-                                   matchingHealthCheckRecord.results || 'N/A'}
-                                </Tag>
-                              ) : (
-                                <span>—</span>
-                              );
-                            }
-                          },
+                          // {
+                          //   title: 'Kết quả',
+                          //   key: 'result',
+                          //   render: (_, record) => {
+                          //     // Find the corresponding health check record to display its status
+                          //     const matchingHealthCheckRecord = healthCheckRecords.find(
+                          //       checkRecord => checkRecord.date && checkRecord.date.length >= 3 && 
+                          //       `${checkRecord.date[0]}-${String(checkRecord.date[1]).padStart(2, '0')}-${String(checkRecord.date[2]).padStart(2, '0')}` === record.snapshotDate
+                          //     );
+                          //     return matchingHealthCheckRecord ? (
+                          //       <Tag icon={<CheckCircleOutlined />} color="green">
+                          //         {matchingHealthCheckRecord.results === 'nomal' ? 'Khỏe mạnh' : 
+                          //          matchingHealthCheckRecord.results === 'NEEDS_ATTENTION' ? 'Cần theo dõi' : 
+                          //          matchingHealthCheckRecord.results === 'NEEDS_TREATMENT' ? 'Cần điều trị' : 
+                          //          matchingHealthCheckRecord.results || 'N/A'}
+                          //       </Tag>
+                          //     ) : (
+                          //       <span>—</span>
+                          //     );
+                          //   }
+                          // },
                           {
                             title: 'Chiều cao (cm)',
                             key: 'height',
@@ -983,11 +994,11 @@ const HealthChecks = () => {
                             key: 'weight',
                             dataIndex: 'weightKg',
                           },
-                          {
-                            title: 'BMI',
-                            key: 'bmi',
-                            dataIndex: 'bmi',
-                          },
+                          // {
+                          //   title: 'BMI',
+                          //   key: 'bmi',
+                          //   dataIndex: 'bmi',
+                          // },
                           {
                             title: 'Thị lực (T/P)',
                             key: 'vision',
@@ -1451,14 +1462,14 @@ const HealthChecks = () => {
                   {/* <p>
                     <strong>Ngày đo:</strong> {selectedRecord.lastMeasuredDate}
                   </p> */}
-                  <p>
+                  {/* <p>
                     <strong>Kết quả tổng quát:</strong> {
                       selectedRecord.result === 'nomal' ? 'Khỏe mạnh' : 
                       selectedRecord.result === 'NEEDS_ATTENTION' ? 'Cần theo dõi' : 
                       selectedRecord.result === 'NEEDS_TREATMENT' ? 'Cần điều trị' : 
                       selectedRecord.result || 'N/A'
                     }
-                  </p>
+                  </p> */}
                 </Card>
               </Col>
               
