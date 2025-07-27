@@ -283,17 +283,6 @@
   }
 } 
 
-/* Health Profile Card Styles - These are no longer needed */
-.health-profile-card,
-.health-profile-header,
-.health-profile-title,
-.health-profile-date,
-.health-profile-card .ant-table-tbody > tr > td,
-.health-profile-card .ant-table-tbody > tr > td:nth-child(odd),
-.health-profile-card .ant-table-tbody > tr > td:nth-child(even) {
-  /* Remove these styles */
-}
-
 /* Ensure responsive behavior */
 @media (max-width: 768px) {
   .health-profile-card .ant-table-tbody > tr > td {
