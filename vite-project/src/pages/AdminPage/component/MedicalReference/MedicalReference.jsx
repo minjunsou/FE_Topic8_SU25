@@ -143,7 +143,7 @@ export default function MedicalReference() {
         columns={currentTab.columns}
         dataSource={data}
         loading={loading}
-        pagination={{ pageSize: 10 }}
+                                             pagination={{ pageSize: 10 }}
         scroll={{ x: true }}
       />
       <Modal

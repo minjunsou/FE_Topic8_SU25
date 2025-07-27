@@ -565,7 +565,89 @@ const VaccinationDashboard = () => {
         </Row>
       </Card>
 
-
+      {/* Statistics */}
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col span={3}>
+          <Card>
+            <Statistic
+              title="Tổng thông báo"
+              value={statistics.totalNotices}
+              prefix={<FileTextOutlined />}
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+        <Col span={3}>
+          <Card>
+            <Statistic
+              title="Tổng record"
+              value={statistics.totalRecords}
+              prefix={<BarChartOutlined />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col span={3}>
+          <Card>
+            <Statistic
+              title="Loại vaccine"
+              value={statistics.totalVaccines}
+              prefix={<MedicineBoxOutlined />}
+              valueStyle={{ color: '#722ed1' }}
+            />
+          </Card>
+        </Col>
+        <Col span={3}>
+          <Card>
+            <Statistic
+              title="Chờ xác nhận"
+              value={statistics.pendingConfirmations}
+              prefix={<ClockCircleOutlined />}
+              valueStyle={{ color: '#faad14' }}
+            />
+          </Card>
+        </Col>
+        <Col span={3}>
+          <Card>
+            <Statistic
+              title="Đã xác nhận"
+              value={statistics.confirmedCount}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col span={3}>
+          <Card>
+            <Statistic
+              title="Đã từ chối"
+              value={statistics.declinedCount}
+              prefix={<ExclamationCircleOutlined />}
+              valueStyle={{ color: '#ff4d4f' }}
+            />
+          </Card>
+        </Col>
+        <Col span={3}>
+          <Card>
+            <Statistic
+              title="Sắp tới"
+              value={statistics.upcomingVaccinations}
+              prefix={<CalendarOutlined />}
+              valueStyle={{ color: '#1890ff' }}
+            />
+          </Card>
+        </Col>
+        <Col span={3}>
+          <Card>
+            <Statistic
+              title="Quá hạn"
+              value={statistics.overdueVaccinations}
+              prefix={<ExclamationCircleOutlined />}
+              valueStyle={{ color: '#ff4d4f' }}
+            />
+          </Card>
+        </Col>
+      </Row>
 
       {/* Tables */}
       <Row gutter={16}>
