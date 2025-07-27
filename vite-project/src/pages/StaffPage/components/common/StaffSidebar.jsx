@@ -4,7 +4,7 @@ import {
   MedicineBoxOutlined, 
   FileTextOutlined, 
   DashboardOutlined,
-  CalendarOutlined,
+
   AlertOutlined,
   MedicineBoxTwoTone,
   LogoutOutlined,
@@ -93,6 +93,12 @@ const StaffSidebar = ({
       onClick: () => onMenuClick('profiles')
     },
     {
+      key: 'consultationSchedule',
+      icon: <ProfileOutlined />,
+      label: 'Lịch khám',
+      onClick: () => onMenuClick('consultationSchedule')
+    },
+    {
       key: 'change-password',
       icon: <KeyOutlined />,
       label: 'Đổi mật khẩu',
@@ -104,6 +110,7 @@ const StaffSidebar = ({
       label: 'Vaccine',
       onClick: () => onMenuClick('vaccine')
     },
+    
   ];
 
   return (
