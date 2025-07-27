@@ -12,6 +12,7 @@ const menuItems = [
   { key: 'healthCheckNotices', label: 'Thông báo khám' },
   { key: 'vaccinationNotices', label: 'Thông báo tiêm' },
   { key: 'consultations', label: 'Lịch tư vấn' },
+  { key: 'medicalReference', label: 'Tham chiếu y tế' },
 ];
 
 // Lazy load các component chức năng (placeholder, sẽ tạo sau)
@@ -25,6 +26,7 @@ const HealthCheckNotices = lazy(() => import('./component/HealthCheckNotices/Hea
 const VaccinationNotices = lazy(() => import('./component/VaccinationNotices/VaccinationNotices'));
 const Consultations = lazy(() => import('./component/Consultations/Consultations'));
 const Vaccine = lazy(() => import('./component/Vaccine/Vaccine'));
+const MedicalReference = lazy(() => import('./component/MedicalReference/MedicalReference'));
 
 const componentMap = {
   accounts: Accounts,
@@ -37,6 +39,7 @@ const componentMap = {
   healthCheckNotices: HealthCheckNotices,
   vaccinationNotices: VaccinationNotices,
   consultations: Consultations,
+  medicalReference: MedicalReference,
 };
 
 export default function AdminPage() {

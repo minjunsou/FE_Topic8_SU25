@@ -991,7 +991,7 @@ const HealthChecks = () => {
                   </div>
                   
                   {/* Health Check Records Section */}
-                  <div className="health-check-records-section" style={{ marginTop: 24 }}>
+                  {/* <div className="health-check-records-section" style={{ marginTop: 24 }}>
                     <Title level={4}>
                       <MedicineBoxOutlined /> Lịch sử kiểm tra sức khỏe
                     </Title>
@@ -1008,7 +1008,7 @@ const HealthChecks = () => {
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                       />
                     )}
-                  </div>
+                  </div> */}
                 </div>
               ) : (
                 <Empty 

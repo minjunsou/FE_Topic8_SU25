@@ -976,7 +976,7 @@ getVaccinationConfirmationsByNotice: async (vaccineNoticeId) => {
 
 getVaccinationConfirmationsByStatus: async (status) => {
   try {
-    const response = await axiosInstance.get(`/v1/vaccination-confirmations/status/${status}`);
+    const response = await axiosInstance.get(`/v1/vaccination-confirmations/all-by-status/${status}`);
     return response.data.data || [];
   } catch (error) {
     console.error(`Lỗi khi lấy xác nhận tiêm chủng theo trạng thái ${status}:`, error);
@@ -984,12 +984,22 @@ getVaccinationConfirmationsByStatus: async (status) => {
   }
 },
 
-updateVaccinationConfirmation: async (id, confirmationData) => {
+updateVaccinationConfirmation: async (confirmationData) => {
   try {
-    const response = await axiosInstance.put(`/v1/vaccination-confirmations/${id}`, confirmationData);
+    const response = await axiosInstance.put(`/v1/vaccination-confirmations/update`, confirmationData);
     return response.data;
   } catch (error) {
-    console.error(`Lỗi khi cập nhật xác nhận tiêm chủng ID ${id}:`, error);
+    console.error(`Lỗi khi cập nhật xác nhận tiêm chủng:`, error);
+    throw error;
+  }
+},
+
+updateVaccinationConfirmationStatusOnly: async (statusData) => {
+  try {
+    const response = await axiosInstance.put(`/v1/vaccination-confirmations/update-status-only`, statusData);
+    return response.data;
+  } catch (error) {
+    console.error(`Lỗi khi cập nhật trạng thái xác nhận tiêm chủng:`, error);
     throw error;
   }
 },
@@ -1024,12 +1034,22 @@ getVaccinationConfirmationsByStatusAndParent: async (status, parentId) => {
   }
 },
 
-confirmAllVaccinationConfirmations: async (confirmationIds) => {
+confirmAllVaccinationConfirmationsByParent: async (parentId) => {
   try {
-    const response = await axiosInstance.put('/v1/vaccination-confirmations/confirm-all', confirmationIds);
+    const response = await axiosInstance.put(`/v1/vaccination-confirmations/confirm-all`, null, { params: { parentId } });
     return response.data;
   } catch (error) {
-    console.error('Lỗi khi xác nhận tất cả xác nhận tiêm chủng:', error);
+    console.error('Lỗi khi xác nhận tất cả xác nhận tiêm chủng cho parent:', error);
+    throw error;
+  }
+},
+
+getVaccinationNoticeStatistics: async (noticeId) => {
+  try {
+    const response = await axiosInstance.get(`/v1/vaccination-confirmations/statistics/${noticeId}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Lỗi khi lấy thống kê xác nhận tiêm chủng:', error);
     throw error;
   }
 },
