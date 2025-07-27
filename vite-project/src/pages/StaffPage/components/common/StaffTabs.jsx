@@ -88,7 +88,16 @@ const StaffTabs = ({
             </span>
           } 
           key="profiles" 
-        />
+        /> 
+        <TabPane 
+        tab={
+          <span>
+            <ProfileOutlined />
+            Lịch khám
+          </span>
+        } 
+        key="consultationSchedule" 
+      />
         <TabPane 
           tab={
             <span>
@@ -107,6 +116,7 @@ const StaffTabs = ({
           } 
           key="vaccine" 
         />
+       
       </Tabs>
     </div>
   );

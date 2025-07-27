@@ -17,6 +17,7 @@ import StaffTabs from './components/common/StaffTabs';
 import LoadingIndicator from './components/common/LoadingIndicator';
 import HealthChecks from './components/HealthChecks/HealthChecks';
 import Vaccine from './components/Vaccine/Vaccine';
+import ConsultationSchedule from './components/ConsultationSchedule';
 import './StaffPage.css';
 
 const { Content } = Layout;
@@ -363,6 +364,23 @@ const StaffPage = () => {
     lowStockMedications: [],
     expiringSoonMedications: []
   });
+  const [userInfo, setUserInfo] = useState(null);
+
+  // Lấy thông tin người dùng từ localStorage khi component được render
+  useEffect(() => {
+    const storedUserInfo = localStorage.getItem('userInfo');
+    if (storedUserInfo) {
+      try {
+        const parsedUserInfo = JSON.parse(storedUserInfo);
+        setUserInfo(parsedUserInfo);
+      } catch (error) {
+        console.error('Lỗi khi phân tích thông tin người dùng:', error);
+        message.error('Không thể lấy thông tin người dùng');
+      }
+    } else {
+      message.warning('Vui lòng đăng nhập để sử dụng tính năng này');
+    }
+  }, []);
 
   // Xử lý cập nhật trạng thái yêu cầu thuốc (chấp nhận/từ chối)
   const handleMedicationRequestStatusChange = async (requestId, isAccepted) => {
@@ -542,6 +560,7 @@ const StaffPage = () => {
     if (path.includes('medicine-supplies')) return 'medicine-supplies';
     if (path.includes('profiles')) return 'profiles';
     if (activeTab === 'change-password') return 'change-password';
+    if (activeTab === 'consultationSchedule') return 'consultationSchedule';
     return 'dashboard';
   };
 
@@ -627,6 +646,8 @@ const StaffPage = () => {
         );
       case 'change-password':
         return <StaffChangePassword />;
+      case 'consultationSchedule':
+        return <ConsultationSchedule nurseId={userInfo?.accountId} />;
       case 'vaccine':
         return <Vaccine/>;
       case 'overview':
