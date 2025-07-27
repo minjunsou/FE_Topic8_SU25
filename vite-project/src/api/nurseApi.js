@@ -1338,7 +1338,8 @@ const nurseApi = {
       console.error('Lỗi khi lấy danh sách bệnh:', error);
       throw error;
     }
-
+  },
+    /**
    * Cập nhật dữ liệu sức khỏe cơ bản cho học sinh
    * @param {Object} healthData - Dữ liệu sức khỏe cơ bản
    * @param {string} healthData.studentId - ID của học sinh
@@ -1404,6 +1405,7 @@ const nurseApi = {
    * @param {number} size - Kích thước trang (mặc định là 20)
    * @returns {Promise} - Promise chứa dữ liệu lịch sử sức khỏe
    */
+
   getStudentHealthSnapshots: async (studentId, page = 0, size = 20) => {
     try {
       if (!studentId) {
@@ -1438,9 +1440,7 @@ const nurseApi = {
         empty: true
       };
     }
-  }
-
-  
+  },
 };
 
 export default nurseApi;
