@@ -4,7 +4,7 @@ import {
   MedicineBoxOutlined, 
   FileTextOutlined, 
   DashboardOutlined,
-  CalendarOutlined,
+
   AlertOutlined,
   MedicineBoxTwoTone,
   LogoutOutlined,
@@ -103,6 +103,11 @@ const StaffSidebar = ({
       icon: <KeyOutlined />,
       label: 'Vaccine',
       onClick: () => onMenuClick('vaccine')
+    },
+    {
+      key: 'consultationSchedule',
+      label: 'Lịch khám',
+      onClick: () => onMenuClick('consultationSchedule')
     },
   ];
 

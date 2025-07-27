@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Typography, Select, Spin, Empty, message, Tag, Button, Modal, Descriptions, Avatar, Space, Divider, List, Badge, Alert, Tabs, Form, DatePicker, Input, Radio } from 'antd';
+import { Table, Card, Typography, Select, Spin, Empty, message, Tag, Button, Modal, Descriptions, Avatar, Space, Divider, List, Badge, Alert, Tabs, Form, DatePicker, Input, Radio, Popconfirm } from 'antd';
 import { MedicineBoxOutlined, FileTextOutlined, CheckCircleOutlined, UserOutlined, InfoCircleOutlined, PhoneOutlined, MailOutlined, AlertOutlined, ExperimentOutlined, HeartOutlined, CalendarOutlined } from '@ant-design/icons';
 import { parentApi } from '../../api';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useRef } from 'react';
 import './UserProfile.css';
 
 const { Title, Text } = Typography;
@@ -12,6 +14,14 @@ const { TextArea } = Input;
 
 const HealthCheckHistory = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const appointmentTabRef = useRef(null);
+  // Lấy tab từ query param
+  const getDefaultTab = () => {
+    const params = new URLSearchParams(location.search);
+    return params.get('tab') === 'appointment' ? 'appointment' : 'health';
+  };
+  const [activeTab, setActiveTab] = useState(getDefaultTab());
   const [loading, setLoading] = useState(true);
   const [children, setChildren] = useState([]);
   const [selectedChild, setSelectedChild] = useState(null);
@@ -24,7 +34,14 @@ const HealthCheckHistory = () => {
   const [loadingMedicalProfile, setLoadingMedicalProfile] = useState(false);
   const [nurses, setNurses] = useState([]);
   const [parentId, setParentId] = useState(null);
-  
+  const [appointmentHistory, setAppointmentHistory] = useState([]);
+  const [loadingAppointment, setLoadingAppointment] = useState(false);
+  const [cancelLoadingId, setCancelLoadingId] = useState(null);
+  const [confirmCancel, setConfirmCancel] = useState({ visible: false, record: null });
+  // State cho modal xác nhận hủy lịch
+  const [cancellingId, setCancellingId] = useState(null);
+  const [cancellingLoading, setCancellingLoading] = useState(false);
+
   // Fetch children data on component mount
   useEffect(() => {
     fetchChildrenData();
@@ -37,6 +54,16 @@ const HealthCheckHistory = () => {
       fetchHealthCheckHistory();
     }
   }, [selectedChild]);
+  
+  // Scroll đến tab lịch sử đặt lịch khám nếu có query param
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('tab') === 'appointment' && appointmentTabRef.current) {
+      setTimeout(() => {
+        appointmentTabRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 300);
+    }
+  }, [location.search]);
   
   // Fetch children data
   const fetchChildrenData = async () => {
@@ -380,6 +407,167 @@ const HealthCheckHistory = () => {
     },
   ];
 
+  // Fetch appointment history for parent
+  const fetchAppointmentHistory = async () => {
+    setLoadingAppointment(true);
+    try {
+      let parentId = null;
+      const storedUserInfo = localStorage.getItem('userInfo');
+      if (storedUserInfo) {
+        const parsedUserInfo = JSON.parse(storedUserInfo);
+        parentId = parsedUserInfo.accountId;
+      }
+      if (parentId) {
+        // Gọi API mới lấy lịch sử đặt lịch khám
+        const data = await parentApi.getConsultationAppointmentsByParent(parentId);
+        // Map lại dữ liệu cho bảng
+        const mappedData = data.map(item => {
+          // Format ngày
+          let formattedDate = '';
+          if (Array.isArray(item.scheduledDate) && item.scheduledDate.length >= 3) {
+            formattedDate = `${item.scheduledDate[2]}/${item.scheduledDate[1]}/${item.scheduledDate[0]}`;
+          } else {
+            formattedDate = item.scheduledDate || '';
+          }
+          // Map tên học sinh nếu có
+          let studentName = item.studentId;
+          if (children && children.length > 0) {
+            const found = children.find(c => c.id === item.studentId);
+            if (found) studentName = found.name;
+          }
+          // Map tên y tá nếu có
+          let nurseName = item.nurseId;
+          if (nurses && nurses.length > 0) {
+            const foundNurse = nurses.find(n => n.accountId === item.nurseId);
+            if (foundNurse) nurseName = foundNurse.fullName;
+          }
+          // Format slot
+          let slotLabel = '';
+          switch(item.slot) {
+            case 'MORNING_SLOT_1': slotLabel = 'Sáng ca 1 (7:30-9:00)'; break;
+            case 'MORNING_SLOT_2': slotLabel = 'Sáng ca 2 (9:00-10:30)'; break;
+            case 'AFTERNOON_SLOT_1': slotLabel = 'Chiều ca 1 (13:30-15:00)'; break;
+            case 'AFTERNOON_SLOT_2': slotLabel = 'Chiều ca 2 (15:00-16:30)'; break;
+            default: slotLabel = item.slot || '';
+          }
+          return {
+            id: item.id || item.consultationId,
+            appointmentDate: formattedDate,
+            childName: studentName,
+            nurseName: nurseName,
+            slot: slotLabel,
+            reason: item.reason,
+            status: item.status,
+          };
+        });
+        setAppointmentHistory(mappedData);
+      }
+    } catch (error) {
+      message.error('Không thể lấy lịch sử đặt lịch khám');
+    } finally {
+      setLoadingAppointment(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'appointment') {
+      fetchAppointmentHistory();
+    }
+  }, [activeTab]);
+
+  // Hàm xử lý hủy lịch
+  const handleCancelAppointment = async (record) => {
+    setCancelLoadingId(record.id);
+    try {
+      await parentApi.cancelConsultationAppointment(record.id, parentId);
+      message.success('Hủy lịch hẹn thành công!');
+      fetchAppointmentHistory();
+    } catch (error) {
+      message.error('Hủy lịch hẹn thất bại!');
+    } finally {
+      setCancelLoadingId(null);
+      setConfirmCancel({ visible: false, record: null });
+    }
+  };
+
+  // Cột cho bảng lịch sử đặt lịch khám
+  const appointmentColumns = [
+    {
+      title: 'Ngày hẹn',
+      dataIndex: 'appointmentDate',
+      key: 'appointmentDate',
+      width: '15%',
+    },
+    {
+      title: 'Học sinh',
+      dataIndex: 'childName',
+      key: 'childName',
+      width: '18%',
+    },
+    {
+      title: 'Y tá phụ trách',
+      dataIndex: 'nurseName',
+      key: 'nurseName',
+      width: '18%',
+    },
+    {
+      title: 'Khung giờ',
+      dataIndex: 'slot',
+      key: 'slot',
+      width: '16%',
+    },
+    {
+      title: 'Lý do khám',
+      dataIndex: 'reason',
+      key: 'reason',
+      width: '18%',
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: '15%',
+      render: (status) => (
+        <Tag color={status === 'SCHEDULED' ? 'blue' : status === 'COMPLETED' ? 'green' : status === 'CANCELLED' ? 'default' : 'default'}>
+          {status}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      width: '13%',
+      render: (_, record) => (
+        record.status === 'SCHEDULED' ? (
+          <Popconfirm
+            title="Bạn chắc chắn muốn hủy lịch hẹn này?"
+            okText="Hủy lịch"
+            cancelText="Không"
+            onConfirm={async () => {
+              setCancellingId(record.id);
+              setCancellingLoading(true);
+              try {
+                await parentApi.cancelConsultationAppointment(record.id, parentId);
+                message.success('Đã hủy lịch hẹn thành công!');
+                fetchAppointmentHistory();
+              } catch (error) {
+                message.error('Hủy lịch hẹn thất bại!');
+              } finally {
+                setCancellingId(null);
+                setCancellingLoading(false);
+              }
+            }}
+            okButtonProps={{ loading: cancellingLoading && cancellingId === record.id }}
+          >
+            <Button danger size="small" loading={cancellingLoading && cancellingId === record.id}>
+              Hủy lịch
+            </Button>
+          </Popconfirm>
+        ) : null
+      ),
+    },
+  ];
+
   // Render allergies list
   const renderAllergies = () => {
     if (!medicalProfile || !medicalProfile.allergies || medicalProfile.allergies.length === 0) {
@@ -477,51 +665,75 @@ const HealthCheckHistory = () => {
       <Title level={4}>
         <MedicineBoxOutlined /> Lịch sử kiểm tra sức khỏe
       </Title>
-      
-      {children.length > 0 && (
-        <div className="child-select-container">
-          <Text strong>Chọn học sinh:</Text>
-          <Select
-            value={selectedChild?.id}
-            onChange={handleChildChange}
-            className="child-select"
-            style={{ width: 200, marginLeft: 8 }}
-          >
-            {children.map(child => (
-              <Option key={child.id} value={child.id}>
-                {child.name} - {child.className}
-              </Option>
-            ))}
-          </Select>
-        </div>
-      )}
-      
-      <div className="health-check-history">
-        {loading ? (
-          <div className="loading-container">
-            <Spin size="large" />
-            <Text>Đang tải dữ liệu...</Text>
-          </div>
-        ) : healthCheckHistory.length > 0 ? (
-          <Table
-            columns={columns}
-            dataSource={healthCheckHistory}
-            pagination={{ pageSize: 5 }}
-            rowClassName="health-check-row"
-          />
-        ) : (
-          <Empty
-            description={
-              <span>
-                {selectedChild 
-                  ? `Không có dữ liệu kiểm tra sức khỏe cho học sinh ${selectedChild.name}`
-                  : 'Vui lòng chọn học sinh để xem lịch sử kiểm tra sức khỏe'
+      <Tabs activeKey={activeTab} onChange={setActiveTab} style={{ marginBottom: 24 }}>
+        <Tabs.TabPane tab="Lịch sử kiểm tra sức khỏe" key="health">
+          {/* Tab lịch sử kiểm tra sức khỏe */}
+          {children.length > 0 && (
+            <div className="child-select-container">
+              <Text strong>Chọn học sinh:</Text>
+              <Select
+                value={selectedChild?.id}
+                onChange={handleChildChange}
+                className="child-select"
+                style={{ width: 200, marginLeft: 8 }}
+              >
+                {children.map(child => (
+                  <Option key={child.id} value={child.id}>
+                    {child.name} - {child.className}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+          )}
+          <div className="health-check-history">
+            {loading ? (
+              <div className="loading-container">
+                <Spin size="large" />
+                <Text>Đang tải dữ liệu...</Text>
+              </div>
+            ) : healthCheckHistory.length > 0 ? (
+              <Table
+                columns={columns}
+                dataSource={healthCheckHistory}
+                pagination={{ pageSize: 5 }}
+                rowClassName="health-check-row"
+              />
+            ) : (
+              <Empty
+                description={
+                  <span>
+                    {selectedChild 
+                      ? `Không có dữ liệu kiểm tra sức khỏe cho học sinh ${selectedChild.name}`
+                      : 'Vui lòng chọn học sinh để xem lịch sử kiểm tra sức khỏe'
+                    }
+                  </span>
                 }
-              </span>
-            }
-          />
-        )}
-      </div>
+              />
+            )}
+          </div>
+        </Tabs.TabPane>
+        <Tabs.TabPane tab="Lịch sử đặt lịch khám" key="appointment">
+          <div ref={appointmentTabRef} />
+          {/* Tab lịch sử đặt lịch khám */}
+          <div className="appointment-history">
+            {loadingAppointment ? (
+              <div className="loading-container">
+                <Spin size="large" />
+                <Text>Đang tải dữ liệu...</Text>
+              </div>
+            ) : appointmentHistory.length > 0 ? (
+              <Table
+                columns={appointmentColumns}
+                dataSource={appointmentHistory}
+                pagination={{ pageSize: 5 }}
+                rowKey="id"
+              />
+            ) : (
+              <Empty description="Không có lịch sử đặt lịch khám" />
+            )}
+          </div>
+        </Tabs.TabPane>
+      </Tabs>
       
       {/* Modal Chi tiết kiểm tra sức khỏe */}
       <Modal
@@ -718,6 +930,27 @@ const HealthCheckHistory = () => {
           </div>
         ) : (
           <Empty description="Không tìm thấy thông tin y tá" />
+        )}
+      </Modal>
+
+      {/* Modal xác nhận hủy lịch */}
+      <Modal
+        open={confirmCancel.visible}
+        onCancel={() => setConfirmCancel({ visible: false, record: null })}
+        onOk={() => handleCancelAppointment(confirmCancel.record)}
+        okText="Xác nhận hủy"
+        cancelText="Đóng"
+        confirmLoading={!!cancelLoadingId}
+        centered
+      >
+        <p>Bạn chắc chắn muốn hủy lịch hẹn này?</p>
+        {confirmCancel.record && (
+          <ul style={{ marginLeft: 16 }}>
+            <li><b>Ngày hẹn:</b> {confirmCancel.record.appointmentDate}</li>
+            <li><b>Học sinh:</b> {confirmCancel.record.childName}</li>
+            <li><b>Y tá phụ trách:</b> {confirmCancel.record.nurseName}</li>
+            <li><b>Khung giờ:</b> {confirmCancel.record.slot}</li>
+          </ul>
         )}
       </Modal>
     </Card>

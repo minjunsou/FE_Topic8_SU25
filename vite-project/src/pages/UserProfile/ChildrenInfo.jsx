@@ -862,7 +862,7 @@ const ChildrenInfo = () => {
           {basicData.gender === 'male' ? 'Nam' : 'Nữ'}
         </Descriptions.Item>
         <Descriptions.Item label="Nhóm máu">{basicData.bloodType}</Descriptions.Item>
-        <Descriptions.Item label="Cập nhật lần cuối">{basicData.lastMeasured}</Descriptions.Item>
+        {/* <Descriptions.Item label="Cập nhật lần cuối">{basicData.lastMeasured}</Descriptions.Item> */}
       </Descriptions>
     );
   };
