@@ -1038,6 +1038,7 @@ const HealthChecks = () => {
                         image={Empty.PRESENTED_IMAGE_SIMPLE}
                       />
                     )}
+                  </div> {/* health-check-records-section */}
                 </div>
               ) : (
                 <Empty 
@@ -1045,11 +1046,11 @@ const HealthChecks = () => {
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               )}
-            </div>
+            </div> {/* records-container */}
           </div>
+          {/* student-health-records */}
         </TabPane>
       </Tabs>
-
       {/* Modal tạo thông báo kiểm tra sức khỏe mới */}
       <Modal
         title="Tạo thông báo kiểm tra sức khỏe mới"
