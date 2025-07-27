@@ -4,14 +4,6 @@
   padding: 24px;
 }
 
-.appointment-page {
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #f4f8fb;
-  padding-top: 64px; /* Thêm padding để tránh dính header */
-}
 
 .appointment-form-card,
 .appointment-info-card,
