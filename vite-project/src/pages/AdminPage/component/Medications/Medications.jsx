@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Input, Space, message, Spin, Modal, Form, InputNumber, Select, DatePicker } from 'antd';
-import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Input, Space, message, Spin, Modal, Form, InputNumber, Select, DatePicker, Card, Tag, Typography, Alert, Row, Col } from 'antd';
+import { PlusOutlined, ReloadOutlined, SearchOutlined, MedicineBoxOutlined, WarningOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { getAllMedications, searchMedications, createMedication, updateMedication, deleteMedication, getLowStockMedications } from '../../../../api/adminApi';
 import dayjs from 'dayjs';
+
+const { Text } = Typography;
 
 const MedicationType = {
   TABLET: 'Viên',
@@ -35,6 +37,7 @@ export default function Medications() {
   const [medications, setMedications] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [alerts, setAlerts] = useState([]);
 
   // Modal Thêm thuốc
   const [openAdd, setOpenAdd] = useState(false);
@@ -58,12 +61,45 @@ export default function Medications() {
       } else {
         res = await getAllMedications();
       }
-      setMedications(res.data?.data || res.data || []);
+      
+      const medicationsData = Array.isArray(res) ? res : 
+                            Array.isArray(res.data) ? res.data : 
+                            Array.isArray(res.data?.data) ? res.data.data : [];
+      
+      setMedications(medicationsData);
+      
+      // Tạo alerts từ dữ liệu thực tế
+      createAlerts(medicationsData);
     } catch (err) {
       message.error('Lỗi tải danh sách thuốc');
     } finally {
       setLoading(false);
     }
+  };
+
+  const createAlerts = (medicationsData) => {
+    const lowStockCount = medicationsData.filter(med => med.quantity < 10).length;
+    const expiredCount = medicationsData.filter(med => {
+      if (!med.expiryDate) return false;
+      return dayjs(med.expiryDate).isBefore(dayjs(), 'day');
+    }).length;
+
+    const newAlerts = [];
+    if (lowStockCount > 0) {
+      newAlerts.push({
+        type: 'warning',
+        message: `${lowStockCount} loại thuốc sắp hết hàng`,
+        icon: <WarningOutlined />
+      });
+    }
+    if (expiredCount > 0) {
+      newAlerts.push({
+        type: 'error',
+        message: `${expiredCount} loại thuốc đã hết hạn`,
+        icon: <ExclamationCircleOutlined />
+      });
+    }
+    setAlerts(newAlerts);
   };
 
   useEffect(() => {
@@ -127,11 +163,8 @@ export default function Medications() {
 
   const handleDelete = (record) => {
     Modal.confirm({
-      title: 'Xác nhận xóa thuốc',
-      content: `Bạn có chắc muốn xóa thuốc "${record.name}"?`,
-      okText: 'Xóa',
-      okType: 'danger',
-      cancelText: 'Hủy',
+      title: 'Xác nhận xóa',
+      content: `Bạn có chắc chắn muốn xóa thuốc "${record.name}"?`,
       onOk: async () => {
         try {
           await deleteMedication(record.medicationId);
@@ -145,15 +178,15 @@ export default function Medications() {
   };
 
   const handleShowLowStock = async () => {
-    setLoading(true);
     setShowLowStock(true);
     try {
-      const res = await getLowStockMedications();
-      setMedications(res.data?.data || res.data || []);
+      const res = await getLowStockMedications(10);
+      const lowStockData = Array.isArray(res) ? res : 
+                          Array.isArray(res.data) ? res.data : 
+                          Array.isArray(res.data?.data) ? res.data.data : [];
+      setMedications(lowStockData);
     } catch (err) {
       message.error('Lỗi tải danh sách thuốc sắp hết');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -163,12 +196,53 @@ export default function Medications() {
   };
 
   const columns = [
-    { title: 'Tên thuốc', dataIndex: 'name', key: 'name' },
-    { title: 'Mô tả', dataIndex: 'description', key: 'description' },
-    { title: 'Số lượng', dataIndex: 'quantity', key: 'quantity' },
-    { title: 'Đơn vị', dataIndex: 'quantityType', key: 'quantityType' },
-    { title: 'Loại thuốc', dataIndex: 'medicationType', key: 'medicationType', render: v => MedicationType[v] || v },
-    { title: 'Hạn sử dụng', dataIndex: 'expiryDate', key: 'expiryDate' },
+    { 
+      title: 'Tên thuốc', 
+      dataIndex: 'name', 
+      key: 'name',
+      render: (text) => <Text strong>{text}</Text>
+    },
+    { 
+      title: 'Mô tả', 
+      dataIndex: 'description', 
+      key: 'description',
+      ellipsis: true
+    },
+    { 
+      title: 'Số lượng', 
+      dataIndex: 'quantity', 
+      key: 'quantity',
+      render: (quantity, record) => (
+        <Text type={quantity < 10 ? 'danger' : 'secondary'}>
+          {quantity} {record.quantityType}
+        </Text>
+      )
+    },
+    { 
+      title: 'Loại', 
+      dataIndex: 'medicationType', 
+      key: 'medicationType',
+      render: (type) => (
+        <Tag color="blue">
+          {MedicationType[type] || type}
+        </Tag>
+      )
+    },
+    { 
+      title: 'Hạn sử dụng', 
+      dataIndex: 'expiryDate', 
+      key: 'expiryDate',
+      render: (date) => {
+        if (!date) return 'N/A';
+        const isExpired = dayjs(date).isBefore(dayjs(), 'day');
+        return (
+          <Text type={isExpired ? 'danger' : 'secondary'}>
+            {dayjs(date).format('DD/MM/YYYY')}
+            {isExpired && <Tag color="red" style={{ marginLeft: 8 }}>Hết hạn</Tag>}
+          </Text>
+        );
+      }
+    },
     {
       title: 'Thao tác',
       key: 'actions',
@@ -182,72 +256,242 @@ export default function Medications() {
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Input.Search
-          placeholder="Tìm theo tên thuốc..."
-          allowClear
-          enterButton={<SearchOutlined />}
-          onSearch={v => setSearch(v)}
-          style={{ width: 240 }}
-        />
-        <Button icon={<ReloadOutlined />} onClick={() => { setSearch(''); fetchMedications(); }}>
-          Làm mới
-        </Button>
-        <div style={{ flex: 1 }} />
-        <Button onClick={showLowStock ? handleShowAll : handleShowLowStock}>
-          {showLowStock ? 'Tất cả thuốc' : 'Thuốc sắp hết'}
-        </Button>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>Thêm thuốc</Button>
+    <div className="medications-management">
+      <div style={{ marginBottom: 24 }}>
+        <h2>Quản lý thuốc</h2>
       </div>
-      <Spin spinning={loading} tip="Đang tải...">
+
+      {/* Alerts */}
+      {alerts.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          {alerts.map((alert, index) => (
+            <Alert
+              key={index}
+              message={alert.message}
+              type={alert.type}
+              icon={alert.icon}
+              showIcon
+              style={{ marginBottom: 8 }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Filters and Actions */}
+      <Card style={{ marginBottom: 24 }}>
+        <Row gutter={16} align="middle">
+          <Col span={8}>
+            <Input.Search
+              placeholder="Tìm kiếm thuốc..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onSearch={setSearch}
+              allowClear
+            />
+          </Col>
+          <Col span={16}>
+            <Space>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                onClick={handleAdd}
+              >
+                Thêm thuốc mới
+              </Button>
+              <Button 
+                icon={<WarningOutlined />} 
+                onClick={handleShowLowStock}
+                type={showLowStock ? 'primary' : 'default'}
+              >
+                Thuốc sắp hết
+              </Button>
+              <Button 
+                icon={<MedicineBoxOutlined />} 
+                onClick={handleShowAll}
+                type={!showLowStock ? 'primary' : 'default'}
+              >
+                Tất cả thuốc
+              </Button>
+              <Button 
+                icon={<ReloadOutlined />} 
+                onClick={() => {
+                  fetchMedications();
+                }}
+              >
+                Làm mới
+              </Button>
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Medications Table */}
+      <Card>
         <Table
           columns={columns}
           dataSource={medications}
-          rowKey={r => r.medicationId}
-          pagination={false}
+          rowKey="medicationId"
+          loading={loading}
+          pagination={{
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} thuốc`,
+          }}
+          scroll={{ x: 1200 }}
         />
-      </Spin>
+      </Card>
+
+      {/* Add Medication Modal */}
       <Modal
         title="Thêm thuốc mới"
         open={openAdd}
         onOk={handleAddOk}
         onCancel={() => setOpenAdd(false)}
         confirmLoading={addLoading}
-        okText="Thêm"
-        cancelText="Hủy"
+        width={600}
       >
-        <Form
-          form={form}
-          layout="vertical"
-        >
-          <Form.Item name="name" label="Tên thuốc" rules={[{ required: true, message: 'Bắt buộc' }]}><Input /></Form.Item>
-          <Form.Item name="description" label="Mô tả"><Input /></Form.Item>
-          <Form.Item name="quantity" label="Số lượng" rules={[{ required: true, message: 'Bắt buộc' }]}><InputNumber min={1} style={{ width: '100%' }} /></Form.Item>
-          <Form.Item name="quantityType" label="Đơn vị" rules={[{ required: true, message: 'Bắt buộc' }]}><Select options={quantityTypeOptions} /></Form.Item>
-          <Form.Item name="medicationType" label="Loại thuốc" rules={[{ required: true, message: 'Bắt buộc' }]}><Select options={medicationTypeOptions} /></Form.Item>
-          <Form.Item name="expiryDate" label="Hạn sử dụng" rules={[{ required: true, message: 'Bắt buộc' }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" inputReadOnly /></Form.Item>
+        <Form form={form} layout="vertical">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="name"
+                label="Tên thuốc"
+                rules={[{ required: true, message: 'Vui lòng nhập tên thuốc' }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="medicationType"
+                label="Loại thuốc"
+                rules={[{ required: true, message: 'Vui lòng chọn loại thuốc' }]}
+              >
+                <Select>
+                  {medicationTypeOptions.map(option => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item
+            name="description"
+            label="Mô tả"
+          >
+            <Input.TextArea rows={3} />
+          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="quantity"
+                label="Số lượng"
+                rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
+              >
+                <InputNumber min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="quantityType"
+                label="Đơn vị"
+                rules={[{ required: true, message: 'Vui lòng chọn đơn vị' }]}
+              >
+                <Select>
+                  {quantityTypeOptions.map(option => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item
+            name="expiryDate"
+            label="Hạn sử dụng"
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
         </Form>
       </Modal>
+
+      {/* Edit Medication Modal */}
       <Modal
         title="Sửa thuốc"
         open={openEdit}
         onOk={handleEditOk}
         onCancel={() => setOpenEdit(false)}
         confirmLoading={editLoading}
-        okText="Lưu"
-        cancelText="Hủy"
+        width={600}
       >
-        <Form
-          form={editForm}
-          layout="vertical"
-        >
-          <Form.Item name="name" label="Tên thuốc" rules={[{ required: true, message: 'Bắt buộc' }]}><Input /></Form.Item>
-          <Form.Item name="description" label="Mô tả"><Input /></Form.Item>
-          <Form.Item name="quantity" label="Số lượng" rules={[{ required: true, message: 'Bắt buộc' }]}><InputNumber min={1} style={{ width: '100%' }} /></Form.Item>
-          <Form.Item name="quantityType" label="Đơn vị" rules={[{ required: true, message: 'Bắt buộc' }]}><Select options={quantityTypeOptions} /></Form.Item>
-          <Form.Item name="medicationType" label="Loại thuốc" rules={[{ required: true, message: 'Bắt buộc' }]}><Select options={medicationTypeOptions} /></Form.Item>
-          <Form.Item name="expiryDate" label="Hạn sử dụng" rules={[{ required: true, message: 'Bắt buộc' }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" inputReadOnly /></Form.Item>
+        <Form form={editForm} layout="vertical">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="name"
+                label="Tên thuốc"
+                rules={[{ required: true, message: 'Vui lòng nhập tên thuốc' }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="medicationType"
+                label="Loại thuốc"
+                rules={[{ required: true, message: 'Vui lòng chọn loại thuốc' }]}
+              >
+                <Select>
+                  {medicationTypeOptions.map(option => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item
+            name="description"
+            label="Mô tả"
+          >
+            <Input.TextArea rows={3} />
+          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="quantity"
+                label="Số lượng"
+                rules={[{ required: true, message: 'Vui lòng nhập số lượng' }]}
+              >
+                <InputNumber min={0} style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="quantityType"
+                label="Đơn vị"
+                rules={[{ required: true, message: 'Vui lòng chọn đơn vị' }]}
+              >
+                <Select>
+                  {quantityTypeOptions.map(option => (
+                    <Select.Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item
+            name="expiryDate"
+            label="Hạn sử dụng"
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
         </Form>
       </Modal>
     </div>

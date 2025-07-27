@@ -57,7 +57,7 @@ export default function VaccinationRecords() {
       <Spin spinning={loading} tip="Đang tải...">
         <Table
           columns={columns}
-          dataSource={records}
+          dataSource={Array.isArray(records) ? records : []}
           rowKey={r => r.recordId}
           pagination={false}
         />

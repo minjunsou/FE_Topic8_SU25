@@ -351,7 +351,7 @@ const Dashboard = ({
   //   }
   // ];
 
-  // Cấu hình cột cho bảng sự kiện y tế
+  // Cấu hình cột cho bảng sự cố y tế
   const medicalIncidentColumns = [
     {
       title: 'Học sinh',
@@ -364,7 +364,7 @@ const Dashboard = ({
       key: 'class',
     },
     {
-      title: 'Loại sự kiện',
+      title: 'Loại sự cố',
       dataIndex: 'incidentType',
       key: 'incidentType',
     },
@@ -465,7 +465,7 @@ const Dashboard = ({
                 <AlertOutlined className="icon incident" />
               </div>
               <div className="stat-info">
-                <Text className="stat-title">Sự kiện y tế</Text>
+                <Text className="stat-title">Sự cố y tế</Text>
                 <Title level={2} className="stat-number">{medicalIncidents?.length || 0}</Title>
                 <Text className="stat-highlight">{medicalIncidents?.filter(item => item.status === 'new').length || 0} mới</Text>
               </div>
@@ -552,7 +552,7 @@ const Dashboard = ({
             title={
               <Space>
                 <AlertOutlined style={{ color: '#ff4d4f' }} />
-                <span>Sự kiện y tế gần đây</span>
+                <span>Sự cố y tế gần đây</span>
               </Space>
             }
             extra={

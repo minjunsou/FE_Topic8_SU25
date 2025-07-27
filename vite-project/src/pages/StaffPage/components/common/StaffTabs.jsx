@@ -39,7 +39,7 @@ const StaffTabs = ({
           tab={
             <span>
               <AlertOutlined />
-              Sự kiện y tế
+              Sự cố y tế
               <Badge 
                 count={medicalIncidents?.filter(i => i.status === 'new').length || 0} 
                 style={{ marginLeft: 8 }}

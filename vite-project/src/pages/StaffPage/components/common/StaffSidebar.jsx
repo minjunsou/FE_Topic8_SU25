@@ -37,7 +37,7 @@ const StaffSidebar = ({
         icon: <AlertOutlined />,
         label: (
           <span>
-            Sự kiện y tế
+            Sự cố y tế
             <Badge 
               count={unreadIncidents} 
               style={{ marginLeft: 8 }}

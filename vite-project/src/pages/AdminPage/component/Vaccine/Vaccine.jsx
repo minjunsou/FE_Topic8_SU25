@@ -117,7 +117,7 @@ export default function Vaccine() {
       <Spin spinning={loading} tip="Đang tải...">
         <Table
           columns={vaccineColumns}
-          dataSource={vaccines}
+          dataSource={Array.isArray(vaccines) ? vaccines : []}
           rowKey={r => r.vaccineId}
           pagination={false}
         />
@@ -130,12 +130,12 @@ export default function Vaccine() {
         width={700}
       >
         <Spin spinning={batchesLoading} tip="Đang tải...">
-          <Table
-            columns={batchColumns}
-            dataSource={batches}
-            rowKey={r => r.vaccineBatchId}
-            pagination={false}
-          />
+                  <Table
+          columns={batchColumns}
+          dataSource={Array.isArray(batches) ? batches : []}
+          rowKey={r => r.vaccineBatchId}
+          pagination={false}
+        />
         </Spin>
       </Modal>
       <Modal

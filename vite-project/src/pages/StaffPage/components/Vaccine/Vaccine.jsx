@@ -39,6 +39,12 @@ const Vaccine = () => {
   // State cho danh sách bệnh
   const [diseaseOptions, setDiseaseOptions] = useState([]);
   const [diseaseLoading, setDiseaseLoading] = useState(false);
+  
+  // State cho external vaccines
+  const [externalVaccines, setExternalVaccines] = useState([]);
+  const [externalVaccineLoading, setExternalVaccineLoading] = useState(false);
+  const [verifyModalVisible, setVerifyModalVisible] = useState(false);
+  const [selectedExternalVaccine, setSelectedExternalVaccine] = useState(null);
 
   // Lấy danh sách vaccine khi load
   useEffect(() => {
@@ -173,7 +179,6 @@ const Vaccine = () => {
           <Table
             columns={[
               { title: 'Họ tên', dataIndex: 'studentName' },
-              { title: 'Lớp', dataIndex: 'className' },
               { title: 'Trạng thái', dataIndex: 'status', render: (status) => {
                 let color = 'orange', text = 'Chưa xác nhận';
                 if (status === 'CONFIRMED') { color = 'green'; text = 'Đã xác nhận'; }
@@ -428,6 +433,93 @@ const Vaccine = () => {
     </Card>
   );
 
+  // Fetch external vaccines
+  const fetchExternalVaccines = async () => {
+    setExternalVaccineLoading(true);
+    try {
+      const [externalVaccinesData, vaccinesList, studentsList] = await Promise.all([
+        nurseApi.getUnverifiedExternalVaccines(),
+        nurseApi.getAllVaccines(),
+        nurseApi.getAllStudents()
+      ]);
+      
+      // Map thêm thông tin tên học sinh và vaccine
+      const mappedVaccines = externalVaccinesData.map(vaccine => {
+        const vaccineInfo = vaccinesList.find(v => v.vaccineId === vaccine.vaccineId);
+        const studentInfo = studentsList.find(s => s.accountId === vaccine.studentId);
+        const submittedByInfo = studentsList.find(s => s.accountId === vaccine.submittedBy);
+        
+        return {
+          ...vaccine,
+          studentName: studentInfo?.fullName || 'Unknown',
+          vaccineName: vaccineInfo?.name || 'Unknown',
+          submittedByName: submittedByInfo?.fullName || 'Unknown'
+        };
+      });
+      
+      setExternalVaccines(mappedVaccines);
+    } catch (error) {
+      console.error('Lỗi khi lấy external vaccines:', error);
+      setExternalVaccines([]);
+    }
+    setExternalVaccineLoading(false);
+  };
+
+  // Verify external vaccine
+  const handleVerifyExternalVaccine = async (externalVaccineId) => {
+    try {
+      await nurseApi.verifyExternalVaccine(externalVaccineId);
+      message.success('Đã xác minh tiêm chủng bên ngoài!');
+      await fetchExternalVaccines();
+    } catch (error) {
+      message.error('Xác minh thất bại!');
+    }
+  };
+
+  // Thêm useEffect để fetch external vaccines
+  useEffect(() => {
+    if (activeTab === 'external') {
+      fetchExternalVaccines();
+    }
+  }, [activeTab]);
+
+  // External vaccine columns
+  const externalVaccineColumns = [
+    { title: 'Học sinh', dataIndex: 'studentName', key: 'studentName' },
+    { title: 'Tên vaccine', dataIndex: 'vaccineName', key: 'vaccineName' },
+    { title: 'Ngày tiêm', dataIndex: 'injectionDate', key: 'injectionDate',
+      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '' },
+    { title: 'Địa điểm', dataIndex: 'location', key: 'location' },
+    { title: 'Ghi chú', dataIndex: 'note', key: 'note' },
+    { title: 'Người khai báo', dataIndex: 'submittedByName', key: 'submittedByName' },
+    {
+      title: 'Hành động',
+      key: 'action',
+      render: (_, record) => (
+        <Button 
+          type="primary" 
+          onClick={() => handleVerifyExternalVaccine(record.externalVaccineId)}
+        >
+          Xác minh
+        </Button>
+      ),
+    },
+  ];
+
+  // Tab content cho external vaccine
+  const externalVaccineTabContent = (
+    <Card title="Quản lý tiêm chủng bên ngoài">
+      <Spin spinning={externalVaccineLoading} tip="Đang tải...">
+        <Table
+          columns={externalVaccineColumns}
+          dataSource={externalVaccines}
+          rowKey="externalVaccineId"
+          pagination={{ pageSize: 10 }}
+        />
+      </Spin>
+    </Card>
+  );
+
   return (
     <Tabs activeKey={activeTab} onChange={setActiveTab}>
       <Tabs.TabPane tab="Quản lý lô/Thông báo" key="batch">
@@ -604,6 +696,9 @@ const Vaccine = () => {
       </Tabs.TabPane>
       <Tabs.TabPane tab="Lịch sử Record" key="record">
         {recordTabContent}
+      </Tabs.TabPane>
+      <Tabs.TabPane tab="Tiêm chủng bên ngoài" key="external">
+        {externalVaccineTabContent}
       </Tabs.TabPane>
     </Tabs>
   );

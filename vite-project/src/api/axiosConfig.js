@@ -2,14 +2,30 @@ import axios from 'axios';
 
 // Tạo instance của axios với cấu hình mặc định
 const axiosInstance = axios.create({
-
   baseURL: 'http://localhost:8080/api',
-
-  timeout: 10000,
+  timeout: 30000, // Tăng timeout từ 10s lên 30s
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Hàm retry request
+const retryRequest = async (config, retryCount = 0, maxRetries = 3) => {
+  try {
+    return await axiosInstance(config);
+  } catch (error) {
+    if (error.code === 'ECONNABORTED' && retryCount < maxRetries) {
+      console.log(`Request timeout, retrying... (${retryCount + 1}/${maxRetries})`);
+      // Tăng timeout cho lần retry
+      const retryConfig = {
+        ...config,
+        timeout: config.timeout * (retryCount + 2) // Tăng timeout theo số lần retry
+      };
+      return retryRequest(retryConfig, retryCount + 1, maxRetries);
+    }
+    throw error;
+  }
+};
 
 // Interceptor cho request
 axiosInstance.interceptors.request.use(
@@ -61,6 +77,22 @@ axiosInstance.interceptors.response.use(
   },
   async (error) => {
     console.error('Response error:', error);
+    
+    // Xử lý lỗi timeout
+    if (error.code === 'ECONNABORTED') {
+      console.error('REQUEST TIMEOUT: Server không phản hồi trong thời gian quy định');
+      console.error('Vui lòng kiểm tra:');
+      console.error('1. Server backend có đang chạy không?');
+      console.error('2. URL API có đúng không?');
+      console.error('3. Network connection có ổn định không?');
+      
+      // Thử retry nếu chưa vượt quá số lần thử
+      if (error.config && !error.config._retry) {
+        error.config._retry = true;
+        console.log('Attempting to retry request...');
+        return retryRequest(error.config);
+      }
+    }
     
     // Chi tiết hóa các lỗi CORS
     if (error.message && error.message.includes('Network Error')) {

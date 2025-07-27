@@ -148,7 +148,7 @@ export default function HealthEvents() {
       <Spin spinning={loading} tip="Đang tải...">
         <Table
           columns={columns}
-          dataSource={incidents}
+          dataSource={Array.isArray(incidents) ? incidents : []}
           rowKey={r => r.eventId}
           pagination={false}
         />

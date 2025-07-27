@@ -1365,6 +1365,106 @@ getAllNurses: async (page = 0, size = 10, sortBy = 'fullName', direction = 'asc'
       throw error;
     }
   },
+
+  /**
+   * External Vaccine APIs (dành cho phụ huynh)
+   */
+  createExternalVaccine: async (externalVaccineData) => {
+    try {
+      const response = await axiosInstance.post('/external-vaccine-records/create', externalVaccineData);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi tạo external vaccine record:', error);
+      throw error;
+    }
+  },
+
+  getExternalVaccinesByStudent: async (studentId) => {
+    try {
+      const response = await axiosInstance.get(`/external-vaccine-records/student/${studentId}/verified`, {
+        params: { status: true }
+      });
+      return response.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy external vaccines cho student ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  getUnverifiedExternalVaccines: async () => {
+    try {
+      const response = await axiosInstance.get('/external-vaccine-records/unverified');
+      return response.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy unverified external vaccines:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Children Management APIs
+   */
+  getChildrenByParent: async (parentId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/accounts/${parentId}/children`);
+      return response.data?.children || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy danh sách con của parent ${parentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Vaccine APIs
+   */
+  getAllVaccines: async () => {
+    try {
+      const response = await axiosInstance.get('/all-vaccines');
+      return response.data || [];
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách vaccine:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Vaccination Notice APIs
+   */
+  getVaccinationNoticesByParent: async (parentId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-notices/parent/${parentId}/active`);
+      return response.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy vaccination notices cho parent ${parentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Vaccination Record APIs
+   */
+  getVaccinationRecordsByStudent: async (studentId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-records/student/${studentId}`);
+      return response.data || [];
+    } catch (error) {
+      console.error(`Lỗi khi lấy vaccination records cho student ${studentId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Statistics APIs
+   */
+  getVaccinationStatistics: async (parentId) => {
+    try {
+      const response = await axiosInstance.get(`/v1/vaccination-confirmations/statistics/parent/${parentId}`);
+      return response.data || {};
+    } catch (error) {
+      console.error(`Lỗi khi lấy thống kê tiêm chủng cho parent ${parentId}:`, error);
+      throw error;
+    }
+  },
 };
 
 export default parentApi;

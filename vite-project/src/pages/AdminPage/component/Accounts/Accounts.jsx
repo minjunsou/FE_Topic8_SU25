@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Input, Select, Space, message, Spin, Modal, Form, DatePicker, Switch } from 'antd';
-import { PlusOutlined, UploadOutlined, ReloadOutlined } from '@ant-design/icons';
-import { getAccounts, createAccount, importAccounts, updateAccount } from '../../../../api/adminApi';
+import { Table, Button, Input, Select, Space, message, Spin, Modal, Form, DatePicker, Switch, Card, Tag, Typography, Row, Col } from 'antd';
+import { PlusOutlined, UploadOutlined, ReloadOutlined, UserOutlined, TeamOutlined } from '@ant-design/icons';
+import { getAccounts, createAccount, importAccounts, updateAccount, getAccountStatistics } from '../../../../api/adminApi';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
+const { Text } = Typography;
 
 const roleOptions = [
   { value: '', label: 'Tất cả vai trò' },
@@ -60,7 +61,8 @@ export default function Accounts() {
         direction,
       };
       const res = await getAccounts(params);
-      setAccounts(res.data.accounts || []);
+      const accountsData = res.data.accounts || [];
+      setAccounts(accountsData);
       setTotal(res.data.totalItems || 0);
     } catch (err) {
       message.error('Lỗi tải danh sách tài khoản');
@@ -75,13 +77,55 @@ export default function Accounts() {
   }, [page, pageSize, name, roleId, sortBy, direction]);
 
   const columns = [
-    { title: 'Tên đăng nhập', dataIndex: 'username', key: 'username' },
-    { title: 'Họ tên', dataIndex: 'fullName', key: 'fullName', sorter: true },
-    { title: 'Ngày sinh', dataIndex: 'dob', key: 'dob' },
-    { title: 'Giới tính', dataIndex: 'gender', key: 'gender' },
-    { title: 'Số điện thoại', dataIndex: 'phone', key: 'phone' },
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Vai trò', dataIndex: 'roleId', key: 'roleId', render: v => roleOptions.find(r => r.value === v)?.label || v },
+    { 
+      title: 'Tên đăng nhập', 
+      dataIndex: 'username', 
+      key: 'username',
+      render: (text) => <Text code>{text}</Text>
+    },
+    { 
+      title: 'Họ tên', 
+      dataIndex: 'fullName', 
+      key: 'fullName', 
+      sorter: true,
+      render: (text) => <Text strong>{text}</Text>
+    },
+    { 
+      title: 'Ngày sinh', 
+      dataIndex: 'dob', 
+      key: 'dob',
+      render: (date) => date ? dayjs(date).format('DD/MM/YYYY') : 'N/A'
+    },
+    { 
+      title: 'Giới tính', 
+      dataIndex: 'gender', 
+      key: 'gender',
+      render: (gender) => (
+        <Tag color={gender === 'Nam' ? 'blue' : gender === 'Nữ' ? 'pink' : 'default'}>
+          {gender}
+        </Tag>
+      )
+    },
+    { 
+      title: 'Số điện thoại', 
+      dataIndex: 'phone', 
+      key: 'phone' 
+    },
+    { 
+      title: 'Email', 
+      dataIndex: 'email', 
+      key: 'email' 
+    },
+    { 
+      title: 'Vai trò', 
+      dataIndex: 'roleId', 
+      key: 'roleId', 
+      render: v => {
+        const role = roleOptions.find(r => r.value === v);
+        const color = v === 1 ? 'green' : v === 2 ? 'blue' : v === 3 ? 'orange' : 'red';
+        return <Tag color={color}>{role?.label || v}</Tag>;
+      }
+    },
     {
       title: 'Thao tác',
       key: 'actions',
@@ -103,7 +147,6 @@ export default function Accounts() {
     }
   };
 
-  // Thêm tài khoản
   const handleAdd = () => {
     form.resetFields();
     setOpenAdd(true);
@@ -113,20 +156,12 @@ export default function Accounts() {
     try {
       const values = await form.validateFields();
       setAddLoading(true);
-      // Tự động sinh username từ email
-      const email = values.email;
-      const username = email ? email.split('@')[0] : '';
-      const payload = {
-        ...values,
-        username,
-        dob: values.dob ? values.dob.format('YYYY-MM-DD') : undefined,
-      };
-      await createAccount(payload);
+      await createAccount(values);
       message.success('Thêm tài khoản thành công');
       setOpenAdd(false);
       fetchAccounts();
     } catch (err) {
-      if (err.errorFields) return; // Lỗi validate
+      if (err.errorFields) return;
       message.error(err?.response?.data?.message || 'Thêm tài khoản thất bại');
     } finally {
       setAddLoading(false);
@@ -140,17 +175,18 @@ export default function Accounts() {
   };
 
   const handleImportOk = async () => {
-    if (!fileList.length) {
-      message.warning('Vui lòng chọn file Excel');
+    if (fileList.length === 0) {
+      message.error('Vui lòng chọn file Excel');
       return;
     }
-    const formData = new FormData();
-    formData.append('file', fileList[0]);
-    setImportLoading(true);
     try {
+      setImportLoading(true);
+      const formData = new FormData();
+      formData.append('file', fileList[0].originFileObj);
       const res = await importAccounts(formData);
       setImportResult(res.data);
-      message.success('Import tài khoản thành công');
+      message.success('Import thành công');
+      setOpenImport(false);
       fetchAccounts();
     } catch (err) {
       message.error(err?.response?.data?.message || 'Import thất bại');
@@ -189,127 +225,281 @@ export default function Accounts() {
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-        <Input.Search
-          placeholder="Tìm theo tên..."
+    <div className="accounts-management">
+      <div style={{ marginBottom: 24 }}>
+        <h2>Quản lý tài khoản</h2>
+      </div>
+
+      {/* Filters and Actions */}
+      <Card style={{ marginBottom: 24 }}>
+        <Row gutter={16} align="middle">
+          <Col span={6}>
+            <Input
+              placeholder="Tìm kiếm theo tên"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
           allowClear
-          onSearch={v => setName(v)}
-          style={{ width: 200 }}
         />
+          </Col>
+          <Col span={4}>
         <Select
+              placeholder="Vai trò"
           value={roleId}
           onChange={setRoleId}
-          style={{ width: 160 }}
-        >
-          {roleOptions.map(r => (
-            <Option key={r.value} value={r.value}>{r.label}</Option>
+              allowClear
+              style={{ width: '100%' }}
+            >
+              {roleOptions.slice(1).map(option => (
+                <Option key={option.value} value={option.value}>
+                  {option.label}
+                </Option>
           ))}
         </Select>
-        <Button icon={<ReloadOutlined />} onClick={fetchAccounts}>
+          </Col>
+          <Col span={14}>
+            <Space>
+              <Button 
+                type="primary" 
+                icon={<PlusOutlined />} 
+                onClick={handleAdd}
+              >
+                Thêm tài khoản
+              </Button>
+              <Button 
+                icon={<UploadOutlined />} 
+                onClick={handleImport}
+              >
+                Import Excel
+              </Button>
+              <Button 
+                icon={<ReloadOutlined />} 
+                onClick={() => {
+                  fetchAccounts();
+                }}
+              >
           Làm mới
         </Button>
-        <div style={{ flex: 1 }} />
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>Thêm tài khoản</Button>
-        <Button icon={<UploadOutlined />} onClick={handleImport}>Import Excel</Button>
-      </div>
-      <Spin spinning={loading} tip="Đang tải...">
+            </Space>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Accounts Table */}
+      <Card>
         <Table
           columns={columns}
           dataSource={accounts}
-          rowKey={r => r.accountId}
+          rowKey="accountId"
+          loading={loading}
           pagination={{
             current: page,
-            pageSize,
-            total,
+            pageSize: pageSize,
+            total: total,
             showSizeChanger: true,
-            pageSizeOptions: ['10', '20', '50', '100'],
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} tài khoản`,
           }}
           onChange={handleTableChange}
+          scroll={{ x: 1200 }}
         />
-      </Spin>
+      </Card>
+
+      {/* Add Account Modal */}
       <Modal
-        title="Thêm tài khoản mới"
+        title="Thêm tài khoản"
         open={openAdd}
         onOk={handleAddOk}
         onCancel={() => setOpenAdd(false)}
         confirmLoading={addLoading}
-        okText="Thêm"
-        cancelText="Hủy"
+        width={600}
       >
-        <Form
-          form={form}
-          layout="vertical"
-        >
-          <Form.Item name="email" label="Email" rules={[{ required: true, message: 'Bắt buộc' }]}><Input /></Form.Item>
-          <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, message: 'Bắt buộc' }, { min: 6, message: 'Tối thiểu 6 ký tự' }]}><Input.Password /></Form.Item>
-          <Form.Item name="fullName" label="Họ tên" rules={[{ required: true, message: 'Bắt buộc' }]}><Input /></Form.Item>
-          <Form.Item name="dob" label="Ngày sinh" rules={[{ required: true, message: 'Bắt buộc' }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" inputReadOnly /></Form.Item>
-          <Form.Item name="gender" label="Giới tính" rules={[{ required: true, message: 'Bắt buộc' }]}><Select options={genderOptions} /></Form.Item>
-          <Form.Item name="phone" label="Số điện thoại" rules={[{ required: true, message: 'Bắt buộc' }, { pattern: /^\d{9,11}$/, message: 'Số điện thoại không hợp lệ' }]}><Input /></Form.Item>
-          <Form.Item name="roleId" label="Vai trò" rules={[{ required: true, message: 'Bắt buộc' }]}><Select options={roleOptions.filter(r => r.value)} /></Form.Item>
+        <Form form={form} layout="vertical">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="username"
+                label="Tên đăng nhập"
+                rules={[{ required: true, message: 'Vui lòng nhập tên đăng nhập' }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="password"
+                label="Mật khẩu"
+                rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}
+              >
+                <Input.Password />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="fullName"
+                label="Họ tên"
+                rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="roleId"
+                label="Vai trò"
+                rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
+              >
+                <Select>
+                  {roleOptions.slice(1).map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="dob"
+                label="Ngày sinh"
+              >
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="gender"
+                label="Giới tính"
+              >
+                <Select>
+                  {genderOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="phone"
+                label="Số điện thoại"
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { type: 'email', message: 'Email không hợp lệ' }
+                ]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
+
+      {/* Import Modal */}
       <Modal
         title="Import tài khoản từ Excel"
         open={openImport}
         onOk={handleImportOk}
         onCancel={() => setOpenImport(false)}
         confirmLoading={importLoading}
-        okText="Import"
-        cancelText="Hủy"
-        destroyOnClose
       >
-        <Input
+        <div>
+          <p>Vui lòng chọn file Excel chứa danh sách tài khoản</p>
+          <input
           type="file"
           accept=".xlsx,.xls"
-          onChange={e => {
+            onChange={(e) => {
             const file = e.target.files[0];
-            if (file && !['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'].includes(file.type)) {
-              message.error('Chỉ chấp nhận file Excel (.xlsx, .xls)');
-              setFileList([]);
-            } else {
-              setFileList(file ? [file] : []);
+              if (file) {
+                setFileList([{ originFileObj: file, name: file.name }]);
             }
           }}
         />
         {importResult && (
           <div style={{ marginTop: 16 }}>
-            <div><b>Tổng xử lý:</b> {importResult.totalProcessed}</div>
-            <div><b>Thành công:</b> {importResult.successCount}</div>
-            <div><b>Thất bại:</b> {importResult.failureCount}</div>
-            {importResult.results && importResult.results.filter(r => !r.success).length > 0 && (
-              <div style={{ marginTop: 8 }}>
-                <b>Danh sách lỗi:</b>
-                <ul style={{ maxHeight: 120, overflow: 'auto', color: 'red' }}>
-                  {importResult.results.filter(r => !r.success).map((r, idx) => (
-                    <li key={idx}>{r.email || r.phone || r.accountId}: {r.errorMessage}</li>
-                  ))}
-                </ul>
+              <p>Kết quả import:</p>
+              <p>Thành công: {importResult.successCount}</p>
+              <p>Thất bại: {importResult.failureCount}</p>
               </div>
             )}
           </div>
-        )}
       </Modal>
+
+      {/* Edit Account Modal */}
       <Modal
         title="Sửa tài khoản"
         open={openEdit}
         onOk={handleEditOk}
         onCancel={() => setOpenEdit(false)}
         confirmLoading={editLoading}
-        okText="Lưu"
-        cancelText="Hủy"
+        width={600}
       >
-        <Form
-          form={editForm}
-          layout="vertical"
-        >
-          <Form.Item name="fullName" label="Họ tên" rules={[{ required: true, message: 'Bắt buộc' }]}><Input /></Form.Item>
-          <Form.Item name="dob" label="Ngày sinh" rules={[{ required: true, message: 'Bắt buộc' }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" inputReadOnly /></Form.Item>
-          <Form.Item name="gender" label="Giới tính" rules={[{ required: true, message: 'Bắt buộc' }]}><Select options={genderOptions} /></Form.Item>
-          <Form.Item name="phone" label="Số điện thoại" rules={[{ required: true, message: 'Bắt buộc' }, { pattern: /^\d{9,11}$/, message: 'Số điện thoại không hợp lệ' }]}><Input /></Form.Item>
-          <Form.Item name="emailNotificationsEnabled" label="Nhận email thông báo" valuePropName="checked"><Switch /></Form.Item>
-          <Form.Item name="notificationTypes" label="Loại thông báo"><Input /></Form.Item>
+        <Form form={editForm} layout="vertical">
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="fullName"
+                label="Họ tên"
+                rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="dob"
+                label="Ngày sinh"
+              >
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="gender"
+                label="Giới tính"
+              >
+                <Select>
+                  {genderOptions.map(option => (
+                    <Option key={option.value} value={option.value}>
+                      {option.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="phone"
+                label="Số điện thoại"
+              >
+                <Input />
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[
+              { type: 'email', message: 'Email không hợp lệ' }
+            ]}
+          >
+            <Input />
+          </Form.Item>
         </Form>
       </Modal>
     </div>

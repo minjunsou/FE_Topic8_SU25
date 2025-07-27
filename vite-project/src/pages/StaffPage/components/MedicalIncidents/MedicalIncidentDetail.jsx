@@ -115,13 +115,13 @@ const MedicalIncidentDetail = ({
     }, 1000);
   };
 
-  // Hàm xử lý khi hoàn thành sự kiện
+  // Hàm xử lý khi hoàn thành sự cố
   const handleFinishIncident = () => {
     setUpdatingStatus(true);
     
     // Giả lập gọi API
     setTimeout(() => {
-      message.success('Đã đóng sự kiện y tế');
+      message.success('Đã đóng sự cố y tế');
       onFinish(incident.id);
       setUpdatingStatus(false);
     }, 1000);
@@ -140,7 +140,7 @@ const MedicalIncidentDetail = ({
     {
       date: '2025-06-18 08:30',
       user: 'Y tá Nguyễn Thị A',
-      action: 'Đã tạo sự kiện y tế',
+      action: 'Đã tạo sự cố y tế',
       description: 'Ghi nhận học sinh bị sốt cao khi đang ở lớp'
     },
     {
@@ -163,7 +163,7 @@ const MedicalIncidentDetail = ({
         <div className="incident-title">
           <AlertOutlined className="icon-alert" />
           <Title level={4}>
-            Sự kiện y tế #{incident.id}: {incident.incidentType}
+            Sự cố y tế #{incident.id}: {incident.incidentType}
             <Tag 
               color={getSeverityColor(incident.severity)} 
               style={{ marginLeft: 8 }}
@@ -188,7 +188,7 @@ const MedicalIncidentDetail = ({
                 onClick={handleFinishIncident}
                 loading={updatingStatus}
               >
-                Hoàn thành sự kiện
+                Hoàn thành sự cố
               </Button>
             )}
             <Button onClick={onClose}>Đóng</Button>
@@ -245,9 +245,9 @@ const MedicalIncidentDetail = ({
             </Col>
             
             <Col xs={24} md={12}>
-              <Card title="Thông tin sự kiện" className="info-card">
+              <Card title="Thông tin sự cố" className="info-card">
                 <Descriptions column={1}>
-                  <Descriptions.Item label="Loại sự kiện">{incident.incidentType}</Descriptions.Item>
+                  <Descriptions.Item label="Loại sự cố">{incident.incidentType}</Descriptions.Item>
                   <Descriptions.Item label="Thời gian xảy ra">{incident.incidentDate}</Descriptions.Item>
                   <Descriptions.Item label="Mức độ">{getSeverityLabel(incident.severity)}</Descriptions.Item>
                   <Descriptions.Item label="Mô tả">{incident.description}</Descriptions.Item>
